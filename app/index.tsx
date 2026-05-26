@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { hasToken } from '../lib/api';
-import { signInWithPassword, registerSendCode, registerVerifyCode, registerComplete } from '../lib/auth';
+import {
+  signInWithPassword, registerSendCode, registerVerifyCode, registerComplete,
+  requestPasswordReset, verifyPasswordReset, completePasswordReset,
+} from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
 import {
-  AuthChrome, AuthHero, AuthField, AuthLink, SSOButton, AuthOr, AuthBackLink, AuthError, RButton,
+  AuthChrome, AuthHero, AuthField, AuthLink, AuthBackLink, AuthError, RButton,
 } from '../components/auth';
 import { RadarMark } from '../components/RadarMark';
 
-type AuthView = 'login' | 'register' | 'verify' | 'completeReg' | 'forgot' | 'forgotSent';
+type AuthView = 'login' | 'register' | 'verify' | 'completeReg' | 'forgot' | 'forgotVerify' | 'forgotComplete';
 
 export default function AuthRouter() {
   const router = useRouter();
@@ -74,11 +77,41 @@ export default function AuthRouter() {
     setBusy(false);
   };
 
-  const submitForgot = () => {
+  const submitForgot = async () => {
     if (!email.includes('@')) { setErr('Enter a valid email'); return; }
-    // Backend endpoint not yet implemented — we render the success state per the design
-    setErr('');
-    setView('forgotSent');
+    setErr(''); setBusy(true);
+    const r = await requestPasswordReset(email);
+    if (r.success && r.sessionId) {
+      setSessionId(r.sessionId);
+      setCode('');
+      setView('forgotVerify');
+    } else {
+      setErr(r.error ?? 'Failed to send code');
+    }
+    setBusy(false);
+  };
+
+  const submitForgotVerify = async () => {
+    if (!code) { setErr('Enter the code'); return; }
+    setErr(''); setBusy(true);
+    const r = await verifyPasswordReset(sessionId, code);
+    if (r.success) {
+      setPwd(''); setPwd2('');
+      setView('forgotComplete');
+    } else {
+      setErr(r.error ?? 'Invalid code');
+    }
+    setBusy(false);
+  };
+
+  const submitForgotComplete = async () => {
+    if (pwd !== pwd2) { setErr('Passwords do not match'); return; }
+    if (pwd.length < 8) { setErr('Min. 8 characters'); return; }
+    setErr(''); setBusy(true);
+    const r = await completePasswordReset(sessionId, pwd);
+    if (r.success) goApp();
+    else setErr(r.error ?? 'Password reset failed');
+    setBusy(false);
   };
 
   const switchView = (v: AuthView) => { setView(v); setErr(''); };
@@ -94,11 +127,6 @@ export default function AuthRouter() {
         footer={
           <>
             <RButton full onPress={submitLogin} disabled={busy}>{busy ? t('pleaseWait') : t('signIn')}</RButton>
-            <AuthOr />
-            <View style={{ gap: 8 }}>
-              <SSOButton provider="google" label={lang === 'ar' ? 'المتابعة بجوجل' : 'Continue with Google'} />
-              <SSOButton provider="apple" label={lang === 'ar' ? 'المتابعة بآبل' : 'Continue with Apple'} />
-            </View>
             <View style={{
               marginTop: 22,
               flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -230,7 +258,9 @@ export default function AuthRouter() {
       <AuthChrome
         footer={
           <>
-            <RButton full onPress={submitForgot}>{t('sendResetLink')}</RButton>
+            <RButton full onPress={submitForgot} disabled={busy}>
+              {busy ? t('pleaseWait') : t('sendResetLink')}
+            </RButton>
             <AuthBackLink onPress={() => switchView('login')} label={t('backToSignIn')} />
           </>
         }
@@ -246,21 +276,66 @@ export default function AuthRouter() {
     );
   }
 
-  // ───────── FORGOT PASSWORD — sent confirmation ─────────
+  // ───────── FORGOT PASSWORD — verify code ─────────
+  if (view === 'forgotVerify') {
+    return (
+      <AuthChrome
+        footer={
+          <>
+            <RButton full onPress={submitForgotVerify} disabled={busy}>
+              {busy ? t('pleaseWait') : t('verifyAction')}
+            </RButton>
+            <AuthBackLink onPress={() => switchView('forgot')} label={lang === 'ar' ? 'بريد مختلف' : 'Use a different email'} />
+          </>
+        }
+      >
+        <AuthHero
+          eyebrow={t('authVersion')}
+          title={lang === 'ar' ? 'تحقق من الرمز' : 'Verify the code'}
+          sub={`${lang === 'ar' ? 'أرسلنا رمزًا إلى' : 'We sent a code to'} ${email}`}
+        />
+        <AuthError message={err} />
+        <AuthField
+          label={t('verifyCode')} value={code} onChange={setCode}
+          placeholder="000000" keyboardType="number-pad"
+          textContentType="oneTimeCode" autoFocus
+        />
+      </AuthChrome>
+    );
+  }
+
+  // ───────── FORGOT PASSWORD — set new password ─────────
   return (
     <AuthChrome
-      footer={<RButton full onPress={() => switchView('login')}>{t('backToSignIn')}</RButton>}
+      footer={
+        <RButton full onPress={submitForgotComplete} disabled={busy || (!!pwd2 && pwd !== pwd2)}>
+          {busy ? t('pleaseWait') : (lang === 'ar' ? 'تعيين كلمة السر' : 'Set new password')}
+        </RButton>
+      }
     >
-      <AuthHero eyebrow={t('authVersion')} title={t('forgotSentTitle')} sub={t('forgotSentSub')} />
-      <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-        <RadarMark size={140} gold={tok.gold} lightRing animate />
+      <AuthHero
+        eyebrow={t('authVersion')}
+        title={lang === 'ar' ? 'كلمة سر جديدة' : 'Set a new password'}
+        sub={lang === 'ar' ? 'الحد الأدنى 8 أحرف.' : 'At least 8 characters.'}
+      />
+      <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+        <RadarMark size={92} gold={tok.gold} lightRing />
       </View>
-      <View style={{ alignItems: 'center' }}>
-        <Text style={{
-          color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10,
-          letterSpacing: 1.4, writingDirection: 'ltr',
-        }}>{email || 'name@radar.app'}</Text>
-      </View>
+      <Text style={{
+        color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10,
+        letterSpacing: 1.4, writingDirection: 'ltr', textAlign: 'center', marginBottom: 16,
+      }}>{email}</Text>
+      <AuthError message={err} />
+      <AuthField
+        label={t('password')} value={pwd} onChange={setPwd}
+        placeholder={t('passwordPlaceholder')} secureTextEntry
+        textContentType="newPassword" autoFocus
+      />
+      <AuthField
+        label={t('confirmPassword')} value={pwd2} onChange={setPwd2}
+        placeholder={lang === 'ar' ? 'إعادة الإدخال' : 'Re-enter password'}
+        secureTextEntry textContentType="newPassword"
+      />
     </AuthChrome>
   );
 }

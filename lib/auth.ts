@@ -95,6 +95,58 @@ export async function registerComplete(sessionId: string, username: string, pass
   }
 }
 
+export async function requestPasswordReset(email: string): Promise<AuthResult> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/password/request-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      return { success: false, error: json.error?.message ?? 'Failed to request reset' };
+    }
+    return { success: true, sessionId: json.data.sessionId };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to request reset' };
+  }
+}
+
+export async function verifyPasswordReset(sessionId: string, code: string): Promise<AuthResult> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/password/verify-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, code }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      return { success: false, error: json.error?.message ?? 'Invalid code' };
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Verification failed' };
+  }
+}
+
+export async function completePasswordReset(sessionId: string, password: string): Promise<AuthResult> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/password/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, password }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      return { success: false, error: json.error?.message ?? 'Password reset failed' };
+    }
+    await setToken(json.data.accessToken);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Password reset failed' };
+  }
+}
+
 export async function signOut(): Promise<void> {
   await clearToken();
 }
