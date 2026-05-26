@@ -9,7 +9,8 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_BASE": "https://api.seshat.site"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -21,7 +22,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE": "https://api.seshat.site"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -30,7 +32,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE": "https://api.seshat.site"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {
