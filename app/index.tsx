@@ -306,6 +306,15 @@ export default function AuthRouter() {
           placeholder="000000" keyboardType="number-pad"
           textContentType="oneTimeCode" autoFocus
         />
+        <Text style={{
+          marginTop: 14,
+          fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2,
+          color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left',
+        }}>
+          {lang === 'ar'
+            ? 'لم يصلكِ الرمز؟ تحقّقي من مجلد البريد المزعج / السبام أو اضغطي إعادة الإرسال.'
+            : "Didn't get the code? Check your spam folder, or tap Resend below."}
+        </Text>
       </AuthChrome>
     );
   }
@@ -421,6 +430,15 @@ export default function AuthRouter() {
           placeholder="000000" keyboardType="number-pad"
           textContentType="oneTimeCode" autoFocus
         />
+        <Text style={{
+          marginTop: 14,
+          fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2,
+          color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left',
+        }}>
+          {lang === 'ar'
+            ? 'لم يصلكِ الرمز؟ تحقّقي من مجلد السبام، أو اضغطي إعادة الإرسال، أو سجّلي حسابًا جديدًا.'
+            : "Didn't get the code? Check spam folder, tap Resend, or sign up below if you don't have an account."}
+        </Text>
       </AuthChrome>
     );
   }

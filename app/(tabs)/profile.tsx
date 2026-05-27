@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera,
+  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy,
 } from 'lucide-react-native';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -346,6 +346,22 @@ export default function ProfileScreen() {
                 } catch (e) { /* fall through to plain URL */ }
                 Linking.openURL(url).catch(() => {});
               }}
+              last
+            />
+          </RCard>
+        </View>
+
+        {/* Help — support contact + future help articles */}
+        <View style={{ marginTop: 18 }}>
+          <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'المساعدة' : 'Help'}
+          </REyebrow>
+          <RCard padding={0} style={{ paddingHorizontal: 16 }}>
+            <PlanRow
+              icon={LifeBuoy}
+              title={lang === 'ar' ? 'الدعم' : 'Support'}
+              hint={lang === 'ar' ? 'أبلغي عن مشكلة أو اطلبي مساعدة' : 'Report a problem or ask for help'}
+              onPress={() => router.push('/support')}
               last
             />
           </RCard>
