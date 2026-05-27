@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
-  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote,
+  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags,
 } from 'lucide-react-native';
 import { apiFetch, hasToken } from '../../lib/api';
 import { signOut } from '../../lib/auth';
@@ -213,6 +213,41 @@ export default function ProfileScreen() {
               title={lang === 'ar' ? 'الديون' : 'Debts'}
               hint={lang === 'ar' ? 'ما الذي تدين به' : 'What you still owe'}
               onPress={() => router.push('/debts')}
+            />
+            <PlanRow
+              icon={Tags}
+              title={lang === 'ar' ? 'التصنيفات' : 'Categories'}
+              hint={lang === 'ar' ? 'افتراضية + مخصصة' : 'Defaults + your own'}
+              onPress={() => router.push('/categories')}
+              last
+            />
+          </RCard>
+        </View>
+
+        {/* Channels — other places to talk to Seshat. */}
+        <View style={{ marginTop: 18 }}>
+          <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'القنوات' : 'Channels'}
+          </REyebrow>
+          <RCard padding={0} style={{ paddingHorizontal: 16 }}>
+            <PlanRow
+              icon={Send}
+              title={lang === 'ar' ? 'بوت تيليجرام' : 'Telegram bot'}
+              hint={lang === 'ar' ? 'تحدّث مع Seshat من تيليجرام' : 'Chat with Seshat from Telegram'}
+              onPress={async () => {
+                // Mint a one-time deep-link token so the bot can auto-link this
+                // chat to the signed-in user without a second email + OTP step.
+                // Falls back to the plain bot URL if the mint or open fails.
+                let url = 'https://t.me/seshat_app_bot';
+                try {
+                  const r = await apiFetch<{ data: { deepLink: string } }>(
+                    '/me/telegram/link-token',
+                    { method: 'POST' },
+                  );
+                  if (r.data?.deepLink) url = r.data.deepLink;
+                } catch (e) { /* fall through to plain URL */ }
+                Linking.openURL(url).catch(() => {});
+              }}
               last
             />
           </RCard>

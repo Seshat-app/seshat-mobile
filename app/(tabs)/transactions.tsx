@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, SlidersHorizontal } from 'lucide-react-native';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -9,12 +9,13 @@ import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RPill, RHScroll, RAmount } from '../../components/ui';
 import { RTxRow, RefreshSpinner, type TxRowData } from '../../components/shell';
 import { SkeletonRow } from '../../components/Skeleton';
+import { EditTransactionSheet, type EditingTx } from '../../components/EditTransactionSheet';
 
 type Filter = 'all' | 'income' | 'expense' | { categoryId: string };
 
 export default function TransactionsScreen() {
   const { tok, lang, t } = useI18n();
-  const { dataVersion, categories } = useAppData();
+  const { dataVersion, categories, bumpVersion } = useAppData();
   const insets = useSafeAreaInsets();
   const [txs, setTxs] = useState<TxRowData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,52 @@ export default function TransactionsScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState<EditingTx | null>(null);
+
+  const onRowAction = (tx: TxRowData) => {
+    Alert.alert(
+      tx.description || (lang === 'ar' ? 'المعاملة' : 'Transaction'),
+      lang === 'ar' ? 'ماذا تريد أن تفعل؟' : 'What do you want to do?',
+      [
+        {
+          text: lang === 'ar' ? 'تعديل' : 'Edit',
+          onPress: () => setEditing({
+            _id: tx._id,
+            type: tx.type,
+            amount: tx.amount,
+            currency: tx.currency,
+            description: tx.description,
+            date: tx.date,
+            categoryId: tx.categoryId as EditingTx['categoryId'],
+          }),
+        },
+        {
+          text: lang === 'ar' ? 'حذف' : 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              lang === 'ar' ? 'تأكيد الحذف' : 'Delete this entry?',
+              tx.description || '',
+              [
+                { text: lang === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
+                {
+                  text: lang === 'ar' ? 'حذف' : 'Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await apiFetch(`/transactions/${tx._id}`, { method: 'DELETE' });
+                      bumpVersion();
+                    } catch (e) { console.warn('delete tx', e); }
+                  },
+                },
+              ],
+            );
+          },
+        },
+        { text: lang === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
+      ],
+    );
+  };
 
   const fetchTxs = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     const has = await hasToken();
@@ -186,7 +233,14 @@ export default function TransactionsScreen() {
                     <RAmount value={total} size={11} weight="regular" currency={list[0]?.currency ?? 'EGP'} sign={total > 0} decimals={0} />
                   </View>
                   <RCard padding={0} style={{ paddingHorizontal: 18 }}>
-                    {list.map((tx, i) => <RTxRow key={tx._id} tx={tx} last={i === list.length - 1} />)}
+                    {list.map((tx, i) => (
+                      <RTxRow
+                        key={tx._id}
+                        tx={tx}
+                        last={i === list.length - 1}
+                        onLongPress={() => onRowAction(tx)}
+                      />
+                    ))}
                   </RCard>
                 </View>
               );
@@ -195,6 +249,14 @@ export default function TransactionsScreen() {
           </ScrollView>
         )}
       </View>
+
+      <EditTransactionSheet
+        visible={!!editing}
+        editing={editing}
+        categories={categories}
+        onClose={() => setEditing(null)}
+        onSaved={() => { setEditing(null); bumpVersion(); }}
+      />
     </View>
   );
 }

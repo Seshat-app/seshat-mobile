@@ -119,14 +119,21 @@ export type TxRowData = {
   categoryId?: { nameEn?: string; nameAr?: string; emoji?: string };
 };
 
-export function RTxRow({ tx, last }: { tx: TxRowData; last?: boolean }) {
+export function RTxRow({
+  tx, last, onPress, onLongPress,
+}: {
+  tx: TxRowData;
+  last?: boolean;
+  onPress?: () => void;
+  onLongPress?: () => void;
+}) {
   const { tok, lang } = useI18n();
   const catId = catIdFromName(tx.categoryId?.nameEn);
   const desc = tx.description || catLabel(tx.categoryId, lang);
   const signed = tx.type === 'income' ? tx.amount : -tx.amount;
   const dateLabel = new Date(tx.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  return (
+  const content = (
     <View style={{
       flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
       alignItems: 'center', gap: 12, paddingVertical: 12,
@@ -149,6 +156,18 @@ export function RTxRow({ tx, last }: { tx: TxRowData; last?: boolean }) {
       </View>
       <RAmount value={signed} currency={tx.currency} size={15} sign={signed > 0} decimals={signed % 1 === 0 ? 0 : 2} />
     </View>
+  );
+
+  if (!onPress && !onLongPress) return content;
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={400}
+      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+    >
+      {content}
+    </Pressable>
   );
 }
 
