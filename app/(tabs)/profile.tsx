@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import {
-  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags,
+  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera,
 } from 'lucide-react-native';
+import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
 import { signOut } from '../../lib/auth';
 import { useI18n, type Lang, formatAmount, currencyLabel } from '../../lib/i18n';
@@ -20,6 +22,7 @@ const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
 
 type Profile = {
   displayName?: string;
+  avatarUrl?: string;
   email: string;
   language: 'en' | 'ar';
   currency: string;
@@ -38,6 +41,7 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [salaryOpen, setSalaryOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -66,6 +70,41 @@ export default function ProfileScreen() {
       console.warn('save profile failed', err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePhoto = async () => {
+    // Ask for gallery permission. iOS shows a system prompt the first time;
+    // Android Tiramisu+ shows the photo picker without a permission entry.
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        lang === 'ar' ? 'الإذن مطلوب' : 'Permission needed',
+        lang === 'ar' ? 'افتحي إعدادات التطبيق وامنحي صلاحية الصور.' : 'Open app settings and grant photo access.',
+      );
+      return;
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (picked.canceled || !picked.assets?.[0]) return;
+
+    setUploadingAvatar(true);
+    try {
+      const { secureUrl } = await uploadAvatar(picked.assets[0].uri);
+      await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ avatarUrl: secureUrl }) });
+      setProfile((p) => p ? { ...p, avatarUrl: secureUrl } : p);
+      refresh();
+    } catch (err) {
+      Alert.alert(
+        lang === 'ar' ? 'فشل الرفع' : 'Upload failed',
+        err instanceof Error ? err.message : String(err),
+      );
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -154,17 +193,42 @@ export default function ProfileScreen() {
               </>
             ) : (
               <>
-                <View style={{
-                  width: 56, height: 56, borderRadius: 28,
-                  backgroundColor: tok.elevated,
-                  borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Text style={{
-                    color: tok.gold, fontFamily: fontHead(lang),
-                    fontSize: 20, letterSpacing: -0.4,
-                  }}>{initial}</Text>
-                </View>
+                <Pressable
+                  onPress={handleChangePhoto}
+                  disabled={uploadingAvatar}
+                  style={({ pressed }) => ({
+                    width: 56, height: 56, borderRadius: 28,
+                    backgroundColor: tok.elevated,
+                    borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                    alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden',
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  {profile.avatarUrl ? (
+                    <Image
+                      source={{ uri: profile.avatarUrl }}
+                      style={{ width: 56, height: 56 }}
+                    />
+                  ) : (
+                    <Text style={{
+                      color: tok.gold, fontFamily: fontHead(lang),
+                      fontSize: 20, letterSpacing: -0.4,
+                    }}>{initial}</Text>
+                  )}
+                  {/* Camera badge overlay - tappable hint */}
+                  <View style={{
+                    position: 'absolute', bottom: -2, right: -2,
+                    width: 22, height: 22, borderRadius: 11,
+                    backgroundColor: tok.gold,
+                    borderWidth: 2, borderColor: tok.surface,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {uploadingAvatar
+                      ? <ActivityIndicator size="small" color="#0D0D0D" />
+                      : <Camera size={11} color="#0D0D0D" strokeWidth={2.2} />}
+                  </View>
+                </Pressable>
                 <View style={{ flex: 1 }}>
                   <TextInput
                     value={displayName}
