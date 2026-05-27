@@ -1,17 +1,26 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { hasToken } from '../lib/api';
 import {
-  signInWithPassword, registerSendCode, registerVerifyCode, registerComplete,
+  signInWithPassword, signInWithGoogle, registerSendCode, registerVerifyCode, registerComplete,
   requestPasswordReset, verifyPasswordReset, completePasswordReset,
 } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
 import {
   AuthChrome, AuthHero, AuthField, AuthLink, AuthBackLink, AuthError, RButton,
+  SSOButton, AuthOr,
 } from '../components/auth';
 import { RadarMark } from '../components/RadarMark';
+
+// Required for expo-auth-session to dismiss the in-app browser cleanly after
+// the OAuth provider redirects back to the app. Safe to call at module scope.
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_WEB_CLIENT_ID = '332477207123-frrpq33b3ccaefllusa1nakso1bqfrlv.apps.googleusercontent.com';
 
 type AuthView = 'login' | 'register' | 'verify' | 'completeReg' | 'forgot' | 'forgotVerify' | 'forgotComplete';
 
@@ -31,6 +40,39 @@ export default function AuthRouter() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Google sign-in. expo-auth-session opens the Google account picker in a
+  // Chrome Custom Tab / system browser; the response.params include `id_token`
+  // which we hand to the API for verification.
+  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
+    clientId: GOOGLE_WEB_CLIENT_ID,
+    // We want the ID token (server can verify it against Google's JWKS) not
+    // the OAuth access token (only useful for calling Google APIs).
+    scopes: ['openid', 'email', 'profile'],
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type === 'success') {
+      const idToken = (googleResponse.params as Record<string, string>).id_token;
+      if (!idToken) {
+        setErr('Google did not return an ID token');
+        setBusy(false);
+        return;
+      }
+      (async () => {
+        setBusy(true);
+        const r = await signInWithGoogle(idToken);
+        if (r.success) goApp();
+        else setErr(r.error ?? 'Google sign-in failed');
+        setBusy(false);
+      })();
+    } else if (googleResponse?.type === 'error') {
+      setErr('Google sign-in was cancelled');
+      setBusy(false);
+    } else if (googleResponse?.type === 'dismiss' || googleResponse?.type === 'cancel') {
+      setBusy(false);
+    }
+  }, [googleResponse]);
+
   useEffect(() => {
     hasToken().then((has) => {
       if (has) router.replace('/(tabs)');
@@ -39,6 +81,14 @@ export default function AuthRouter() {
   }, []);
 
   const goApp = () => router.replace('/(tabs)');
+
+  const submitGoogle = async () => {
+    if (!googleRequest) return;
+    setErr(''); setBusy(true);
+    await promptGoogle();
+    // The redirect is handled by the useEffect above. We keep busy=true until
+    // it resolves so users can't tap twice.
+  };
 
   const submitLogin = async () => {
     if (!email || !pwd) return;
@@ -127,6 +177,12 @@ export default function AuthRouter() {
         footer={
           <>
             <RButton full onPress={submitLogin} disabled={busy}>{busy ? t('pleaseWait') : t('signIn')}</RButton>
+            <AuthOr />
+            <SSOButton
+              provider="google"
+              label={lang === 'ar' ? 'المتابعة بجوجل' : 'Continue with Google'}
+              onPress={submitGoogle}
+            />
             <View style={{
               marginTop: 22,
               flexDirection: lang === 'ar' ? 'row-reverse' : 'row',

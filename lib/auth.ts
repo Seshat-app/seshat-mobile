@@ -25,6 +25,24 @@ export interface AuthResult {
   sessionId?: string;
 }
 
+export async function signInWithGoogle(idToken: string): Promise<AuthResult> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      return { success: false, error: json.error?.message ?? 'Google sign-in failed' };
+    }
+    await setToken(json.data.accessToken);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Google sign-in failed' };
+  }
+}
+
 export async function signInWithPassword(identifier: string, password: string): Promise<AuthResult> {
   try {
     const res = await fetch(`${API_BASE}/auth/sign-in`, {
