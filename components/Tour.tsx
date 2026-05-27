@@ -114,7 +114,11 @@ export function Tour({ visible, onClose }: { visible: boolean; onClose: () => vo
   const { tok, lang } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width: W, height: H } = Dimensions.get('window');
+  // Use screen.height (full physical screen) not window.height. On edge-to-edge
+  // Android, window.height excludes the bottom nav-bar height while the Modal
+  // we render extends across the full screen. Using window made the spotlight
+  // float ~80px above the FAB on Android phones with on-screen nav bars.
+  const { width: W, height: H } = Dimensions.get('screen');
   const [step, setStep] = useState(0);
 
   // Animation for the tooltip card sliding in

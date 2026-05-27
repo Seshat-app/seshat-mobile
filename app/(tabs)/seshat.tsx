@@ -98,11 +98,12 @@ export default function SeshatScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      // No offset — on iOS the system keyboard slides over the tab bar, so
-      // the KAV's bottom edge effectively reaches the screen bottom. An
-      // offset here only adds empty space between the input bar and the
-      // keyboard.
+      // 'padding' on both platforms. On Android with edge-to-edge enabled,
+      // the previous `undefined` behavior leaned on adjust-resize, which is
+      // a no-op when the activity is drawing under the system bars - the
+      // chat input ended up hidden beneath the keyboard with no way to see
+      // what you were typing.
+      behavior="padding"
       style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}
     >
       <View style={{

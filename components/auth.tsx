@@ -14,12 +14,18 @@ import { RadarMark } from './RadarMark';
 // ─────────────────────────────────────────────────────────────
 // Shared chrome for all auth screens
 // ─────────────────────────────────────────────────────────────
-export function AuthChrome({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+export function AuthChrome({
+  children, footer, headerCta,
+}: { children: ReactNode; footer?: ReactNode; headerCta?: ReactNode }) {
   const { tok, lang, setLang } = useI18n();
   const insets = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      // 'padding' on both platforms. On Android the previous `undefined`
+      // value relied on adjust-resize from the activity, but edge-to-edge
+      // disables that on many devices and the footer ends up hidden under
+      // the keyboard. 'padding' is consistent everywhere.
+      behavior="padding"
       style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}
     >
       <View style={{
@@ -33,24 +39,30 @@ export function AuthChrome({ children, footer }: { children: ReactNode; footer?:
         }}>
           <RadarMark size={20} gold={tok.gold} lightRing />
           <Text style={{
-            // Syne ExtraBold for the wordmark — loaded in _layout.tsx
+            // Syne ExtraBold for the wordmark - loaded in _layout.tsx
             fontFamily: 'Syne_800ExtraBold',
             fontSize: 14, color: tok.gold, letterSpacing: -0.6,
           }}>Radar</Text>
         </View>
-        <Pressable
-          onPress={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-          style={({ pressed }) => ({
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{
-            color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10,
-            letterSpacing: 1.6, textTransform: 'uppercase',
-          }}>{lang === 'ar' ? 'EN' : 'AR'}</Text>
-        </Pressable>
+        <View style={{
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 12,
+        }}>
+          {headerCta}
+          <Pressable
+            onPress={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+            style={({ pressed }) => ({
+              borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+              borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text style={{
+              color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10,
+              letterSpacing: 1.6, textTransform: 'uppercase',
+            }}>{lang === 'ar' ? 'EN' : 'AR'}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView

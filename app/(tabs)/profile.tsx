@@ -42,6 +42,10 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [salaryOpen, setSalaryOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  // Danger zone is collapsed by default so users don't tap delete by reflex
+  // while scrolling. Opening it reveals the typed-email confirm field.
+  const [dangerOpen, setDangerOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -128,34 +132,25 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    // Apple Guideline 5.1.1(v) — destructive enough to warrant a double-tap
-    // confirmation, not a single tap. First Alert explains what will go;
-    // only on "Continue" does the second Alert ask the actual yes/no.
-    const lines = lang === 'ar'
-      ? [
-          'سيتم حذف حسابك وكل بياناتك نهائياً.',
-          'لا يمكن التراجع.',
-          'هل أنت متأكد؟',
-        ]
-      : [
-          'Your account and all your data will be permanently deleted.',
-          'This cannot be undone.',
-          'Are you sure?',
-        ];
+  const handleDeleteAccount = async () => {
+    // Final confirmation alert AFTER the typed-email gate has been passed.
+    // The typed email IS the primary friction; this alert is the last
+    // chance to back out and exists mostly because Alert blocks the UI so
+    // users can't accidentally tap "delete" twice during the network call.
     Alert.alert(
       lang === 'ar' ? 'حذف الحساب' : 'Delete account',
-      lines.join('\n\n'),
+      lang === 'ar'
+        ? 'سيتم حذف حسابك وكل بياناتك نهائياً. هذا الإجراء لا يمكن التراجع عنه.'
+        : 'Your account and all your data will be permanently deleted. This cannot be undone.',
       [
         { text: lang === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
         {
-          text: lang === 'ar' ? 'حذف نهائياً' : 'Delete permanently',
+          text: lang === 'ar' ? 'حذف' : 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
               await apiFetch('/me', { method: 'DELETE' });
               await signOut();
-              // Same reload-vs-navigate trick as sign-out, see comment there.
               try {
                 await Updates.reloadAsync();
               } catch {
@@ -222,26 +217,38 @@ export default function ProfileScreen() {
                   onPress={handleChangePhoto}
                   disabled={uploadingAvatar}
                   style={({ pressed }) => ({
+                    width: 56, height: 56,
+                    // No overflow clip here - the badge sits at bottom-right
+                    // extending past the avatar circle and would get cut off
+                    // if the parent clipped its children.
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  {/* Inner circle wraps the image and clips to a round shape.
+                      Keeping the clip on this child instead of the parent
+                      lets the badge below extend outside the circle bounds. */}
+                  <View style={{
                     width: 56, height: 56, borderRadius: 28,
                     backgroundColor: tok.elevated,
                     borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
                     alignItems: 'center', justifyContent: 'center',
                     overflow: 'hidden',
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  {profile.avatarUrl ? (
-                    <Image
-                      source={{ uri: profile.avatarUrl }}
-                      style={{ width: 56, height: 56 }}
-                    />
-                  ) : (
-                    <Text style={{
-                      color: tok.gold, fontFamily: fontHead(lang),
-                      fontSize: 20, letterSpacing: -0.4,
-                    }}>{initial}</Text>
-                  )}
-                  {/* Camera badge overlay - tappable hint */}
+                  }}>
+                    {profile.avatarUrl ? (
+                      <Image
+                        source={{ uri: profile.avatarUrl }}
+                        style={{ width: 56, height: 56 }}
+                      />
+                    ) : (
+                      <Text style={{
+                        color: tok.gold, fontFamily: fontHead(lang),
+                        fontSize: 20, letterSpacing: -0.4,
+                      }}>{initial}</Text>
+                    )}
+                  </View>
+                  {/* Camera badge - sits over the bottom-right edge of the
+                      circle as a tap hint. Border matches the card surface so
+                      the badge reads as separate from the avatar disc. */}
                   <View style={{
                     position: 'absolute', bottom: -2, right: -2,
                     width: 22, height: 22, borderRadius: 11,
@@ -485,25 +492,99 @@ export default function ProfileScreen() {
           </Text>
         </Pressable>
 
-        {/* Account deletion — Apple Guideline 5.1.1(v). Visually softer than
-            sign-out (smaller, ghost-style link) so users don't tap it by accident. */}
+        {/* Danger zone. Collapsed by default so the delete button isn't a
+            single careless tap away. Tapping the toggle reveals the typed-
+            email confirmation gate; the actual delete button is disabled
+            until what the user types exactly matches their account email.
+            Apple Guideline 5.1.1(v) is still satisfied: account deletion
+            is reachable in 3 taps + 1 typed email + 1 confirmation alert. */}
         <Pressable
-          onPress={handleDeleteAccount}
-          hitSlop={8}
+          onPress={() => {
+            setDangerOpen((o) => !o);
+            if (dangerOpen) setDeleteConfirmText('');
+          }}
+          hitSlop={6}
           style={({ pressed }) => ({
-            marginTop: 18, paddingVertical: 10,
+            marginTop: 32, paddingVertical: 8,
             alignItems: 'center',
-            opacity: pressed ? 0.7 : 1,
+            opacity: pressed ? 0.6 : 1,
           })}
         >
           <Text style={{
-            color: tok.alertText,
+            color: tok.muted,
             fontFamily: fontMono('regular'),
-            fontSize: 11,
-            letterSpacing: lang === 'ar' ? 0 : 1.4,
-            textTransform: lang === 'ar' ? 'none' : 'uppercase',
-          }}>{lang === 'ar' ? 'حذف الحساب نهائياً' : 'Delete account permanently'}</Text>
+            fontSize: 10,
+            letterSpacing: 1.4,
+          }}>
+            {dangerOpen
+              ? (lang === 'ar' ? 'إخفاء' : 'HIDE')
+              : (lang === 'ar' ? 'منطقة الخطر' : 'DANGER ZONE')}
+          </Text>
         </Pressable>
+
+        {dangerOpen && (
+          <View style={{
+            marginTop: 4, marginBottom: 24,
+            padding: 16, borderRadius: 12,
+            backgroundColor: tok.surface,
+            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.alertText,
+            gap: 12,
+          }}>
+            <Text style={{
+              color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}>
+              {lang === 'ar' ? 'حذف الحساب نهائياً' : 'Delete account permanently'}
+            </Text>
+            <Text style={{
+              color: tok.muted, fontFamily: fontBody(lang), fontSize: 12, lineHeight: 18,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+            }}>
+              {lang === 'ar'
+                ? `لتأكيد الحذف، اكتب بريدك الإلكتروني (${profile?.email ?? ''}) في الحقل أدناه. سيتم حذف الحساب وجميع البيانات (المعاملات، الميزانيات، الأهداف، الفئات) نهائياً ولا يمكن استرجاعها.`
+                : `To confirm, type your email (${profile?.email ?? ''}) below. Your account and all data (transactions, budgets, goals, categories) will be permanently deleted.`}
+            </Text>
+            <TextInput
+              value={deleteConfirmText}
+              onChangeText={setDeleteConfirmText}
+              placeholder={profile?.email ?? ''}
+              placeholderTextColor={tok.muted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              style={{
+                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+                color: tok.bone, fontFamily: fontMono('regular'), fontSize: 13,
+                backgroundColor: tok.elevated,
+                writingDirection: 'ltr',
+              }}
+            />
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={deleteConfirmText.trim().toLowerCase() !== (profile?.email?.toLowerCase() ?? '__NEVER_MATCH__')}
+              style={({ pressed }) => {
+                const enabled = deleteConfirmText.trim().toLowerCase() === (profile?.email?.toLowerCase() ?? '');
+                return {
+                  borderRadius: 10, paddingVertical: 12,
+                  alignItems: 'center',
+                  backgroundColor: enabled ? tok.alertText : tok.elevated,
+                  opacity: pressed && enabled ? 0.85 : 1,
+                };
+              }}
+            >
+              <Text style={{
+                color: deleteConfirmText.trim().toLowerCase() === (profile?.email?.toLowerCase() ?? '')
+                  ? '#FFFFFF' : tok.muted,
+                fontFamily: fontMono('regular'),
+                fontSize: 11, letterSpacing: 1.4,
+              }}>
+                {lang === 'ar' ? 'حذف الحساب' : 'DELETE ACCOUNT'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
 
       <SetSalarySheet

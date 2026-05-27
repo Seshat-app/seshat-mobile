@@ -164,6 +164,36 @@ export default function AuthRouter() {
     setBusy(false);
   };
 
+  // Resend handlers for the two verify screens. Both re-issue the send-code
+  // call with the same email, which on the API side allocates a fresh
+  // sessionId. We swap that in so the next verify-code call hits the new
+  // session. Old session is left to TTL-expire on the server.
+  const [resentAt, setResentAt] = useState<number | null>(null);
+  const resendRegister = async () => {
+    setErr(''); setBusy(true);
+    const r = await registerSendCode(email);
+    if (r.success && r.sessionId) {
+      setSessionId(r.sessionId);
+      setResentAt(Date.now());
+      setCode('');
+    } else {
+      setErr(r.error ?? 'Failed to resend');
+    }
+    setBusy(false);
+  };
+  const resendForgot = async () => {
+    setErr(''); setBusy(true);
+    const r = await requestPasswordReset(email);
+    if (r.success && r.sessionId) {
+      setSessionId(r.sessionId);
+      setResentAt(Date.now());
+      setCode('');
+    } else {
+      setErr(r.error ?? 'Failed to resend');
+    }
+    setBusy(false);
+  };
+
   const switchView = (v: AuthView) => { setView(v); setErr(''); };
 
   if (checking) {
@@ -174,6 +204,19 @@ export default function AuthRouter() {
   if (view === 'login') {
     return (
       <AuthChrome
+        // Sign-up CTA lives in the always-visible header, not at the bottom
+        // of the footer where it was getting cut off on short screens or
+        // when the keyboard opened. Footer keeps the primary action chain
+        // (sign in, OR, Google) but no longer trails with a second prompt.
+        headerCta={
+          <Pressable onPress={() => switchView('register')} hitSlop={8}>
+            <Text style={{
+              color: tok.gold, fontFamily: fontBody(lang, 'semibold'), fontSize: 13,
+            }}>
+              {lang === 'ar' ? `${t('signUp')} ←` : `${t('signUp')} →`}
+            </Text>
+          </Pressable>
+        }
         footer={
           <>
             <RButton full onPress={submitLogin} disabled={busy}>{busy ? t('pleaseWait') : t('signIn')}</RButton>
@@ -183,16 +226,6 @@ export default function AuthRouter() {
               label={lang === 'ar' ? 'المتابعة بجوجل' : 'Continue with Google'}
               onPress={submitGoogle}
             />
-            <View style={{
-              marginTop: 22,
-              flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-              justifyContent: 'center', alignItems: 'center', gap: 8,
-            }}>
-              <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 13 }}>{t('noAccount')}</Text>
-              <Pressable onPress={() => switchView('register')}>
-                <Text style={{ color: tok.gold, fontFamily: fontBody(lang, 'semibold'), fontSize: 13 }}>{t('signUp')} →</Text>
-              </Pressable>
-            </View>
           </>
         }
       >
@@ -255,6 +288,13 @@ export default function AuthRouter() {
             <RButton full onPress={submitVerify} disabled={busy}>
               {busy ? t('pleaseWait') : t('verifyAction')}
             </RButton>
+            <ResendCodeRow
+              onResend={resendRegister}
+              busy={busy}
+              resentAt={resentAt}
+              lang={lang}
+              tok={tok}
+            />
             <AuthBackLink onPress={() => switchView('register')} label={lang === 'ar' ? 'بريد مختلف' : 'Use a different email'} />
           </>
         }
@@ -341,6 +381,31 @@ export default function AuthRouter() {
             <RButton full onPress={submitForgotVerify} disabled={busy}>
               {busy ? t('pleaseWait') : t('verifyAction')}
             </RButton>
+            <ResendCodeRow
+              onResend={resendForgot}
+              busy={busy}
+              resentAt={resentAt}
+              lang={lang}
+              tok={tok}
+            />
+            {/* Escape hatch: if the user got here because they thought they
+                had an account but actually don't (silent no-op on the server
+                for unknown emails), let them pivot to register without
+                making them figure out the back path themselves. */}
+            <View style={{
+              marginTop: 6,
+              flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+              justifyContent: 'center', alignItems: 'center', gap: 6,
+            }}>
+              <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 12 }}>
+                {lang === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}
+              </Text>
+              <Pressable onPress={() => switchView('register')}>
+                <Text style={{ color: tok.gold, fontFamily: fontBody(lang, 'semibold'), fontSize: 12 }}>
+                  {lang === 'ar' ? 'سجّل الآن' : 'Sign up instead'}
+                </Text>
+              </Pressable>
+            </View>
             <AuthBackLink onPress={() => switchView('forgot')} label={lang === 'ar' ? 'بريد مختلف' : 'Use a different email'} />
           </>
         }
@@ -393,5 +458,52 @@ export default function AuthRouter() {
         secureTextEntry textContentType="newPassword"
       />
     </AuthChrome>
+  );
+}
+
+// Small "Didn't get a code? Resend" row used on both verify screens. We
+// disable the link for 30 seconds after a resend so the user can't spam
+// the OTP endpoint by rapid-tapping while the email is still in flight.
+const RESEND_COOLDOWN_MS = 30_000;
+function ResendCodeRow({
+  onResend, busy, resentAt, lang, tok,
+}: {
+  onResend: () => void;
+  busy: boolean;
+  resentAt: number | null;
+  lang: 'en' | 'ar';
+  tok: any;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!resentAt) return;
+    const i = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(i);
+  }, [resentAt]);
+
+  const remainingMs = resentAt ? Math.max(0, RESEND_COOLDOWN_MS - (now - resentAt)) : 0;
+  const cooldown = remainingMs > 0;
+  const seconds = Math.ceil(remainingMs / 1000);
+
+  return (
+    <View style={{
+      marginTop: 14,
+      flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+      justifyContent: 'center', alignItems: 'center', gap: 6,
+    }}>
+      <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 12 }}>
+        {lang === 'ar' ? 'لم يصلكِ الرمز؟' : "Didn't get the code?"}
+      </Text>
+      <Pressable onPress={onResend} disabled={busy || cooldown} hitSlop={8}>
+        <Text style={{
+          color: busy || cooldown ? tok.muted : tok.gold,
+          fontFamily: fontBody(lang, 'semibold'), fontSize: 12,
+        }}>
+          {cooldown
+            ? (lang === 'ar' ? `إعادة الإرسال خلال ${seconds}ث` : `Resend in ${seconds}s`)
+            : (lang === 'ar' ? 'إعادة الإرسال' : 'Resend')}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
