@@ -47,10 +47,14 @@ function tabRect(tabIndex: 0 | 1 | 2 | 3, o: StepOpts): Rect {
 }
 
 function fabRect(o: StepOpts): Rect {
+  // RFAB lives in a flex:1 container that extends to the bottom of the
+  // screen (it does NOT respect the bottom safe-area inset). So we measure
+  // from the raw screen bottom, not from the safe-area top. Subtracting
+  // insetBottom here would push the highlight upward by ~34pt on iPhone.
   const size = 56;
   return {
     x: o.W - 20 - size,
-    y: o.H - o.insetBottom - 92 - size,
+    y: o.H - 92 - size,
     w: size,
     h: size,
   };

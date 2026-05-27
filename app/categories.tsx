@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, TextInput, Platform, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, TextInput, Platform, RefreshControl, Alert, StyleSheet } from 'react-native';
 import { Trash2, X } from 'lucide-react-native';
 import { apiFetch, hasToken, newIdempotencyKey } from '../lib/api';
 import { useI18n } from '../lib/i18n';
@@ -93,50 +93,71 @@ export default function CategoriesScreen() {
             {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
           </RCard>
         ) : (
-          <RCard padding={0} style={{ paddingHorizontal: 12 }}>
+          <RCard padding={0} style={{ paddingHorizontal: 18 }}>
             {items.map((cat, i) => (
               <Pressable
                 key={cat._id}
                 onLongPress={() => onDelete(cat)}
                 delayLongPress={400}
                 style={({ pressed }) => ({
-                  paddingVertical: 14, paddingHorizontal: 8,
+                  paddingVertical: 16,
                   flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                   alignItems: 'center', gap: 14,
-                  borderBottomWidth: i < items.length - 1 ? 1 : 0,
+                  borderBottomWidth: i < items.length - 1 ? StyleSheet.hairlineWidth : 0,
                   borderBottomColor: tok.border,
                   opacity: pressed ? 0.7 : 1,
                 })}
               >
                 <View style={{
-                  width: 36, height: 36, borderRadius: 10,
+                  width: 42, height: 42, borderRadius: 12,
                   backgroundColor: tok.elevated,
+                  borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <CategoryIconByKey iconKey={iconKeyForCategory(cat)} size={18} color={tok.bone} />
+                  <CategoryIconByKey iconKey={iconKeyForCategory(cat)} size={20} color={tok.bone} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{
-                    fontFamily: fontBody(lang, 'medium'), fontSize: 15, color: tok.bone,
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontFamily: fontBody(lang, 'medium'), fontSize: 15, color: tok.bone,
+                      textAlign: lang === 'ar' ? 'right' : 'left',
+                    }}
+                  >
                     {lang === 'ar' ? cat.nameAr : cat.nameEn}
                   </Text>
-                  <Text style={{
-                    fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.2, marginTop: 2,
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}>
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.2, marginTop: 3,
+                      textAlign: lang === 'ar' ? 'right' : 'left',
+                    }}
+                  >
                     {cat.isDefault
                       ? (lang === 'ar' ? 'افتراضي' : 'DEFAULT')
                       : (lang === 'ar' ? 'مخصص' : 'CUSTOM')}
                     {'  ·  '}{cat.type.toUpperCase()}
                   </Text>
                 </View>
-                {!cat.isDefault && (
-                  <Pressable onPress={() => onDelete(cat)} hitSlop={8} style={{ padding: 6 }}>
-                    <Trash2 size={16} color={tok.muted} />
-                  </Pressable>
-                )}
+                {/* Right-anchor on every row so the layout reads balanced.
+                    Default rows show a muted "lock" indicator (you cannot
+                    delete a default); custom rows get a tappable trash icon. */}
+                <View style={{
+                  width: 32, height: 32, borderRadius: 10,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: cat.isDefault ? 'transparent' : tok.elevated,
+                }}>
+                  {cat.isDefault ? (
+                    <View style={{
+                      width: 6, height: 6, borderRadius: 3,
+                      backgroundColor: tok.border,
+                    }} />
+                  ) : (
+                    <Pressable onPress={() => onDelete(cat)} hitSlop={10} style={{ padding: 6 }}>
+                      <Trash2 size={16} color={tok.muted} />
+                    </Pressable>
+                  )}
+                </View>
               </Pressable>
             ))}
           </RCard>
