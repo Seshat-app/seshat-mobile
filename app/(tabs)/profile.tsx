@@ -110,7 +110,22 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.replace('/');
+    // Token is cleared, but `router.replace('/')` from inside the (tabs)
+    // group bounces to (tabs)/index because of expo-router's route group
+    // resolution. Force a JS bundle reload so the whole tree re-mounts
+    // fresh: AuthRouter at app/index.tsx sees no token and shows login,
+    // AppDataProvider drops its cached profile/categories. Works in both
+    // a production APK (Updates.reloadAsync) and Expo Go (DevSettings).
+    try {
+      await Updates.reloadAsync();
+    } catch {
+      try {
+        const RN = require('react-native');
+        RN.DevSettings?.reload?.();
+      } catch {
+        router.replace('/');
+      }
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -140,7 +155,17 @@ export default function ProfileScreen() {
             try {
               await apiFetch('/me', { method: 'DELETE' });
               await signOut();
-              router.replace('/');
+              // Same reload-vs-navigate trick as sign-out, see comment there.
+              try {
+                await Updates.reloadAsync();
+              } catch {
+                try {
+                  const RN = require('react-native');
+                  RN.DevSettings?.reload?.();
+                } catch {
+                  router.replace('/');
+                }
+              }
             } catch (err) {
               const msg = err instanceof Error ? err.message : 'Failed';
               Alert.alert(
