@@ -24,6 +24,17 @@ export function catIdFromName(nameEn: string | undefined | null): CatId {
   return NAME_TO_ID[nameEn] ?? 'other';
 }
 
+// Resolve the icon key for a category record. New `icon` field wins (custom
+// categories), then fall back to the legacy name-based mapping for any
+// pre-existing records that don't have one stored.
+export function iconKeyForCategory(
+  cat: { icon?: string; nameEn?: string } | undefined | null,
+): string {
+  if (!cat) return 'other';
+  if (cat.icon && cat.icon.trim()) return cat.icon.trim();
+  return catIdFromName(cat.nameEn);
+}
+
 // Display label — Arabic falls back to the API's nameAr when present
 export function catLabel(cat: { nameEn?: string; nameAr?: string } | undefined, lang: 'en' | 'ar'): string {
   if (!cat) return '—';

@@ -5,7 +5,8 @@ import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../li
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RadarMark } from './RadarMark';
 import { REyebrow, RAmount } from './ui';
-import { CategoryIcon } from './icons';
+import { CategoryIcon, CategoryIconByKey } from './icons';
+import { iconKeyForCategory } from '../lib/categoryMap';
 import type { CatId } from '../lib/categoryMap';
 import { catIdFromName, catLabel } from '../lib/categoryMap';
 
@@ -91,7 +92,9 @@ export function RefreshSpinner({ refreshing, size = 22 }: { refreshing: boolean;
 // ─────────────────────────────────────────────────────────────
 // Category chip — icon in a rounded surface tile
 // ─────────────────────────────────────────────────────────────
-export function RCatChip({ cat, size = 38, dim = false }: { cat: CatId; size?: number; dim?: boolean }) {
+export function RCatChip({
+  cat, iconKey, size = 38, dim = false,
+}: { cat?: CatId; iconKey?: string; size?: number; dim?: boolean }) {
   const { tok } = useI18n();
   return (
     <View style={{
@@ -101,7 +104,9 @@ export function RCatChip({ cat, size = 38, dim = false }: { cat: CatId; size?: n
       alignItems: 'center', justifyContent: 'center',
       opacity: dim ? 0.6 : 1,
     }}>
-      <CategoryIcon cat={cat} size={size * 0.5} color={tok.bone} />
+      {iconKey
+        ? <CategoryIconByKey iconKey={iconKey} size={size * 0.5} color={tok.bone} />
+        : <CategoryIcon cat={cat ?? 'other'} size={size * 0.5} color={tok.bone} />}
     </View>
   );
 }
@@ -116,7 +121,7 @@ export type TxRowData = {
   currency: string;
   description?: string;
   date: string;
-  categoryId?: { nameEn?: string; nameAr?: string; emoji?: string };
+  categoryId?: { nameEn?: string; nameAr?: string; emoji?: string; icon?: string };
 };
 
 export function RTxRow({
@@ -128,7 +133,7 @@ export function RTxRow({
   onLongPress?: () => void;
 }) {
   const { tok, lang } = useI18n();
-  const catId = catIdFromName(tx.categoryId?.nameEn);
+  const iconKey = iconKeyForCategory(tx.categoryId);
   const desc = tx.description || catLabel(tx.categoryId, lang);
   const signed = tx.type === 'income' ? tx.amount : -tx.amount;
   const dateLabel = new Date(tx.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -140,7 +145,7 @@ export function RTxRow({
       borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
       borderBottomColor: tok.border,
     }}>
-      <RCatChip cat={catId} />
+      <RCatChip iconKey={iconKey} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text
           numberOfLines={1}

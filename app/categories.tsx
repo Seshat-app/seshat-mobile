@@ -9,12 +9,15 @@ import { RCard, RButton } from '../components/ui';
 import { PlanScreen } from '../components/PlanShell';
 import { SkeletonRow } from '../components/Skeleton';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
+import { CategoryIconByKey, CATEGORY_ICON_KEYS } from '../components/icons';
+import { iconKeyForCategory } from '../lib/categoryMap';
 
 type ApiCategory = {
   _id: string;
   nameEn: string;
   nameAr: string;
   emoji: string;
+  icon?: string;
   type: 'income' | 'expense' | 'both';
   isDefault: boolean;
 };
@@ -105,7 +108,13 @@ export default function CategoriesScreen() {
                   opacity: pressed ? 0.7 : 1,
                 })}
               >
-                <Text style={{ fontSize: 22 }}>{cat.emoji}</Text>
+                <View style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  backgroundColor: tok.elevated,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <CategoryIconByKey iconKey={iconKeyForCategory(cat)} size={18} color={tok.bone} />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{
                     fontFamily: fontBody(lang, 'medium'), fontSize: 15, color: tok.bone,
@@ -159,13 +168,16 @@ function AddCategorySheet({
   const insets = useKeyboardHeight();
   const [nameEn, setNameEn] = useState('');
   const [nameAr, setNameAr] = useState('');
-  const [emoji, setEmoji] = useState('📌');
+  const [iconKey, setIconKey] = useState<string>('other');
   const [type, setType] = useState<'expense' | 'income' | 'both'>('expense');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   useEffect(() => {
-    if (visible) { setNameEn(''); setNameAr(''); setEmoji('📌'); setType('expense'); setErr(''); }
+    if (visible) {
+      setNameEn(''); setNameAr(''); setIconKey('other');
+      setType('expense'); setErr('');
+    }
   }, [visible]);
 
   const submit = async () => {
@@ -177,7 +189,12 @@ function AddCategorySheet({
     try {
       await apiFetch('/categories', {
         method: 'POST',
-        body: JSON.stringify({ nameEn: nameEn.trim(), nameAr: nameAr.trim(), emoji: emoji.trim() || '📌', type }),
+        body: JSON.stringify({
+          nameEn: nameEn.trim(),
+          nameAr: nameAr.trim(),
+          icon: iconKey,
+          type,
+        }),
         idempotencyKey: newIdempotencyKey(),
       });
       onCreated();
@@ -195,7 +212,7 @@ function AddCategorySheet({
         backgroundColor: tok.surface,
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
         paddingHorizontal: 20, paddingTop: 18, paddingBottom: 24 + insets,
-        gap: 14,
+        gap: 14, maxHeight: '85%',
       }}>
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -207,42 +224,28 @@ function AddCategorySheet({
           <Pressable onPress={onClose} hitSlop={8}><X size={18} color={tok.muted} /></Pressable>
         </View>
 
-        <View style={{
-          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          alignItems: 'center', gap: 12,
-        }}>
+        {/* Names */}
+        <View style={{ gap: 8 }}>
           <TextInput
-            value={emoji}
-            onChangeText={setEmoji}
-            maxLength={4}
-            placeholder="📌"
+            value={nameEn}
+            onChangeText={setNameEn}
+            placeholder={lang === 'ar' ? 'الاسم بالإنجليزية (مثل Skincare)' : 'English name (e.g. Skincare)'}
             placeholderTextColor={tok.muted}
-            style={{
-              width: 60, height: 56, borderRadius: 14, backgroundColor: tok.elevated,
-              textAlign: 'center', fontSize: 26, color: tok.bone,
-            }}
+            style={inputStyle(tok)}
           />
-          <View style={{ flex: 1, gap: 8 }}>
-            <TextInput
-              value={nameEn}
-              onChangeText={setNameEn}
-              placeholder={lang === 'ar' ? 'الاسم بالإنجليزية (مثل Skincare)' : 'English name (e.g. Skincare)'}
-              placeholderTextColor={tok.muted}
-              style={inputStyle(tok)}
-            />
-            <TextInput
-              value={nameAr}
-              onChangeText={setNameAr}
-              placeholder={lang === 'ar' ? 'الاسم بالعربية' : 'Arabic name'}
-              placeholderTextColor={tok.muted}
-              style={[inputStyle(tok), { textAlign: 'right' }]}
-            />
-          </View>
+          <TextInput
+            value={nameAr}
+            onChangeText={setNameAr}
+            placeholder={lang === 'ar' ? 'الاسم بالعربية' : 'Arabic name'}
+            placeholderTextColor={tok.muted}
+            style={[inputStyle(tok), { textAlign: 'right' }]}
+          />
         </View>
 
+        {/* Type pill row */}
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          gap: 8, marginTop: 2,
+          gap: 8,
         }}>
           {(['expense', 'income', 'both'] as const).map((t) => (
             <Pressable
@@ -260,6 +263,39 @@ function AddCategorySheet({
               }}>{t.toUpperCase()}</Text>
             </Pressable>
           ))}
+        </View>
+
+        {/* Icon picker grid */}
+        <View>
+          <Text style={{
+            fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.4, marginBottom: 8,
+            textAlign: lang === 'ar' ? 'right' : 'left',
+          }}>{lang === 'ar' ? 'اختاري أيقونة' : 'PICK AN ICON'}</Text>
+          <ScrollView style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
+            <View style={{
+              flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+              justifyContent: 'flex-start',
+            }}>
+              {CATEGORY_ICON_KEYS.map((k) => {
+                const active = k === iconKey;
+                return (
+                  <Pressable
+                    key={k}
+                    onPress={() => setIconKey(k)}
+                    style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      backgroundColor: active ? tok.gold : tok.elevated,
+                      alignItems: 'center', justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: active ? tok.gold : tok.border,
+                    }}
+                  >
+                    <CategoryIconByKey iconKey={k} size={20} color={active ? '#0D0D0D' : tok.bone} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
 
         {err ? (
