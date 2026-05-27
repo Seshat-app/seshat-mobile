@@ -43,11 +43,18 @@ export default function AuthRouter() {
   // Google sign-in. expo-auth-session opens the Google account picker in a
   // Chrome Custom Tab / system browser; the response.params include `id_token`
   // which we hand to the API for verification.
+  //
+  // The explicit redirectUri forces all traffic through the Expo auth proxy.
+  // Without it, expo-auth-session defaults to a `seshat://` custom-scheme
+  // URI on standalone builds, which Google's Web OAuth client rejects with
+  // "Custom scheme URIs are not allowed for 'WEB' client type". The proxy
+  // URL is one we registered in Google Cloud Console as an Authorized
+  // Redirect URI; auth.expo.io then deep-links the OAuth response back into
+  // the app via the seshat:// scheme.
   const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
     clientId: GOOGLE_WEB_CLIENT_ID,
-    // We want the ID token (server can verify it against Google's JWKS) not
-    // the OAuth access token (only useful for calling Google APIs).
     scopes: ['openid', 'email', 'profile'],
+    redirectUri: 'https://auth.expo.io/@radar-app/seshat-mobile',
   });
 
   useEffect(() => {
