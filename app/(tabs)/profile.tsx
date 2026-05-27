@@ -13,6 +13,7 @@ import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RButton } from '../../components/ui';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
+import { resetTour } from '../../components/Tour';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
 
@@ -320,6 +321,28 @@ export default function ProfileScreen() {
         <View style={{ marginTop: 14 }}>
           <RButton full variant="destructive" onPress={handleSignOut}>{t('signOut')}</RButton>
         </View>
+
+        {/* Replay first-launch tour. Useful if the user dismissed it accidentally
+            or wants a refresher after new features ship. */}
+        <Pressable
+          onPress={async () => { await resetTour(); router.replace('/(tabs)'); }}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            marginTop: 16, paddingVertical: 10,
+            alignItems: 'center',
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text style={{
+            color: tok.muted,
+            fontFamily: fontMono('regular'),
+            fontSize: 11,
+            letterSpacing: lang === 'ar' ? 0 : 1.4,
+            textTransform: lang === 'ar' ? 'none' : 'uppercase',
+          }}>
+            {lang === 'ar' ? 'إعادة التعريف بالتطبيق' : 'Replay app tour'}
+          </Text>
+        </Pressable>
 
         {/* Account deletion — Apple Guideline 5.1.1(v). Visually softer than
             sign-out (smaller, ghost-style link) so users don't tap it by accident. */}

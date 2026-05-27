@@ -9,6 +9,7 @@ import { fontMono } from '../../lib/fonts';
 import { RFAB } from '../../components/shell';
 import { AddTransactionSheet, type AddTxPayload } from '../../components/AddTransactionSheet';
 import { RToast } from '../../components/ui';
+import { Tour, hasTourBeenSeen } from '../../components/Tour';
 
 export default function TabsLayout() {
   const { tok, lang, t } = useI18n();
@@ -24,6 +25,20 @@ export default function TabsLayout() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
+
+  // First-launch tour. Wait a beat so the screen actually paints behind the
+  // overlay — the goal is "user sees their app, then guidance arrives", not a
+  // tour-before-the-app-loads experience.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const seen = await hasTourBeenSeen();
+      if (!alive || seen) return;
+      setTimeout(() => alive && setTourOpen(true), 900);
+    })();
+    return () => { alive = false; };
+  }, []);
 
   const onSave = async (p: AddTxPayload) => {
     try {
@@ -111,6 +126,8 @@ export default function TabsLayout() {
         categories={categories}
         defaultCurrency={profile?.currency ?? 'EGP'}
       />
+
+      <Tour visible={tourOpen} onClose={() => setTourOpen(false)} />
     </View>
   );
 }
