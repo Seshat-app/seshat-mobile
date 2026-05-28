@@ -52,6 +52,24 @@ export function newIdempotencyKey(): string {
 export interface ApiFetchOptions extends RequestInit {
   /** When set, sent as Idempotency-Key header so the backend can dedupe retries. */
   idempotencyKey?: string;
+  /** Override the active ledger for this single call. Defaults to whatever
+   *  was last set via setActiveLedger(). Useful for the org-creation flow
+   *  where we briefly want to talk to the personal ledger context. */
+  ledgerId?: string;
+}
+
+// Active workspace ("ledger") for this session. Sent as X-Ledger-Id on
+// every authenticated request. Updated by setActiveLedger() when the user
+// taps the workspace switcher in Profile. Null = let the server pick the
+// user's personal ledger (the default).
+let activeLedgerId: string | null = null;
+
+export function setActiveLedger(ledgerId: string | null): void {
+  activeLedgerId = ledgerId;
+}
+
+export function getActiveLedger(): string | null {
+  return activeLedgerId;
 }
 
 export async function apiFetch<T = unknown>(
@@ -64,13 +82,16 @@ export async function apiFetch<T = unknown>(
     throw new Error('Not authenticated');
   }
 
-  const { idempotencyKey, ...rest } = options;
+  const { idempotencyKey, ledgerId, ...rest } = options;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
     ...(rest.headers as Record<string, string> | undefined),
   };
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+  // Per-call override > session-level activeLedgerId > server default.
+  const effectiveLedger = ledgerId ?? activeLedgerId;
+  if (effectiveLedger) headers['X-Ledger-Id'] = effectiveLedger;
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...rest,

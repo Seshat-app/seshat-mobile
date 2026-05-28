@@ -16,6 +16,7 @@ import { RCard, REyebrow, RButton } from '../../components/ui';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
 import { resetTour } from '../../components/Tour';
+import { WorkspaceCard, WorkspaceSheet } from '../../components/WorkspaceSwitcher';
 import * as Updates from 'expo-updates';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
@@ -42,6 +43,9 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [salaryOpen, setSalaryOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  // Workspace switcher modal. Tapping the WorkspaceCard near the top of the
+  // Profile screen opens it.
+  const [workspaceSheetOpen, setWorkspaceSheetOpen] = useState(false);
   // Danger zone is collapsed by default so users don't tap delete by reflex
   // while scrolling. Opening it reveals the typed-email confirm field.
   const [dangerOpen, setDangerOpen] = useState(false);
@@ -280,7 +284,12 @@ export default function ProfileScreen() {
           </View>
         </RCard>
 
-        {/* Plan — Budgets / Goals / Debts navigation */}
+        {/* Workspace - current ledger context + switcher entry point. Sits
+            between identity and Plan because it changes what the rest of
+            the app shows when tapped. */}
+        <WorkspaceCard onPress={() => setWorkspaceSheetOpen(true)} />
+
+        {/* Plan - Budgets / Goals / Debts navigation */}
         <View style={{ marginTop: 18 }}>
           <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
             {lang === 'ar' ? 'الخطة' : 'Plan'}
@@ -609,6 +618,11 @@ export default function ProfileScreen() {
         onSave={saveSalary}
         defaultCurrency={currency}
         initialAmount={salary}
+      />
+
+      <WorkspaceSheet
+        visible={workspaceSheetOpen}
+        onClose={() => setWorkspaceSheetOpen(false)}
       />
     </View>
   );
