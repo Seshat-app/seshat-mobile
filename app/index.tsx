@@ -9,7 +9,7 @@ import {
   requestPasswordReset, verifyPasswordReset, completePasswordReset,
 } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { fontBody, fontMono } from '../lib/fonts';
+import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import {
   AuthChrome, AuthHero, AuthField, AuthLink, AuthBackLink, AuthError, RButton,
   SSOButton, AuthOr,
@@ -22,7 +22,15 @@ WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_WEB_CLIENT_ID = '332477207123-frrpq33b3ccaefllusa1nakso1bqfrlv.apps.googleusercontent.com';
 
-type AuthView = 'login' | 'register' | 'verify' | 'completeReg' | 'forgot' | 'forgotVerify' | 'forgotComplete';
+type AuthView =
+  | 'login'
+  | 'register'
+  | 'verify'
+  | 'completeReg'
+  | 'pickSegment'  // post-registration: Individual or Organization?
+  | 'forgot'
+  | 'forgotVerify'
+  | 'forgotComplete';
 
 export default function AuthRouter() {
   const router = useRouter();
@@ -129,9 +137,28 @@ export default function AuthRouter() {
     if (pwd.length < 8) { setErr('Min. 8 characters'); return; }
     setErr(''); setBusy(true);
     const r = await registerComplete(sessionId, name || email.split('@')[0], pwd);
-    if (r.success) goApp();
-    else setErr(r.error ?? 'Registration failed');
+    if (r.success) {
+      // After registration, ask whether this is an individual or an org
+      // account before landing them in the tabs. Mirrors the web
+      // questionnaire's `individual` vs `team` segmentation.
+      setView('pickSegment');
+    } else {
+      setErr(r.error ?? 'Registration failed');
+    }
     setBusy(false);
+  };
+
+  // pickSegment handlers. Individual: just go home (personal ledger is the
+  // default for any new user). Organization: go home first so the tabs
+  // mount and AppData has a chance to refresh, then push the org-create
+  // screen so the founder lands on the form with the keyboard up.
+  const pickIndividual = () => {
+    goApp();
+  };
+  const pickOrganization = () => {
+    goApp();
+    // Defer so the tabs are mounted before we push into /orgs/new.
+    setTimeout(() => router.push('/orgs/new'), 50);
   };
 
   const submitForgot = async () => {
@@ -364,6 +391,54 @@ export default function AuthRouter() {
     );
   }
 
+  // ───────── PICK SEGMENT (after registration) ─────────
+  // Mirrors the seshat-web questionnaire's `individual` vs `team` choice.
+  // Individual users land on Personal directly; Organization users go
+  // straight to the org-create form after the tabs mount.
+  if (view === 'pickSegment') {
+    return (
+      <AuthChrome
+        footer={
+          <Pressable onPress={pickIndividual} hitSlop={6} style={({ pressed }) => ({
+            paddingVertical: 12, alignItems: 'center',
+            opacity: pressed ? 0.6 : 1,
+          })}>
+            <Text style={{
+              color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.4,
+            }}>
+              {lang === 'ar' ? 'تخطّي - أنا فرد' : "SKIP - I'M AN INDIVIDUAL"}
+            </Text>
+          </Pressable>
+        }
+      >
+        <AuthHero
+          eyebrow={t('authVersion')}
+          title={lang === 'ar' ? 'لمن هذا الحساب؟' : 'Who is this account for?'}
+          sub={lang === 'ar'
+            ? 'يمكنكِ تغيير ذلك أو إضافة منظمة لاحقًا من الإعدادات.'
+            : 'You can change this or add an organization later from settings.'}
+        />
+        <View style={{ marginTop: 20, gap: 12 }}>
+          <SegmentCard
+            title={lang === 'ar' ? 'فرد' : 'Individual'}
+            sub={lang === 'ar' ? 'لتتبع مصاريفي الشخصية فقط.' : 'Track my own money. Personal ledger only.'}
+            onPress={pickIndividual}
+            tok={tok}
+            lang={lang}
+          />
+          <SegmentCard
+            title={lang === 'ar' ? 'منظمة' : 'Organization'}
+            sub={lang === 'ar' ? 'لمشاركتها مع فريقي. ميزانية مشتركة.' : 'Share with my team. A shared ledger.'}
+            onPress={pickOrganization}
+            tok={tok}
+            lang={lang}
+            highlight
+          />
+        </View>
+      </AuthChrome>
+    );
+  }
+
   // ───────── FORGOT PASSWORD ─────────
   if (view === 'forgot') {
     return (
@@ -530,5 +605,49 @@ function ResendCodeRow({
         </Text>
       </Pressable>
     </View>
+  );
+}
+
+// Card used in the post-registration "Who is this account for?" step.
+// One of two: Individual (default style) or Organization (gold highlight).
+function SegmentCard({
+  title, sub, onPress, tok, lang, highlight,
+}: {
+  title: string;
+  sub: string;
+  onPress: () => void;
+  tok: any;
+  lang: 'en' | 'ar';
+  highlight?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        borderRadius: 14,
+        paddingVertical: 16, paddingHorizontal: 16,
+        backgroundColor: highlight ? tok.gold : tok.surface,
+        borderWidth: 1, borderColor: highlight ? tok.gold : tok.border,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Text style={{
+        fontFamily: fontHead(lang), fontSize: 18,
+        color: highlight ? '#0D0D0D' : tok.bone,
+        letterSpacing: -0.3,
+        textAlign: lang === 'ar' ? 'right' : 'left',
+      }}>
+        {title}
+      </Text>
+      <Text style={{
+        marginTop: 4,
+        fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19,
+        color: highlight ? 'rgba(13,13,13,0.7)' : tok.muted,
+        textAlign: lang === 'ar' ? 'right' : 'left',
+        writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+      }}>
+        {sub}
+      </Text>
+    </Pressable>
   );
 }
