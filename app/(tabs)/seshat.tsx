@@ -1,427 +1,278 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Animated,
-} from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowUp, Mic } from 'lucide-react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { Plus, Sparkles, ChevronRight, Trash2 } from 'lucide-react-native';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
-import { fontBody, fontHead } from '../../lib/fonts';
-import { RadarMark } from '../../components/RadarMark';
-import { REyebrow } from '../../components/ui';
-import { useRecorder } from '../../components/useRecorder';
+import { useAppData } from '../../lib/appData';
+import { fontBody, fontHead, fontMono } from '../../lib/fonts';
+import { REyebrow, RCard } from '../../components/ui';
 
-type Message = {
+/**
+ * Seshat tab landing screen - shows the list of chat sessions in the
+ * current workspace. Tap a row to enter the chat view; "+" creates a new
+ * session and routes into it.
+ *
+ * Replaces the older single-stream chat UX. Each session is its own
+ * conversation thread with its own LLM memory.
+ */
+
+type SessionSummary = {
   id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  // When true the bubble streams content character-by-character. Tap to skip.
-  typing?: boolean;
-  // Transaction _ids the agent created in response to this turn. We render
-  // a small "Seshat logged N entries" chip under the bubble when populated.
-  createdTransactionIds?: string[];
+  title: string;
+  lastMessageAt: string;
+  createdAt: string;
+  messageCount: number;
 };
 
-const QUICK_CHIPS_EN = ['Month summary', 'Where do I spend most?', 'How am I doing?'];
-const QUICK_CHIPS_AR = ['ملخص الشهر', 'أين أنفق أكثر؟', 'كم متبقي؟'];
-
-export default function SeshatScreen() {
-  const { tok, lang, t } = useI18n();
+export default function SeshatSessionsScreen() {
+  const router = useRouter();
+  const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 'welcome', role: 'assistant', content: t('seshatTabIntro') },
-  ]);
-  const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const scrollRef = useRef<ScrollView>(null);
-  const recorder = useRecorder();
+  const { activeLedgerId } = useAppData();
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Load persisted chat history on mount. Server returns oldest-first so
-  // we can render the array as-is. If there's any history, replace the
-  // welcome message - that's a first-launch state, not a returning user.
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!(await hasToken())) return;
-        const r = await apiFetch<{ data: Array<{
-          id: string; role: 'user' | 'assistant'; content: string;
-          createdAt: string; createdTransactionIds?: string[];
-        }> }>('/chat');
-        if (r.data?.length) {
-          setMessages(r.data.map((m) => ({
-            id: m.id, role: m.role, content: m.content,
-            createdTransactionIds: m.createdTransactionIds,
-          })));
-          // Jump to bottom after layout settles.
-          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 80);
-        }
-      } catch (err) {
-        console.warn('chat history load failed', err);
-      } finally {
-        setLoadingHistory(false);
-      }
-    })();
+  const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    if (!(await hasToken())) return;
+    if (mode === 'initial') setLoading(true); else setRefreshing(true);
+    try {
+      const r = await apiFetch<{ data: SessionSummary[] }>('/chat/sessions');
+      setSessions(r.data ?? []);
+    } catch (err) {
+      console.warn('load sessions failed', err);
+    } finally {
+      if (mode === 'initial') setLoading(false); else setRefreshing(false);
+    }
   }, []);
 
-  // Voice flow: tap-and-hold mic → record → release → upload audio → render
-  // both the user's transcript bubble and Seshat's typed reply.
-  const sendVoice = async () => {
-    const res = await recorder.stop();
-    if (!res || sending) return;
-    const has = await hasToken();
-    if (!has) {
-      setMessages((prev) => [...prev, { id: String(Date.now()), role: 'assistant', content: t('signInFirst'), typing: true }]);
-      return;
-    }
-    setSending(true);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-    try {
-      const r = await apiFetch<{ data: { transcript: string; reply: string; createdTransactionIds?: string[] } }>('/voice/chat', {
-        method: 'POST',
-        body: JSON.stringify({ audio_base64: res.base64, format: res.format, language: lang }),
-      });
-      const ts = Date.now();
-      setMessages((prev) => [
-        ...prev,
-        { id: String(ts), role: 'user', content: r.data.transcript || '🎙️' },
+  // Refresh whenever the tab regains focus (e.g. after returning from a
+  // chat view that may have changed lastMessageAt or created a session).
+  // Also re-runs when the active workspace changes.
+  useFocusEffect(useCallback(() => {
+    load();
+    return () => {};
+  }, [load, activeLedgerId]));
+
+  const startNew = () => {
+    // Use the literal "new" segment - the chat view treats it as "no
+    // session yet" and the first send creates one server-side.
+    router.push('/seshat/new');
+  };
+
+  const openSession = (id: string) => {
+    router.push({ pathname: '/seshat/[id]', params: { id } });
+  };
+
+  const confirmDelete = (s: SessionSummary) => {
+    Alert.alert(
+      lang === 'ar' ? 'حذف المحادثة' : 'Delete chat',
+      lang === 'ar'
+        ? `هل تريد حذف "${s.title}"؟ لا يمكن التراجع.`
+        : `Delete "${s.title}"? This can't be undone.`,
+      [
+        { text: lang === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
         {
-          id: String(ts + 1), role: 'assistant', content: r.data.reply, typing: true,
-          createdTransactionIds: r.data.createdTransactionIds,
+          text: lang === 'ar' ? 'حذف' : 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingId(s.id);
+            try {
+              await apiFetch(`/chat/sessions/${s.id}`, { method: 'DELETE' });
+              setSessions((prev) => prev.filter((x) => x.id !== s.id));
+            } catch (err) {
+              console.warn('delete session failed', err);
+            } finally {
+              setDeletingId(null);
+            }
+          },
         },
-      ]);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('somethingWrong');
-      setMessages((prev) => [...prev, { id: String(Date.now()), role: 'assistant', content: msg, typing: true }]);
-    } finally {
-      setSending(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-    }
+      ],
+    );
   };
-
-  const send = async (textOverride?: string) => {
-    const text = (textOverride ?? input).trim();
-    if (!text || sending) return;
-
-    const has = await hasToken();
-    if (!has) {
-      setMessages((prev) => [...prev, { id: String(Date.now()), role: 'assistant', content: t('signInFirst') }]);
-      return;
-    }
-
-    const userMsg: Message = { id: String(Date.now()), role: 'user', content: text };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setSending(true);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-
-    try {
-      const res = await apiFetch<{ data: { reply: string; createdTransactionIds?: string[] } }>('/chat', {
-        method: 'POST', body: JSON.stringify({ message: text }),
-      });
-      setMessages((prev) => [...prev, {
-        id: String(Date.now() + 1), role: 'assistant', content: res.data.reply, typing: true,
-        createdTransactionIds: res.data.createdTransactionIds,
-      }]);
-    } catch {
-      setMessages((prev) => [...prev, { id: String(Date.now() + 1), role: 'assistant', content: t('somethingWrong'), typing: true }]);
-    } finally {
-      setSending(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-    }
-  };
-
-  const chips = lang === 'ar' ? QUICK_CHIPS_AR : QUICK_CHIPS_EN;
 
   return (
-    <KeyboardAvoidingView
-      // 'padding' on both platforms. On Android with edge-to-edge enabled,
-      // the previous `undefined` behavior leaned on adjust-resize, which is
-      // a no-op when the activity is drawing under the system bars - the
-      // chat input ended up hidden beneath the keyboard with no way to see
-      // what you were typing.
-      behavior="padding"
-      style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}
-    >
+    <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+      {/* Header */}
       <View style={{
-        paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8,
+        paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 10,
+        alignItems: 'center', justifyContent: 'space-between', gap: 12,
       }}>
-        <RadarMark size={22} gold={tok.gold} lightRing />
-        <View>
+        <View style={{ flexShrink: 1, flex: 1 }}>
           <Text style={{
-            fontFamily: fontHead(lang), fontSize: 18,
-            color: tok.bone, letterSpacing: -0.4,
-          }}>{t('seshat')}</Text>
-          <REyebrow color={tok.posText} style={{ marginTop: 2 }}>● {t('seshatAvailable')}</REyebrow>
-        </View>
-      </View>
-
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-      >
-        {messages.map((m) => (
-          <ChatBubble
-            key={m.id}
-            message={m}
-            onSkipTyping={() => setMessages((prev) => prev.map((p) => p.id === m.id ? { ...p, typing: false } : p))}
-          />
-        ))}
-        {sending && <TypingDots />}
-
-        {/* Quick chips — only on the welcome screen, before any send. */}
-        {messages.length === 1 && (
-          <ScrollView
-            horizontal showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0, marginTop: 8 }}
-            contentContainerStyle={{ gap: 8, alignItems: 'center' }}
-          >
-            {chips.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => send(c)}
-                style={({ pressed }) => ({
-                  backgroundColor: pressed ? tok.elevated : tok.surface,
-                  borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                  borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7,
-                })}
-              >
-                <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 12 }}>{c}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-      </ScrollView>
-
-      <View style={{
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-        borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: tok.border,
-        backgroundColor: tok.navBg,
-        alignItems: 'center', gap: 8,
-      }}>
-        <View style={{
-          flex: 1, minHeight: 44,
-          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          alignItems: 'center', gap: 8,
-          backgroundColor: tok.surface, borderWidth: 1, borderColor: tok.border,
-          borderRadius: 14, paddingHorizontal: 12,
-        }}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={() => send()}
-            placeholder={recorder.isRecording ? (lang === 'ar' ? 'يتم التسجيل…' : 'Recording…') : t('message')}
-            placeholderTextColor={recorder.isRecording ? tok.gold : tok.muted}
-            returnKeyType="send"
-            multiline
-            editable={!sending && !recorder.isRecording}
-            style={{
-              flex: 1, color: tok.bone, fontFamily: fontBody(lang), fontSize: 14,
-              paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-              maxHeight: 100,
-              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-              textAlign: lang === 'ar' ? 'right' : 'left',
-            }}
-          />
-          {/* Tap-and-hold mic. Press in → start recording. Press out → stop +
-              upload to /voice/chat. Drag off cancels (we don't track that
-              precisely here — release always sends). */}
-          <Pressable
-            onPressIn={() => { if (!sending) recorder.start(); }}
-            onPressOut={() => { if (recorder.isRecording) sendVoice(); }}
-            disabled={sending}
-            hitSlop={8}
-            style={{
-              padding: 4,
-              opacity: sending ? 0.4 : 1,
-            }}
-            accessibilityLabel="Hold to record"
-          >
-            <RecordingMicIcon recording={recorder.isRecording} muted={tok.muted} gold={tok.gold} />
-          </Pressable>
+            fontFamily: fontHead(lang), fontSize: 24, color: tok.bone, letterSpacing: -0.4,
+          }}>
+            {lang === 'ar' ? 'سيشات' : 'Seshat'}
+          </Text>
+          <REyebrow style={{ marginTop: 4, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'محادثاتك' : 'Your conversations'}
+          </REyebrow>
         </View>
         <Pressable
-          onPress={() => send()}
-          disabled={!input.trim() || sending}
+          onPress={startNew}
+          hitSlop={8}
           style={({ pressed }) => ({
-            backgroundColor: input.trim() && !sending ? tok.gold : tok.elevated,
-            width: 44, height: 44, borderRadius: 14,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: pressed ? 0.85 : 1,
+            flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+            alignItems: 'center', gap: 6,
+            paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999,
+            backgroundColor: pressed ? tok.goldLight : tok.gold,
           })}
         >
-          <ArrowUp size={18} color={input.trim() && !sending ? '#0D0D0D' : tok.muted} />
+          <Plus size={16} color={tok.void} strokeWidth={2.2} />
+          <Text style={{
+            fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.void,
+          }}>
+            {lang === 'ar' ? 'محادثة جديدة' : 'New chat'}
+          </Text>
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
-  );
-}
 
-// ─────────────────────────────────────────────────────────────
-// ChatBubble — renders one message. Assistant replies marked as
-// typing reveal characters at ~32 chars/sec; tapping skips.
-// ─────────────────────────────────────────────────────────────
-function ChatBubble({ message, onSkipTyping }: { message: Message; onSkipTyping: () => void }) {
-  const { tok, lang, t } = useI18n();
-  const [visibleLen, setVisibleLen] = useState(message.typing ? 0 : message.content.length);
+      {loading ? (
+        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+          <RCard padding={32}><ActivityIndicator color={tok.gold} /></RCard>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140, paddingTop: 8 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load('refresh')}
+              tintColor={tok.gold}
+              colors={[tok.gold]}
+              progressBackgroundColor={tok.surface}
+            />
+          }
+        >
+          {sessions.length === 0 ? (
+            <RCard padding={28}>
+              <View style={{ alignItems: 'center', gap: 12 }}>
+                <View style={{
+                  width: 48, height: 48, borderRadius: 24,
+                  backgroundColor: tok.surface, borderWidth: 1, borderColor: tok.gold,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Sparkles size={20} color={tok.gold} />
+                </View>
+                <Text style={{
+                  fontFamily: fontHead(lang), fontSize: 17, color: tok.bone,
+                  textAlign: 'center', letterSpacing: -0.2,
+                }}>
+                  {lang === 'ar' ? 'لا توجد محادثات بعد' : 'No conversations yet'}
+                </Text>
+                <Text style={{
+                  fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.muted,
+                  textAlign: 'center', paddingHorizontal: 6,
+                }}>
+                  {lang === 'ar'
+                    ? 'ابدأ محادثة جديدة - اكتب، تحدث، أو ارفع إيصالاً.'
+                    : 'Start a new chat — type, talk, or attach a receipt and I\'ll handle the rest.'}
+                </Text>
+                <Pressable
+                  onPress={startNew}
+                  style={({ pressed }) => ({
+                    marginTop: 4,
+                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999,
+                    backgroundColor: pressed ? tok.goldLight : tok.gold,
+                  })}
+                >
+                  <Plus size={14} color={tok.void} strokeWidth={2.2} />
+                  <Text style={{
+                    fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.void,
+                  }}>
+                    {lang === 'ar' ? 'ابدأ' : 'Start a chat'}
+                  </Text>
+                </Pressable>
+              </View>
+            </RCard>
+          ) : (
+            <RCard padding={0} style={{ paddingHorizontal: 14, paddingVertical: 4 }}>
+              {sessions.map((s, i) => (
+                <Pressable
+                  key={s.id}
+                  onPress={() => openSession(s.id)}
+                  onLongPress={() => confirmDelete(s)}
+                  delayLongPress={400}
+                  disabled={deletingId === s.id}
+                  style={({ pressed }) => ({
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                    alignItems: 'center', gap: 12,
+                    paddingVertical: 14,
+                    borderBottomWidth: i === sessions.length - 1 ? 0 : StyleSheet.hairlineWidth,
+                    borderBottomColor: tok.border,
+                    opacity: pressed || deletingId === s.id ? 0.6 : 1,
+                  })}
+                >
+                  <View style={{
+                    width: 36, height: 36, borderRadius: 12,
+                    backgroundColor: tok.surface,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Sparkles size={16} color={tok.gold} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontFamily: fontBody(lang, 'medium'), fontSize: 14, color: tok.bone,
+                        textAlign: lang === 'ar' ? 'right' : 'left',
+                      }}
+                    >
+                      {s.title}
+                    </Text>
+                    <Text style={{
+                      marginTop: 2,
+                      fontFamily: fontMono(), fontSize: 10.5, color: tok.muted,
+                      textAlign: lang === 'ar' ? 'right' : 'left',
+                    }}>
+                      {formatRelative(s.lastMessageAt, lang)} · {s.messageCount} {lang === 'ar' ? 'رسالة' : 'msgs'}
+                    </Text>
+                  </View>
+                  <ChevronRight
+                    size={16} color={tok.muted}
+                    style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }}
+                  />
+                </Pressable>
+              ))}
+            </RCard>
+          )}
 
-  useEffect(() => {
-    if (!message.typing) {
-      setVisibleLen(message.content.length);
-      return;
-    }
-    setVisibleLen(0);
-    const total = message.content.length;
-    let i = 0;
-    const tick = () => {
-      // Reveal in small bursts so longer replies don't take forever.
-      // Roughly 32 chars/sec; bumps by 2 chars per 16ms tick.
-      i = Math.min(total, i + 2);
-      setVisibleLen(i);
-      if (i < total) timer = setTimeout(tick, 30);
-    };
-    let timer = setTimeout(tick, 30);
-    return () => clearTimeout(timer);
-  }, [message.id, message.typing]);
-
-  const isAssistant = message.role === 'assistant';
-  const shown = message.content.slice(0, visibleLen);
-  const stillTyping = isAssistant && visibleLen < message.content.length;
-
-  return (
-    <Pressable onPress={stillTyping ? onSkipTyping : undefined}>
-      <View
-        style={{
-          maxWidth: '82%',
-          alignSelf: isAssistant ? 'flex-start' : 'flex-end',
-          backgroundColor: isAssistant ? tok.surface : tok.elevated,
-          borderRadius: 14, padding: 12,
-          marginBottom: 10,
-          ...(isAssistant
-            ? {
-                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                ...(lang === 'ar'
-                  ? { borderRightWidth: 2, borderRightColor: tok.gold }
-                  : { borderLeftWidth: 2, borderLeftColor: tok.gold }),
-              }
-            : {}),
-        }}
-      >
-        {isAssistant && (
-          <REyebrow color={tok.gold} style={{ marginBottom: 4 }}>{t('seshat')}</REyebrow>
-        )}
-        <Text style={{
-          color: tok.bone, fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14, lineHeight: 22,
-          textAlign: lang === 'ar' ? 'right' : 'left',
-          writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-        }}>
-          {shown}
-          {stillTyping && <Text style={{ color: tok.gold }}>▍</Text>}
-        </Text>
-        {/* "Seshat logged N entries" chip appears under the assistant bubble
-            when this turn created transactions. Visual breadcrumb so the
-            user knows the chat actually did something to their data. */}
-        {isAssistant && !stillTyping && message.createdTransactionIds && message.createdTransactionIds.length > 0 && (
-          <View style={{
-            marginTop: 8,
-            paddingHorizontal: 10, paddingVertical: 6,
-            borderRadius: 8,
-            backgroundColor: tok.elevated,
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
-            alignSelf: lang === 'ar' ? 'flex-end' : 'flex-start',
-          }}>
+          {sessions.length > 0 && (
             <Text style={{
-              fontFamily: fontBody(lang), fontSize: 11, color: tok.gold,
+              marginTop: 14, fontFamily: fontMono(), fontSize: 10, color: tok.muted,
+              textAlign: 'center',
             }}>
-              {lang === 'ar'
-                ? `سجّلت ${message.createdTransactionIds.length} معاملة`
-                : `Logged ${message.createdTransactionIds.length} ${message.createdTransactionIds.length === 1 ? 'entry' : 'entries'}`}
+              {lang === 'ar' ? 'اضغط مطولاً لحذف محادثة' : 'Long-press a chat to delete'}
             </Text>
-          </View>
-        )}
-      </View>
-    </Pressable>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// TypingDots — three pulsing dots while Seshat is computing
-// (before any text has arrived).
-// ─────────────────────────────────────────────────────────────
-function TypingDots() {
-  const { tok, lang } = useI18n();
-  return (
-    <View style={{
-      alignSelf: 'flex-start',
-      backgroundColor: tok.surface,
-      borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
-      borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-      ...(lang === 'ar'
-        ? { borderRightWidth: 2, borderRightColor: tok.gold }
-        : { borderLeftWidth: 2, borderLeftColor: tok.gold }),
-      flexDirection: 'row', alignItems: 'center', gap: 6,
-      marginBottom: 10,
-    }}>
-      <Dot delay={0} />
-      <Dot delay={180} />
-      <Dot delay={360} />
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// RecordingMicIcon — gold mic when idle, pulsing red mic when
-// the recorder is live so the user knows audio is being captured.
-// ─────────────────────────────────────────────────────────────
-function RecordingMicIcon({ recording, muted, gold }: { recording: boolean; muted: string; gold: string }) {
-  const pulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (!recording) {
-      pulse.setValue(1);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 0.35, duration: 500, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [recording]);
-  return (
-    <Animated.View style={{ opacity: pulse }}>
-      <Mic size={18} color={recording ? '#E05555' : muted} strokeWidth={recording ? 2 : 1.5} />
-    </Animated.View>
-  );
-}
-
-function Dot({ delay }: { delay: number }) {
-  const { tok } = useI18n();
-  const opacity = useRef(new Animated.Value(0.3)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(opacity, { toValue: 1, duration: 360, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 360, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-  return (
-    <Animated.View
-      style={{
-        width: 7, height: 7, borderRadius: 4,
-        backgroundColor: tok.gold,
-        opacity,
-      }}
-    />
-  );
+function formatRelative(iso: string, lang: 'en' | 'ar'): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const min = Math.floor(diff / 60000);
+  const hr = Math.floor(diff / 3600000);
+  const day = Math.floor(diff / 86400000);
+  if (lang === 'ar') {
+    if (min < 1) return 'الآن';
+    if (min < 60) return `${min} د`;
+    if (hr < 24) return `${hr} س`;
+    if (day < 7) return `${day} ي`;
+    return d.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+  }
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  if (hr < 24) return `${hr}h ago`;
+  if (day < 7) return `${day}d ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, SlidersHorizontal } from 'lucide-react-native';
+import { Search, SlidersHorizontal, X as XIcon } from 'lucide-react-native';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n, monthYear } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
@@ -10,8 +10,7 @@ import { RCard, REyebrow, RPill, RHScroll, RAmount } from '../../components/ui';
 import { RTxRow, RefreshSpinner, type TxRowData } from '../../components/shell';
 import { SkeletonRow } from '../../components/Skeleton';
 import { EditTransactionSheet, type EditingTx } from '../../components/EditTransactionSheet';
-
-type Filter = 'all' | 'income' | 'expense' | { categoryId: string };
+import { TxFiltersSheet, EMPTY_FILTERS, type TxFilters } from '../../components/TxFiltersSheet';
 
 export default function TransactionsScreen() {
   const { tok, lang, t } = useI18n();
@@ -20,8 +19,8 @@ export default function TransactionsScreen() {
   const [txs, setTxs] = useState<TxRowData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<Filter>('all');
-  const [filterExpanded, setFilterExpanded] = useState(false);
+  const [filters, setFilters] = useState<TxFilters>(EMPTY_FILTERS);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<EditingTx | null>(null);
 
@@ -77,8 +76,14 @@ export default function TransactionsScreen() {
     else setRefreshing(true);
     try {
       const params = new URLSearchParams();
-      if (filter === 'income' || filter === 'expense') params.set('type', filter);
-      else if (typeof filter === 'object') params.set('categoryId', filter.categoryId);
+      if (filters.type === 'income' || filters.type === 'expense') params.set('type', filters.type);
+      if (filters.categoryIds.length) params.set('categoryIds', filters.categoryIds.join(','));
+      if (filters.sources.length) params.set('sources', filters.sources.join(','));
+      if (filters.from) params.set('from', filters.from);
+      if (filters.to) params.set('to', filters.to);
+      if (typeof filters.minAmount === 'number') params.set('minAmount', String(filters.minAmount));
+      if (typeof filters.maxAmount === 'number') params.set('maxAmount', String(filters.maxAmount));
+      params.set('limit', '100');
       if (query.trim()) params.set('search', query.trim());
       const res = await apiFetch<{ data: TxRowData[] }>(`/transactions?${params.toString()}`);
       setTxs(res.data);
@@ -88,7 +93,7 @@ export default function TransactionsScreen() {
       if (mode === 'initial') setLoading(false);
       else setRefreshing(false);
     }
-  }, [filter, query]);
+  }, [filters, query]);
 
   useEffect(() => { fetchTxs('initial'); }, [fetchTxs, dataVersion]);
 
@@ -158,34 +163,48 @@ export default function TransactionsScreen() {
             />
           </View>
           <Pressable
-            onPress={() => setFilterExpanded((x) => !x)}
+            onPress={() => setFilterSheetOpen(true)}
             style={{
-              backgroundColor: filterExpanded ? tok.gold : tok.surface,
-              borderWidth: 1, borderColor: filterExpanded ? tok.gold : tok.border, borderRadius: 10,
+              backgroundColor: hasActiveFilters(filters) ? tok.gold : tok.surface,
+              borderWidth: 1,
+              borderColor: hasActiveFilters(filters) ? tok.gold : tok.border, borderRadius: 10,
               paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center',
             }}
           >
-            <SlidersHorizontal size={16} color={filterExpanded ? '#0D0D0D' : tok.muted} />
+            <SlidersHorizontal size={16} color={hasActiveFilters(filters) ? '#0D0D0D' : tok.muted} />
           </Pressable>
         </View>
 
-        {/* Filter pills — base trio always visible; categories revealed by the filter icon */}
+        {/* Active filter chips - one chip per active filter dimension. Tap an
+            x on a chip to drop just that filter. Type segmented stays as the
+            quick top-level toggle. */}
         <RHScroll style={{ marginBottom: 14 }}>
-          <RPill active={filter === 'all'} onPress={() => setFilter('all')}>{t('all')}</RPill>
-          <RPill active={filter === 'expense'} onPress={() => setFilter('expense')}>{t('expense')}</RPill>
-          <RPill active={filter === 'income'} onPress={() => setFilter('income')}>{t('earned')}</RPill>
-          {filterExpanded && categories.map((c) => {
-            const isActive = typeof filter === 'object' && filter.categoryId === c._id;
-            return (
-              <RPill
-                key={c._id}
-                active={isActive}
-                onPress={() => setFilter(isActive ? 'all' : { categoryId: c._id })}
-              >
-                {lang === 'ar' && c.nameAr ? c.nameAr : c.nameEn}
-              </RPill>
-            );
-          })}
+          <RPill active={filters.type === 'all'} onPress={() => setFilters((f) => ({ ...f, type: 'all' }))}>{t('all')}</RPill>
+          <RPill active={filters.type === 'expense'} onPress={() => setFilters((f) => ({ ...f, type: 'expense' }))}>{t('expense')}</RPill>
+          <RPill active={filters.type === 'income'} onPress={() => setFilters((f) => ({ ...f, type: 'income' }))}>{t('earned')}</RPill>
+          {summarizeFilters(filters, categories, lang).map((chip) => (
+            <Pressable
+              key={chip.key}
+              onPress={() => setFilters(chip.remove)}
+              style={({ pressed }) => ({
+                flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                alignItems: 'center', gap: 4,
+                paddingLeft: lang === 'ar' ? 8 : 10,
+                paddingRight: lang === 'ar' ? 10 : 8,
+                paddingVertical: 6,
+                borderRadius: 999,
+                backgroundColor: pressed ? tok.elevated : tok.surface,
+                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
+              })}
+            >
+              <Text style={{
+                fontFamily: fontBody(lang, 'medium'), fontSize: 11, color: tok.gold,
+              }}>
+                {chip.label}
+              </Text>
+              <XIcon size={11} color={tok.gold} />
+            </Pressable>
+          ))}
         </RHScroll>
 
         {loading ? (
@@ -257,6 +276,73 @@ export default function TransactionsScreen() {
         onClose={() => setEditing(null)}
         onSaved={() => { setEditing(null); bumpVersion(); }}
       />
+
+      <TxFiltersSheet
+        visible={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        initial={filters}
+        categories={categories}
+        onApply={(next) => setFilters(next)}
+      />
     </View>
   );
+}
+
+/** Returns true when any filter beyond the default type=all is in effect. */
+function hasActiveFilters(f: TxFilters): boolean {
+  return f.type !== 'all'
+    || f.categoryIds.length > 0
+    || f.sources.length > 0
+    || !!f.from || !!f.to
+    || typeof f.minAmount === 'number'
+    || typeof f.maxAmount === 'number';
+}
+
+/**
+ * Turn the filter shape into a flat list of dismissible chips. Type isn't
+ * included here - it has its own RPill row above.
+ */
+function summarizeFilters(
+  f: TxFilters,
+  categories: { _id: string; nameEn: string; nameAr?: string; emoji?: string }[],
+  lang: 'en' | 'ar',
+): Array<{ key: string; label: string; remove: (cur: TxFilters) => TxFilters }> {
+  const chips: Array<{ key: string; label: string; remove: (cur: TxFilters) => TxFilters }> = [];
+
+  if (f.from || f.to) {
+    const label = `${f.from ?? '…'} → ${f.to ?? '…'}`;
+    chips.push({
+      key: 'date',
+      label,
+      remove: (cur) => ({ ...cur, from: undefined, to: undefined }),
+    });
+  }
+  for (const id of f.categoryIds) {
+    const cat = categories.find((c) => c._id === id);
+    const name = cat ? ((lang === 'ar' && cat.nameAr) ? cat.nameAr : cat.nameEn) : '?';
+    chips.push({
+      key: `cat-${id}`,
+      label: cat?.emoji ? `${cat.emoji} ${name}` : name,
+      remove: (cur) => ({ ...cur, categoryIds: cur.categoryIds.filter((x) => x !== id) }),
+    });
+  }
+  const sourceLabel: Record<string, string> = lang === 'ar'
+    ? { manual: 'يدوي', seshat: 'سيشات', voice: 'صوت', bot: 'تيليجرام', notification: 'إشعار', 'receipt-ocr': 'إيصال' }
+    : { manual: 'manual', seshat: 'seshat', voice: 'voice', bot: 'telegram', notification: 'notification', 'receipt-ocr': 'receipt' };
+  for (const s of f.sources) {
+    chips.push({
+      key: `src-${s}`,
+      label: sourceLabel[s] ?? s,
+      remove: (cur) => ({ ...cur, sources: cur.sources.filter((x) => x !== s) }),
+    });
+  }
+  if (typeof f.minAmount === 'number' || typeof f.maxAmount === 'number') {
+    const label = `${f.minAmount ?? '…'} – ${f.maxAmount ?? '…'}`;
+    chips.push({
+      key: 'amount',
+      label,
+      remove: (cur) => ({ ...cur, minAmount: undefined, maxAmount: undefined }),
+    });
+  }
+  return chips;
 }
