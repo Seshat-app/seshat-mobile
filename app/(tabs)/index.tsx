@@ -11,6 +11,9 @@ import { DashboardNumbers, DashboardHud, DashboardBento, type DashboardData } fr
 import { SkeletonCard, Skeleton, SkeletonRow } from '../../components/Skeleton';
 import { RCard } from '../../components/ui';
 import { SalaryBanner, SetSalarySheet } from '../../components/SalaryBanner';
+import {
+  SalaryCheckInBanner, SalaryCheckInSheet, fetchSalaryCheckIn, type CheckInStatus,
+} from '../../components/SalaryCheckInBanner';
 import { useRouter } from 'expo-router';
 
 const VIEW_KEY = 'radar.dashboardView';
@@ -25,6 +28,11 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [salaryOpen, setSalaryOpen] = useState(false);
+  // Monthly salary confirmation: server tells us once per month whether the
+  // user owes a check-in for the current month. We keep the result here so
+  // the banner only renders when it actually applies.
+  const [checkIn, setCheckIn] = useState<CheckInStatus>({ needed: false });
+  const [checkInOpen, setCheckInOpen] = useState(false);
 
   // Re-fetch dashboard + profile/categories. Used by both initial load and
   // pull-to-refresh, so the "refreshing" spinner shows in both.
@@ -60,6 +68,12 @@ export default function HomeScreen() {
   // Fetch dashboard on mount and when a tx was added (dataVersion bumps).
   useEffect(() => { fetchDashboard('initial'); }, [dataVersion, fetchDashboard]);
 
+  // Salary check-in state: refreshed whenever the data version bumps (so
+  // confirming the check-in itself hides the banner without a re-mount).
+  useEffect(() => {
+    (async () => setCheckIn(await fetchSalaryCheckIn()))();
+  }, [dataVersion]);
+
   const userName = profile?.displayName || (lang === 'ar' ? 'ليلى' : 'there');
   const currency = profile?.currency ?? 'EGP';
 
@@ -77,6 +91,9 @@ export default function HomeScreen() {
       <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
 
       {needsSalary && <SalaryBanner onPress={() => setSalaryOpen(true)} />}
+      {!needsSalary && checkIn.needed && (
+        <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
+      )}
 
       {loading ? (
         <DashboardSkeleton />
@@ -113,6 +130,13 @@ export default function HomeScreen() {
         onSave={saveSalary}
         defaultCurrency={currency}
         initialAmount={profile?.monthlySalary}
+      />
+
+      <SalaryCheckInSheet
+        visible={checkInOpen}
+        onClose={() => setCheckInOpen(false)}
+        status={checkIn}
+        onDone={() => { bumpVersion(); }}
       />
     </View>
   );

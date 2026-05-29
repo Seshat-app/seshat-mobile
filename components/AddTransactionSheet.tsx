@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Pressable, ScrollView, TextInput, StyleSheet, Animated,
-  Platform, Modal,
+  Platform, Modal, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, X, Sparkles, Mic, Delete } from 'lucide-react-native';
+import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useI18n, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RSegmented, RButton, REyebrow } from './ui';
@@ -13,6 +14,7 @@ import { catIdFromName, catLabel, type CatId } from '../lib/categoryMap';
 import { useKeyboardHeight } from './useKeyboardHeight';
 import { useRecorder } from './useRecorder';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
+import { uploadReceipt } from '../lib/cloudinary';
 
 export type ApiCategory = { _id: string; nameEn: string; nameAr?: string; emoji?: string; type?: 'income' | 'expense' | 'both' };
 
@@ -22,7 +24,36 @@ export type AddTxPayload = {
   currency: string;
   categoryId: string;
   description?: string;
+  notes?: string;
   date: string; // YYYY-MM-DD
+  // Only meaningful on type=income. Marks this entry as part of the user's
+  // recurring monthly baseline (salary, regular freelance retainer, etc.).
+  isMonthlyBaseline?: boolean;
+  // Where this entry came from. The mobile app passes 'manual' for
+  // user-typed entries, 'voice' for transcription, 'notification' when the
+  // sheet was opened from a bank-SMS capture, 'receipt-ocr' from the
+  // scan-receipt flow.
+  source?: 'manual' | 'voice' | 'notification' | 'receipt-ocr';
+};
+
+// Pre-seed values when the sheet is opened from an external trigger
+// (notification capture, receipt OCR, deep link). Any field left undefined
+// falls back to the sheet's normal default behavior.
+export type AddTxPrefill = {
+  type?: 'income' | 'expense';
+  amount?: number;
+  categoryId?: string;
+  description?: string;
+  notes?: string;
+  isMonthlyBaseline?: boolean;
+  source?: 'manual' | 'voice' | 'notification' | 'receipt-ocr';
+  // Free-text label shown in a small banner at the top of the sheet so the
+  // user can tell why fields are pre-filled (e.g. "Detected from CIB SMS").
+  detectionBanner?: string;
+  // When true, the sheet auto-fires the scan-receipt flow on open. Used by
+  // the FAB's "Scan a receipt" path so the user lands directly in the
+  // camera-or-library prompt without an extra tap inside the sheet.
+  autoTriggerScan?: boolean;
 };
 
 // Natural-language parser: extracts amount + category hint from "spent 200 on food"
@@ -55,9 +86,11 @@ type Props = {
   onSave: (payload: AddTxPayload) => Promise<void> | void;
   categories: ApiCategory[];
   defaultCurrency: string;
+  // Optional pre-fill for capture / receipt / deep-link flows.
+  prefill?: AddTxPrefill;
 };
 
-export function AddTransactionSheet({ visible, onClose, onSave, categories, defaultCurrency }: Props) {
+export function AddTransactionSheet({ visible, onClose, onSave, categories, defaultCurrency, prefill }: Props) {
   const { tok, lang, t, dir } = useI18n();
 
   const [amount, setAmount] = useState('0');
@@ -65,6 +98,9 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   const [catId, setCatId] = useState<string | null>(null);
   const [seshatMode, setSeshatMode] = useState(false);
   const [seshatText, setSeshatText] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isMonthlyBaseline, setIsMonthlyBaseline] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Filter categories to those usable for the current type.
@@ -85,6 +121,27 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     if (!visible) {
       setAmount('0'); setType('expense'); setSeshatMode(false); setSeshatText('');
       setCatId(null); setSaving(false);
+      setNotes(''); setIsMonthlyBaseline(false); setShowNotes(false);
+    }
+  }, [visible]);
+
+  // Apply external prefill (notification capture / receipt OCR / deep link)
+  // when the sheet opens. Runs once per visible-transition so the user can
+  // still edit and the changes stick.
+  useEffect(() => {
+    if (!visible || !prefill) return;
+    if (prefill.type) setType(prefill.type);
+    if (typeof prefill.amount === 'number' && prefill.amount > 0) setAmount(String(prefill.amount));
+    if (prefill.categoryId) setCatId(prefill.categoryId);
+    if (prefill.description) { setSeshatMode(true); setSeshatText(prefill.description); }
+    if (prefill.notes) { setNotes(prefill.notes); setShowNotes(true); }
+    if (prefill.isMonthlyBaseline) setIsMonthlyBaseline(true);
+    // FAB -> "Scan a receipt" path: auto-fire the Camera/Library prompt
+    // a beat after the sheet finishes animating in so the picker doesn't
+    // collide with the entrance animation on iOS.
+    if (prefill.autoTriggerScan) {
+      const t = setTimeout(() => { scanReceipt(); }, 360);
+      return () => clearTimeout(t);
     }
   }, [visible]);
 
@@ -122,7 +179,10 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
         currency: defaultCurrency,
         categoryId: catId!,
         description: seshatMode && seshatText.trim() ? seshatText.trim() : undefined,
+        notes: notes.trim() ? notes.trim() : undefined,
         date: new Date().toISOString().slice(0, 10),
+        isMonthlyBaseline: type === 'income' ? isMonthlyBaseline : undefined,
+        source: prefill?.source ?? 'manual',
       });
     } finally {
       setSaving(false);
@@ -136,6 +196,114 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   const insets = useSafeAreaInsets();
   const recorder = useRecorder();
   const [transcribing, setTranscribing] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  // Receipt OCR. We split the source-picking from the actual scan so the
+  // user can choose Camera or Library via a small prompt, then we always
+  // run the same upload + OCR + apply-result pipeline.
+  const scanReceiptFromUri = async (uri: string) => {
+    setScanning(true);
+    // Surface results in seshat mode so the parsed amount + description are
+    // editable in one view.
+    if (!seshatMode) setSeshatMode(true);
+    try {
+      const upload = await uploadReceipt(uri);
+      const res = await apiFetch<{ data: { ok: boolean; reason?: string; amount?: number; vendor?: string; description?: string; suggestedCategoryId?: string } }>(
+        '/transactions/scan-receipt',
+        { method: 'POST', body: JSON.stringify({ imageUrl: upload.secureUrl }) },
+      );
+      const d = res.data;
+      if (!d?.ok) {
+        // Surface the reason rather than silently dropping the photo - the
+        // user just spent a tap on it. Common reasons:
+        // - NVIDIA_API_KEY not set on the server -> "OCR service not configured"
+        // - Image isn't a receipt -> "Not a receipt"
+        // - Model couldn't read the total -> "No amount detected"
+        Alert.alert(
+          lang === 'ar' ? 'لم يتم رصد الإيصال' : 'Could not read the receipt',
+          d?.reason || (lang === 'ar'
+            ? 'لم تتعرف سيشات على هذه الصورة كإيصال. حاول بصورة أوضح أو أدخل المعاملة يدوياً.'
+            : 'Seshat couldn\'t recognize this image as a receipt. Try a clearer photo or add it manually.'),
+        );
+        return;
+      }
+      if (typeof d.amount === 'number') setAmount(String(d.amount));
+      if (d.suggestedCategoryId && filteredCats.find((c) => c._id === d.suggestedCategoryId)) {
+        setCatId(d.suggestedCategoryId);
+      }
+      const desc = [d.vendor, d.description].filter(Boolean).join(' · ').slice(0, 120);
+      if (desc) setSeshatText(desc);
+    } catch (err) {
+      console.warn('[scan receipt] failed', err);
+      Alert.alert(
+        lang === 'ar' ? 'حدث خطأ' : 'Something went wrong',
+        err instanceof Error ? err.message : String(err),
+      );
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const pickReceiptFromLibrary = async () => {
+    if (scanning) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        lang === 'ar' ? 'الصلاحية مرفوضة' : 'Permission needed',
+        lang === 'ar' ? 'فعّل صلاحية الصور من إعدادات الجهاز.' : 'Enable photo permission in your device settings.',
+      );
+      return;
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: false,
+    });
+    if (picked.canceled || !picked.assets?.[0]?.uri) return;
+    await scanReceiptFromUri(picked.assets[0].uri);
+  };
+
+  const takeReceiptWithCamera = async () => {
+    if (scanning) return;
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        lang === 'ar' ? 'الصلاحية مرفوضة' : 'Permission needed',
+        lang === 'ar' ? 'فعّل صلاحية الكاميرا من إعدادات الجهاز.' : 'Enable camera permission in your device settings.',
+      );
+      return;
+    }
+    const picked = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      allowsEditing: false,
+    });
+    if (picked.canceled || !picked.assets?.[0]?.uri) return;
+    await scanReceiptFromUri(picked.assets[0].uri);
+  };
+
+  // Tapping the receipt icon offers the user a quick choice between camera
+  // (snap the paper receipt right now) and library (something already in
+  // Photos). Skips the prompt and goes straight to the action when only
+  // one source makes sense.
+  const scanReceipt = async () => {
+    if (scanning) return;
+    Alert.alert(
+      lang === 'ar' ? 'إضافة إيصال' : 'Add a receipt',
+      lang === 'ar' ? 'كيف تريد تصوير الإيصال؟' : 'Where is the receipt photo from?',
+      [
+        {
+          text: lang === 'ar' ? 'الكاميرا' : 'Camera',
+          onPress: takeReceiptWithCamera,
+        },
+        {
+          text: lang === 'ar' ? 'الصور' : 'Photos',
+          onPress: pickReceiptFromLibrary,
+        },
+        { text: lang === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
+      ],
+    );
+  };
 
   // Voice → text: stop the recording, upload the audio to /voice/transcribe,
   // then drop the transcript into the seshatText field so the existing live
@@ -218,6 +386,25 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: tok.borderHi, opacity: 0.6 }} />
           </View>
+
+          {/* Detection banner - shown when sheet opened from notification capture / OCR. */}
+          {prefill?.detectionBanner ? (
+            <View style={{
+              marginHorizontal: 18, marginTop: 6,
+              paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
+              backgroundColor: tok.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
+              flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+              alignItems: 'center', gap: 8,
+            }}>
+              <Zap size={14} color={tok.gold} />
+              <Text style={{
+                flex: 1, fontFamily: fontBody(lang), fontSize: 12, color: tok.bone,
+                textAlign: lang === 'ar' ? 'right' : 'left',
+              }} numberOfLines={2}>
+                {prefill.detectionBanner}
+              </Text>
+            </View>
+          ) : null}
 
           {/* Top bar */}
           <View style={{
@@ -423,6 +610,19 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   }}
                 />
                 <Pressable
+                  onPress={scanReceipt}
+                  disabled={scanning}
+                  style={{
+                    backgroundColor: tok.elevated,
+                    borderRadius: 10,
+                    width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
+                    opacity: scanning ? 0.5 : 1,
+                  }}
+                  accessibilityLabel="Scan receipt"
+                >
+                  <Receipt size={16} color={scanning ? tok.gold : tok.muted} strokeWidth={1.5} />
+                </Pressable>
+                <Pressable
                   onPressIn={() => recorder.start()}
                   onPressOut={() => { if (recorder.isRecording) sendSheetVoice(); }}
                   disabled={transcribing}
@@ -440,8 +640,87 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </View>
           )}
 
+          {/* Details row: notes button + monthly baseline toggle (income only). */}
+          <View style={{
+            paddingHorizontal: 18, paddingTop: 10, paddingBottom: 4,
+            flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+            alignItems: 'center', gap: 8,
+          }}>
+            <Pressable
+              onPress={() => setShowNotes((v) => !v)}
+              style={({ pressed }) => ({
+                flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                alignItems: 'center', gap: 6,
+                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
+                backgroundColor: pressed ? tok.elevated : tok.surface,
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: notes.trim() || showNotes ? tok.gold : tok.border,
+              })}
+            >
+              <NotebookPen size={14} color={notes.trim() ? tok.gold : tok.muted} />
+              <Text style={{
+                fontFamily: fontBody(lang), fontSize: 12,
+                color: notes.trim() ? tok.bone : tok.muted,
+              }}>
+                {notes.trim()
+                  ? (lang === 'ar' ? 'ملاحظة مضافة' : 'Note added')
+                  : (lang === 'ar' ? 'إضافة ملاحظة' : 'Add note')}
+              </Text>
+            </Pressable>
+
+            {type === 'income' && (
+              <Pressable
+                onPress={() => setIsMonthlyBaseline((v) => !v)}
+                style={({ pressed }) => ({
+                  flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                  alignItems: 'center', gap: 6,
+                  paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
+                  backgroundColor: isMonthlyBaseline ? tok.gold : (pressed ? tok.elevated : tok.surface),
+                  borderWidth: StyleSheet.hairlineWidth,
+                  borderColor: isMonthlyBaseline ? tok.gold : tok.border,
+                })}
+              >
+                <Repeat size={14} color={isMonthlyBaseline ? tok.void : tok.muted} />
+                <Text style={{
+                  fontFamily: fontBody(lang), fontSize: 12,
+                  color: isMonthlyBaseline ? tok.void : tok.muted,
+                }}>
+                  {lang === 'ar' ? 'دخل شهري ثابت' : 'Monthly baseline'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Notes input field, slides out when toggled. */}
+          {showNotes && (
+            <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: 6 }}>
+              <View style={{
+                backgroundColor: tok.surface,
+                borderRadius: 12, padding: 10,
+                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+              }}>
+                <TextInput
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder={lang === 'ar'
+                    ? 'تفاصيل أو سياق لهذه المعاملة...'
+                    : 'Details or context for this entry...'}
+                  placeholderTextColor={tok.muted}
+                  multiline
+                  numberOfLines={3}
+                  style={{
+                    color: tok.bone, fontFamily: fontBody(lang), fontSize: 13,
+                    minHeight: 56, textAlignVertical: 'top',
+                    writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+                    textAlign: lang === 'ar' ? 'right' : 'left',
+                  }}
+                />
+              </View>
+            </View>
+          )}
+
           {/* Save */}
-          <View style={{ paddingHorizontal: 18, paddingTop: 10, backgroundColor: tok.void }}>
+          <View style={{ paddingHorizontal: 18, paddingTop: 6, backgroundColor: tok.void }}>
             <RButton full onPress={submit} disabled={!canSave}>{saveLabel}</RButton>
           </View>
         </Animated.View>

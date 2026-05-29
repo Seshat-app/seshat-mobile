@@ -7,6 +7,7 @@ import { useI18n } from '../lib/i18n';
 import { fontHead } from '../lib/fonts';
 import { REyebrow } from './ui';
 import { RefreshSpinner } from './shell';
+import { WorkspaceChip } from './WorkspaceSwitcher';
 
 // Shared top chrome for Budgets / Goals / Debts: back arrow, title, subtitle,
 // optional + action, and (when refreshing) a small spinning radar mark.
@@ -46,6 +47,7 @@ export function PlanScreen({
             </REyebrow>
           )}
         </View>
+        <WorkspaceChip />
         <RefreshSpinner refreshing={!!refreshing} />
         {onAdd && (
           <Pressable

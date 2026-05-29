@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { setToken, clearToken } from './api';
+import { clearPushToken } from './push';
 
 // Mirrors api.ts so auth requests follow the same host-resolution rules.
 function resolveApiBase(): string {
@@ -166,5 +167,13 @@ export async function completePasswordReset(sessionId: string, password: string)
 }
 
 export async function signOut(): Promise<void> {
+  // Best-effort: tell the server to drop our push token first. If this fails
+  // (offline, expired session) we still sign out locally - the token will
+  // be overwritten on next sign-in anyway.
+  try {
+    await clearPushToken();
+  } catch {
+    // swallow
+  }
   await clearToken();
 }

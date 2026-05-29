@@ -17,6 +17,9 @@ type Message = {
   content: string;
   // When true the bubble streams content character-by-character. Tap to skip.
   typing?: boolean;
+  // Transaction _ids the agent created in response to this turn. We render
+  // a small "Seshat logged N entries" chip under the bubble when populated.
+  createdTransactionIds?: string[];
 };
 
 const QUICK_CHIPS_EN = ['Month summary', 'Where do I spend most?', 'How am I doing?'];
@@ -30,8 +33,36 @@ export default function SeshatScreen() {
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
   const recorder = useRecorder();
+
+  // Load persisted chat history on mount. Server returns oldest-first so
+  // we can render the array as-is. If there's any history, replace the
+  // welcome message - that's a first-launch state, not a returning user.
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!(await hasToken())) return;
+        const r = await apiFetch<{ data: Array<{
+          id: string; role: 'user' | 'assistant'; content: string;
+          createdAt: string; createdTransactionIds?: string[];
+        }> }>('/chat');
+        if (r.data?.length) {
+          setMessages(r.data.map((m) => ({
+            id: m.id, role: m.role, content: m.content,
+            createdTransactionIds: m.createdTransactionIds,
+          })));
+          // Jump to bottom after layout settles.
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 80);
+        }
+      } catch (err) {
+        console.warn('chat history load failed', err);
+      } finally {
+        setLoadingHistory(false);
+      }
+    })();
+  }, []);
 
   // Voice flow: tap-and-hold mic → record → release → upload audio → render
   // both the user's transcript bubble and Seshat's typed reply.
@@ -46,7 +77,7 @@ export default function SeshatScreen() {
     setSending(true);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
     try {
-      const r = await apiFetch<{ data: { transcript: string; reply: string } }>('/voice/chat', {
+      const r = await apiFetch<{ data: { transcript: string; reply: string; createdTransactionIds?: string[] } }>('/voice/chat', {
         method: 'POST',
         body: JSON.stringify({ audio_base64: res.base64, format: res.format, language: lang }),
       });
@@ -54,7 +85,10 @@ export default function SeshatScreen() {
       setMessages((prev) => [
         ...prev,
         { id: String(ts), role: 'user', content: r.data.transcript || '🎙️' },
-        { id: String(ts + 1), role: 'assistant', content: r.data.reply, typing: true },
+        {
+          id: String(ts + 1), role: 'assistant', content: r.data.reply, typing: true,
+          createdTransactionIds: r.data.createdTransactionIds,
+        },
       ]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('somethingWrong');
@@ -82,10 +116,13 @@ export default function SeshatScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
     try {
-      const res = await apiFetch<{ data: { reply: string } }>('/chat', {
+      const res = await apiFetch<{ data: { reply: string; createdTransactionIds?: string[] } }>('/chat', {
         method: 'POST', body: JSON.stringify({ message: text }),
       });
-      setMessages((prev) => [...prev, { id: String(Date.now() + 1), role: 'assistant', content: res.data.reply, typing: true }]);
+      setMessages((prev) => [...prev, {
+        id: String(Date.now() + 1), role: 'assistant', content: res.data.reply, typing: true,
+        createdTransactionIds: res.data.createdTransactionIds,
+      }]);
     } catch {
       setMessages((prev) => [...prev, { id: String(Date.now() + 1), role: 'assistant', content: t('somethingWrong'), typing: true }]);
     } finally {
@@ -286,6 +323,27 @@ function ChatBubble({ message, onSkipTyping }: { message: Message; onSkipTyping:
           {shown}
           {stillTyping && <Text style={{ color: tok.gold }}>▍</Text>}
         </Text>
+        {/* "Seshat logged N entries" chip appears under the assistant bubble
+            when this turn created transactions. Visual breadcrumb so the
+            user knows the chat actually did something to their data. */}
+        {isAssistant && !stillTyping && message.createdTransactionIds && message.createdTransactionIds.length > 0 && (
+          <View style={{
+            marginTop: 8,
+            paddingHorizontal: 10, paddingVertical: 6,
+            borderRadius: 8,
+            backgroundColor: tok.elevated,
+            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
+            alignSelf: lang === 'ar' ? 'flex-end' : 'flex-start',
+          }}>
+            <Text style={{
+              fontFamily: fontBody(lang), fontSize: 11, color: tok.gold,
+            }}>
+              {lang === 'ar'
+                ? `سجّلت ${message.createdTransactionIds.length} معاملة`
+                : `Logged ${message.createdTransactionIds.length} ${message.createdTransactionIds.length === 1 ? 'entry' : 'entries'}`}
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );

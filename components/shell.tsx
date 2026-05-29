@@ -5,6 +5,7 @@ import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../li
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RadarMark } from './RadarMark';
 import { REyebrow, RAmount } from './ui';
+import { WorkspaceChip } from './WorkspaceSwitcher';
 import { CategoryIcon, CategoryIconByKey } from './icons';
 import { iconKeyForCategory } from '../lib/categoryMap';
 import type { CatId } from '../lib/categoryMap';
@@ -44,35 +45,45 @@ export function RHomeHeader({
 }: { userName: string; view: DashView; onViewChange: (v: DashView) => void; refreshing?: boolean }) {
   const { tok, lang, t } = useI18n();
   return (
-    <View style={{
-      paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8,
-      flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-      alignItems: 'center', justifyContent: 'space-between', gap: 12,
-    }}>
-      <View style={{ flexShrink: 1, flex: 1 }}>
-        <Text style={{
-          fontFamily: fontHead(lang),
-          fontSize: lang === 'ar' ? 21 : 20, color: tok.bone, letterSpacing: -0.4,
-          writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-        }}>
-          {greeting(lang, userName)}
-        </Text>
-        <REyebrow style={{ marginTop: 6, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
-          {monthYear(lang)} · {t('detected')}
-        </REyebrow>
+    <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 }}>
+      {/* Workspace chip sits as a one-line band above the greeting so the
+          user always knows which ledger feeds the numbers below, and can
+          switch in one tap. */}
+      <View style={{
+        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+        alignItems: 'center', marginBottom: 10,
+      }}>
+        <WorkspaceChip />
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-        <RViewSwitcher value={view} onChange={onViewChange} />
-        <View style={{ width: 1, height: 18, backgroundColor: tok.border }} />
-        <RadarMark
-          size={28}
-          gold={tok.gold}
-          lightRing
-          // One-shot scan on mount; switches to a continuous spin while data
-          // is refreshing so the mark itself is the loading indicator.
-          animate={!refreshing}
-          spinning={refreshing}
-        />
+      <View style={{
+        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+        alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      }}>
+        <View style={{ flexShrink: 1, flex: 1 }}>
+          <Text style={{
+            fontFamily: fontHead(lang),
+            fontSize: lang === 'ar' ? 21 : 20, color: tok.bone, letterSpacing: -0.4,
+            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+          }}>
+            {greeting(lang, userName)}
+          </Text>
+          <REyebrow style={{ marginTop: 6, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
+            {monthYear(lang)} · {t('detected')}
+          </REyebrow>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <RViewSwitcher value={view} onChange={onViewChange} />
+          <View style={{ width: 1, height: 18, backgroundColor: tok.border }} />
+          <RadarMark
+            size={28}
+            gold={tok.gold}
+            lightRing
+            // One-shot scan on mount; switches to a continuous spin while data
+            // is refreshing so the mark itself is the loading indicator.
+            animate={!refreshing}
+            spinning={refreshing}
+          />
+        </View>
       </View>
     </View>
   );
@@ -122,7 +133,31 @@ export type TxRowData = {
   description?: string;
   date: string;
   categoryId?: { nameEn?: string; nameAr?: string; emoji?: string; icon?: string };
+  // Origin of the transaction. Renders as a tiny chip on the row when
+  // anything other than 'manual'. Lets the user spot AI-created, voice,
+  // receipt, or bot-created entries at a glance.
+  source?: 'manual' | 'voice' | 'seshat' | 'bot' | 'notification' | 'receipt-ocr';
 };
+
+function sourceChipLabel(source: TxRowData['source'], lang: 'en' | 'ar'): string | null {
+  if (!source || source === 'manual') return null;
+  if (lang === 'ar') {
+    return ({
+      voice: 'صوت',
+      seshat: 'سيشات',
+      bot: 'تيليجرام',
+      notification: 'إشعار',
+      'receipt-ocr': 'إيصال',
+    } as const)[source] ?? null;
+  }
+  return ({
+    voice: 'voice',
+    seshat: 'seshat',
+    bot: 'telegram',
+    notification: 'notification',
+    'receipt-ocr': 'receipt',
+  } as const)[source] ?? null;
+}
 
 export function RTxRow({
   tx, last, onPress, onLongPress,
@@ -147,14 +182,39 @@ export function RTxRow({
     }}>
       <RCatChip iconKey={iconKey} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          numberOfLines={1}
-          style={{
-            fontFamily: fontBody(lang, 'medium'), fontSize: lang === 'ar' ? 15 : 14,
-            color: tok.bone, writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}
-        >{desc}</Text>
+        <View style={{
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 6,
+        }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              flex: 1,
+              fontFamily: fontBody(lang, 'medium'), fontSize: lang === 'ar' ? 15 : 14,
+              color: tok.bone, writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}
+          >{desc}</Text>
+          {(() => {
+            const label = sourceChipLabel(tx.source, lang);
+            if (!label) return null;
+            return (
+              <View style={{
+                paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6,
+                backgroundColor: tok.elevated,
+                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+              }}>
+                <Text style={{
+                  fontFamily: fontMono('regular'), fontSize: 9,
+                  color: tok.gold, letterSpacing: 0.8,
+                  textTransform: 'lowercase',
+                }}>
+                  {label}
+                </Text>
+              </View>
+            );
+          })()}
+        </View>
         <REyebrow style={{ marginTop: 3, textAlign: lang === 'ar' ? 'right' : 'left' }}>
           {catLabel(tx.categoryId, lang)} · {dateLabel}
         </REyebrow>

@@ -6,6 +6,7 @@ import { useI18n, monthYear } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RCard, REyebrow, RAmount, RProgress, RStatus } from './ui';
 import { SectionHeader, RTxRow, type TxRowData } from './shell';
+import { RadarMark } from './RadarMark';
 import { catIdFromName, catLabel } from '../lib/categoryMap';
 
 export type DashboardData = {
@@ -28,9 +29,19 @@ export type DashboardData = {
   recentTransactions: TxRowData[];
 };
 
-// Insight string assembled from real data. Falls back to a generic line when
-// there isn't enough signal — Seshat's voice never reads as templated.
-function buildInsight(data: DashboardData, lang: 'en' | 'ar'): string {
+type SeshatInsightData = {
+  // Optional hero number rendered large + gold above the prose, when the
+  // insight has a stat worth anchoring on. Skip for prose-only insights.
+  hero?: { value: string; label?: string };
+  // The main sentence in Seshat's voice. Always present.
+  text: string;
+};
+
+// Insight pulled from real data. Returns a structured payload so the card
+// can render a hero number prominently when one exists, falling back to
+// prose-only when nothing's worth anchoring. Seshat's voice stays the same
+// either way.
+function buildInsight(data: DashboardData, lang: 'en' | 'ar'): SeshatInsightData {
   const top = data.categoryBreakdown[0];
   const prevExp = data.previous?.expense.total ?? 0;
   const curExp = data.current.expense.total;
@@ -38,17 +49,95 @@ function buildInsight(data: DashboardData, lang: 'en' | 'ar'): string {
     const delta = ((curExp - prevExp) / prevExp) * 100;
     if (lang === 'ar') {
       const sign = delta >= 0 ? 'أعلى' : 'أقل';
-      return `صرفتِ ${curExp.toLocaleString()} ج.م هذا الشهر. ${sign} بـ ${Math.abs(delta).toFixed(0)}٪ من الشهر الماضي.`;
+      return {
+        hero: { value: curExp.toLocaleString(), label: lang === 'ar' ? 'إجمالي المصروف' : 'total spent' },
+        text: `صرفتِ هذا الشهر ${sign} بـ ${Math.abs(delta).toFixed(0)}٪ من الشهر الماضي.`,
+      };
     }
     const sign = delta >= 0 ? 'more' : 'less';
-    return `You've spent ${curExp.toLocaleString()} this month. ${Math.abs(delta).toFixed(0)}% ${sign} than last month.`;
+    return {
+      hero: { value: curExp.toLocaleString(), label: 'total spent' },
+      text: `That's ${Math.abs(delta).toFixed(0)}% ${sign} than last month.`,
+    };
   }
   if (top) {
-    return lang === 'ar'
-      ? `أكبر فئة هذا الشهر: ${catLabel(top, lang)} بـ ${top.total.toLocaleString()} ج.م.`
-      : `Top category this month: ${catLabel(top, lang)} at ${top.total.toLocaleString()}.`;
+    return {
+      hero: { value: top.total.toLocaleString(), label: catLabel(top, lang) },
+      text: lang === 'ar'
+        ? 'أكبر فئة هذا الشهر — تابعيها.'
+        : 'Your biggest category this month — watch it.',
+    };
   }
-  return lang === 'ar' ? 'لا شيء مسجَّل بعد. أضف معاملة وسأبدأ.' : 'Nothing recorded yet. Add a transaction and I begin.';
+  return {
+    text: lang === 'ar'
+      ? 'لا شيء مسجَّل بعد. أضف معاملة وسأبدأ.'
+      : 'Nothing recorded yet. Add a transaction and I begin.',
+  };
+}
+
+/**
+ * Seshat insight card - the conversational "noticed by your AI coach"
+ * block that lives on every dashboard layout. One implementation, used
+ * everywhere, so the design stays consistent and any future tweak
+ * propagates once.
+ *
+ * When the insight has a hero value, it's rendered in big gold type so
+ * the card has a stat anchor. Without one (prose-only insights like "no
+ * data yet"), the prose carries the card alone.
+ */
+function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: string }) {
+  const { tok, lang } = useI18n();
+  const insight = buildInsight(data, lang);
+  return (
+    <RCard padding={16}>
+      <View style={{
+        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+        alignItems: 'center', gap: 8, marginBottom: 10,
+      }}>
+        <RadarMark size={16} gold={tok.gold} lightRing animate={false} />
+        <Text style={{
+          fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 2,
+          color: tok.gold, textTransform: 'uppercase',
+        }}>
+          {lang === 'ar' ? 'سيشات لاحظت' : 'Seshat noticed'}
+        </Text>
+      </View>
+
+      {insight.hero ? (
+        <View style={{ marginBottom: 10 }}>
+          <Text style={{
+            fontFamily: fontHead(lang), fontSize: 30, color: tok.gold,
+            letterSpacing: -0.5, lineHeight: 36,
+            textAlign: lang === 'ar' ? 'right' : 'left',
+          }}>
+            {insight.hero.value}
+            <Text style={{ fontFamily: fontMono('regular'), fontSize: 13, color: tok.muted }}>
+              {'  '}{currency}
+            </Text>
+          </Text>
+          {insight.hero.label ? (
+            <Text style={{
+              marginTop: 2,
+              fontFamily: fontBody(lang), fontSize: 12, color: tok.muted,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}>
+              {insight.hero.label}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      <Text style={{
+        fontFamily: fontBody(lang),
+        fontSize: lang === 'ar' ? 14.5 : 14,
+        lineHeight: 21, color: tok.bone,
+        textAlign: lang === 'ar' ? 'right' : 'left',
+        writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+      }}>
+        {insight.text}
+      </Text>
+    </RCard>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -58,7 +147,6 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
   const { tok, lang, t } = useI18n();
   const max = data.categoryBreakdown[0]?.total ?? 1;
   const list = data.recentTransactions.slice(0, 5);
-  const insight = buildInsight(data, lang);
 
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}>
@@ -87,15 +175,7 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
 
       {/* Seshat insight */}
       <View style={{ marginTop: 12 }}>
-        <RCard accent>
-          <REyebrow color={tok.gold}>{t('seshat')}</REyebrow>
-          <Text style={{
-            marginTop: 8, fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14,
-            color: tok.bone, lineHeight: 21,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-          }}>{insight}</Text>
-        </RCard>
+        <SeshatInsightCard data={data} currency={currency} />
       </View>
 
       {/* Spend by category */}
@@ -262,13 +342,7 @@ export function DashboardHud({ data, currency }: { data: DashboardData; currency
 
       {/* Seshat insight */}
       <View style={{ marginTop: 14 }}>
-        <RCard accent>
-          <REyebrow color={tok.gold}>{t('seshat')}</REyebrow>
-          <Text style={{
-            marginTop: 6, fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14,
-            color: tok.bone, lineHeight: 21, textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>{buildInsight(data, lang)}</Text>
-        </RCard>
+        <SeshatInsightCard data={data} currency={currency} />
       </View>
 
       {/* Recent */}
@@ -423,15 +497,7 @@ export function DashboardBento({ data, currency }: { data: DashboardData; curren
 
       {/* Seshat */}
       <View style={{ marginTop: 14 }}>
-        <RCard accent>
-          <REyebrow color={tok.gold}>{t('seshat')}</REyebrow>
-          <Text style={{
-            marginTop: 6, fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14,
-            color: tok.bone, lineHeight: 21,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-          }}>{buildInsight(data, lang)}</Text>
-        </RCard>
+        <SeshatInsightCard data={data} currency={currency} />
       </View>
 
       {/* Recent */}

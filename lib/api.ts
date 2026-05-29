@@ -72,6 +72,27 @@ export function getActiveLedger(): string | null {
   return activeLedgerId;
 }
 
+/**
+ * Same as apiFetch but returns the raw response body as text instead of
+ * parsing as JSON. Used for endpoints that return HTML (e.g. /reports/monthly/html
+ * which feeds expo-print). Throws on non-2xx.
+ */
+export async function apiFetchText(path: string, options: ApiFetchOptions = {}): Promise<string> {
+  const token = await getToken();
+  if (!token) throw new Error('Not authenticated');
+  const { idempotencyKey, ledgerId, ...rest } = options;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    ...(rest.headers as Record<string, string> | undefined),
+  };
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+  const effectiveLedger = ledgerId ?? activeLedgerId;
+  if (effectiveLedger) headers['X-Ledger-Id'] = effectiveLedger;
+  const res = await fetch(`${API_BASE}${path}`, { ...rest, headers });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.text();
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   options: ApiFetchOptions = {},

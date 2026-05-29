@@ -1,5 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
+import { router } from 'expo-router';
 import { apiFetch, hasToken, setActiveLedger, getActiveLedger } from './api';
+import { registerForPushNotifications, subscribeToNotificationTaps } from './push';
+import { subscribeToBankNotifications, flattenEventText } from './androidNotificationListener';
 import type { ApiCategory } from '../components/AddTransactionSheet';
 
 type Profile = {
@@ -13,6 +17,10 @@ type Profile = {
   // `o_<orgId>` for an organization. Mobile uses this to restore state on
   // app launch so the user lands back in the workspace they left.
   activeLedgerId?: string;
+  // The user's personal ledger id (always `u_<logtoId>`). The server sends
+  // it on every /me, even while activeLedgerId points to an org, so we can
+  // build the "Switch back to personal" entry with a real id.
+  personalLedgerId?: string;
 };
 
 export type WorkspaceSummary = {
@@ -38,6 +46,12 @@ type Ctx = {
   // Bump this counter to signal screens to refetch (e.g. after a new tx).
   dataVersion: number;
   bumpVersion: () => void;
+  // Workspace sheet visibility lives in context so any screen can summon
+  // the switcher (header chip, FAB long-press, deep-link landing, etc.)
+  // without lifting state through 4 layers of components.
+  workspaceSheetOpen: boolean;
+  openWorkspaceSheet: () => void;
+  closeWorkspaceSheet: () => void;
 };
 
 const AppDataContext = createContext<Ctx | null>(null);
@@ -58,19 +72,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [orgs, setOrgs] = useState<OrgListItem[]>([]);
   const [activeLedgerId, setActiveLedgerIdState] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
+  const [workspaceSheetOpen, setWorkspaceSheetOpen] = useState(false);
 
   const buildWorkspaces = useCallback((p: Profile | null, orgList: OrgListItem[]): WorkspaceSummary[] => {
     if (!p) return [];
     // Personal entry is synthesized client-side - server doesn't have a row.
-    // We derive its ledgerId from the user's email prefix... actually no,
-    // the server tells us via activeLedgerId. Easier: use the profile's
-    // activeLedgerId pattern. The Personal entry is always at the top.
+    // We prefer the explicit `personalLedgerId` from /me (always present),
+    // falling back to `activeLedgerId` when it happens to be a `u_` value.
+    // The Personal entry is always at the top.
     const personal: WorkspaceSummary = {
-      ledgerId: p.activeLedgerId?.startsWith('u_')
-        ? p.activeLedgerId
-        // Best-effort fallback: the server uses `u_<logtoId>` and we don't
-        // ship logtoId on the profile. Send no header (null) for "default".
-        : '',
+      ledgerId: p.personalLedgerId
+        ?? (p.activeLedgerId?.startsWith('u_') ? p.activeLedgerId : ''),
       name: p.displayName ?? p.email.split('@')[0],
       kind: 'personal',
       currency: p.currency,
@@ -111,6 +123,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         : null;
       setActiveLedger(next);
       setActiveLedgerIdState(next);
+
+      // Fire-and-forget push registration. We only call this once we know
+      // the user is signed in (refresh() short-circuits on no token above).
+      // The helper is idempotent + cached, so calling on every refresh is
+      // fine - real work only happens on first call per session.
+      void registerForPushNotifications();
     } catch (err) {
       console.warn('AppData refresh failed', err);
     }
@@ -139,6 +157,34 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Wire the notification tap -> deep-link bridge once at provider mount.
+  // The push payload tells us which (ledgerId, categoryId) the reminder was
+  // for; we route to the transactions tab where the user can add the entry.
+  // Future: pop the AddTransactionSheet pre-filled with the category.
+  useEffect(() => {
+    return subscribeToNotificationTaps(({ ledgerId }) => {
+      if (ledgerId) {
+        setActiveLedger(ledgerId);
+        setActiveLedgerIdState(ledgerId);
+      }
+      router.replace('/(tabs)/transactions');
+    });
+  }, []);
+
+  // Android: subscribe to bank notifications (only when the user has granted
+  // Notification access via the consent screen). Every event from a known
+  // bank package flattens to text, then routes to /capture which calls the
+  // parser endpoint and opens the AddTransactionSheet pre-filled.
+  // No-op on iOS and in Expo Go (the native module is missing there).
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    return subscribeToBankNotifications((event) => {
+      const text = flattenEventText(event);
+      if (!text) return;
+      router.push({ pathname: '/capture', params: { text, source: 'push' } });
+    });
+  }, []);
+
   const bumpVersion = useCallback(() => setDataVersion((v) => v + 1), []);
 
   const workspaces = buildWorkspaces(profile, orgs);
@@ -153,6 +199,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       refresh,
       dataVersion,
       bumpVersion,
+      workspaceSheetOpen,
+      openWorkspaceSheet: () => setWorkspaceSheetOpen(true),
+      closeWorkspaceSheet: () => setWorkspaceSheetOpen(false),
     }}>
       {children}
     </AppDataContext.Provider>

@@ -18,7 +18,8 @@
       "bundleIdentifier": "com.seshat.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Seshat uses the microphone so you can talk to her instead of typing - describe a transaction by voice and she records it.",
-        "NSPhotoLibraryUsageDescription": "Pick a profile photo from your library to use as your Seshat avatar."
+        "NSPhotoLibraryUsageDescription": "Pick a profile photo from your library to use as your Seshat avatar.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,7 +39,22 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#0C0C0E"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "17.0"
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {},

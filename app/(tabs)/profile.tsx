@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy,
+  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap,
 } from 'lucide-react-native';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -16,7 +16,7 @@ import { RCard, REyebrow, RButton } from '../../components/ui';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
 import { resetTour } from '../../components/Tour';
-import { WorkspaceCard, WorkspaceSheet } from '../../components/WorkspaceSwitcher';
+import { WorkspaceCard } from '../../components/WorkspaceSwitcher';
 import * as Updates from 'expo-updates';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
@@ -33,7 +33,7 @@ type Profile = {
 export default function ProfileScreen() {
   const router = useRouter();
   const { tok, lang, t, mode, setMode, setLang } = useI18n();
-  const { refresh, profile: appProfile, bumpVersion } = useAppData();
+  const { refresh, profile: appProfile, bumpVersion, openWorkspaceSheet } = useAppData();
   const insets = useSafeAreaInsets();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -43,9 +43,8 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [salaryOpen, setSalaryOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  // Workspace switcher modal. Tapping the WorkspaceCard near the top of the
-  // Profile screen opens it.
-  const [workspaceSheetOpen, setWorkspaceSheetOpen] = useState(false);
+  // Workspace switcher modal state lives in AppData context (see opener
+  // destructured above) so any screen can summon it.
   // Danger zone is collapsed by default so users don't tap delete by reflex
   // while scrolling. Opening it reveals the typed-email confirm field.
   const [dangerOpen, setDangerOpen] = useState(false);
@@ -287,7 +286,7 @@ export default function ProfileScreen() {
         {/* Workspace - current ledger context + switcher entry point. Sits
             between identity and Plan because it changes what the rest of
             the app shows when tapped. */}
-        <WorkspaceCard onPress={() => setWorkspaceSheetOpen(true)} />
+        <WorkspaceCard onPress={openWorkspaceSheet} />
 
         {/* Plan - Budgets / Goals / Debts navigation */}
         <View style={{ marginTop: 18 }}>
@@ -326,6 +325,38 @@ export default function ProfileScreen() {
               title={lang === 'ar' ? 'التصنيفات' : 'Categories'}
               hint={lang === 'ar' ? 'افتراضية + مخصصة' : 'Defaults + your own'}
               onPress={() => router.push('/categories')}
+            />
+            <PlanRow
+              icon={BellRing}
+              title={lang === 'ar' ? 'التذكيرات' : 'Reminders'}
+              hint={lang === 'ar' ? 'العادات التي رصدتها سيشات' : 'Habits Seshat has noticed'}
+              onPress={() => router.push('/reminders')}
+            />
+            <PlanRow
+              icon={FileText}
+              title={lang === 'ar' ? 'التقرير الشهري' : 'Monthly report'}
+              hint={lang === 'ar' ? 'ملخص ذكي بالأرقام والتوصيات' : 'AI-powered breakdown of your month'}
+              onPress={() => router.push('/reports/monthly')}
+              last
+            />
+          </RCard>
+        </View>
+
+        {/* Capture — auto-record bank notifications. */}
+        <View style={{ marginTop: 18 }}>
+          <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'الرصد التلقائي' : 'Auto-capture'}
+          </REyebrow>
+          <RCard padding={0} style={{ paddingHorizontal: 16 }}>
+            <PlanRow
+              icon={Zap}
+              title={Platform.OS === 'ios'
+                ? (lang === 'ar' ? 'رصد إشعارات البنوك (iOS)' : 'Bank capture (iOS)')
+                : (lang === 'ar' ? 'رصد إشعارات البنوك' : 'Bank capture')}
+              hint={Platform.OS === 'ios'
+                ? (lang === 'ar' ? 'إعداد اختصار الرسائل البنكية' : 'Set up the bank-SMS Shortcut')
+                : (lang === 'ar' ? 'تفعيل قراءة إشعارات البنوك' : 'Enable bank notification reading')}
+              onPress={() => router.push(Platform.OS === 'ios' ? '/capture-setup-ios' : '/capture-setup-android')}
               last
             />
           </RCard>
@@ -620,10 +651,8 @@ export default function ProfileScreen() {
         initialAmount={salary}
       />
 
-      <WorkspaceSheet
-        visible={workspaceSheetOpen}
-        onClose={() => setWorkspaceSheetOpen(false)}
-      />
+      {/* WorkspaceSheet is mounted globally at the tabs layout level so
+          it can be summoned from any screen via openWorkspaceSheet(). */}
     </View>
   );
 }

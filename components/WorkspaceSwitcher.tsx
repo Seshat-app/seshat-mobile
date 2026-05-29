@@ -1,10 +1,58 @@
 import { useState } from 'react';
 import { View, Text, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Briefcase, ChevronRight, Plus, User as UserIcon, X, Check, Building2 } from 'lucide-react-native';
+import { Briefcase, ChevronDown, ChevronRight, Plus, User as UserIcon, X, Check, Building2 } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { useAppData, type WorkspaceSummary } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
+
+/**
+ * Tiny persistent pill showing the user's current workspace. Tap to summon
+ * the WorkspaceSheet from anywhere. Designed to live in screen headers
+ * (PlanScreen, the home dashboard top bar, etc.) so the user always knows
+ * which ledger their data is filtered by, and can switch in one tap.
+ */
+export function WorkspaceChip() {
+  const { tok, lang } = useI18n();
+  const { workspaces, activeLedgerId, openWorkspaceSheet, profile } = useAppData();
+  if (!profile) return null;
+
+  const active = workspaces.find(
+    (w) => (activeLedgerId ? w.ledgerId === activeLedgerId : w.kind === 'personal'),
+  ) ?? workspaces[0];
+  if (!active) return null;
+
+  const isOrg = active.kind === 'org';
+  return (
+    <Pressable
+      onPress={openWorkspaceSheet}
+      hitSlop={6}
+      style={({ pressed }) => ({
+        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+        alignItems: 'center', gap: 6,
+        paddingHorizontal: 10, paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: pressed ? tok.elevated : tok.surface,
+        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+        maxWidth: 180,
+      })}
+    >
+      {isOrg
+        ? <Building2 size={12} color={tok.gold} strokeWidth={2} />
+        : <UserIcon size={12} color={tok.gold} strokeWidth={2} />}
+      <Text
+        numberOfLines={1}
+        style={{
+          fontFamily: fontBody(lang, 'medium'), fontSize: 12, color: tok.bone,
+          maxWidth: 120,
+        }}
+      >
+        {active.name}
+      </Text>
+      <ChevronDown size={12} color={tok.muted} />
+    </Pressable>
+  );
+}
 
 /**
  * Compact "current workspace" badge shown at the top of the Profile screen.
@@ -100,32 +148,20 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
   const [switching, setSwitching] = useState<string | null>(null);
 
   const pick = async (w: WorkspaceSummary) => {
-    // For Personal the ledgerId is sometimes empty in workspaces[] (server
-    // tells us via meRes.activeLedgerId but a brand-new user may have it
-    // null). In that case clear the active-ledger header so the server
-    // defaults to the user's personal ledger.
-    setSwitching(w.ledgerId || 'personal');
+    // workspaces[].ledgerId is now always populated for both personal and
+    // org entries (the server sends `personalLedgerId` on every /me). If
+    // somehow it's missing, fall back to clearing the in-memory header so
+    // the next request defaults to the personal ledger - but DON'T close
+    // the sheet without doing the round-trip, or the UI stays on the org.
+    if (!w.ledgerId) {
+      const { setActiveLedger } = await import('../lib/api');
+      setActiveLedger(null);
+      onClose();
+      return;
+    }
+    setSwitching(w.ledgerId);
     try {
-      // Compute the target ledger. For personal, derive from profile if
-      // workspace entry lacks it (corner case during very first load).
-      const target = w.ledgerId
-        ? w.ledgerId
-        // No ledger id on the personal entry -> ask server, but mobile
-        // doesn't know logtoId. Easiest: switch to "" which signals
-        // setActiveLedger(null) -> server defaults to personal on next
-        // request. switchLedger expects a string, so we pass "personal".
-        : 'personal';
-      // If the personal entry has no ledger id yet (very fresh login), we
-      // can't POST /me/active-ledger with "personal" - just close the sheet
-      // and let the next /me round-trip restore state. Otherwise switch
-      // normally.
-      if (target === 'personal') {
-        // Mark in-memory header as null; next request defaults to personal.
-        const { setActiveLedger } = await import('../lib/api');
-        setActiveLedger(null);
-      } else {
-        await switchLedger(target);
-      }
+      await switchLedger(w.ledgerId);
       onClose();
     } finally {
       setSwitching(null);
