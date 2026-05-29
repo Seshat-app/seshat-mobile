@@ -20,7 +20,17 @@ import { RadarMark } from '../components/RadarMark';
 // the OAuth provider redirects back to the app. Safe to call at module scope.
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_WEB_CLIENT_ID = '332477207123-frrpq33b3ccaefllusa1nakso1bqfrlv.apps.googleusercontent.com';
+// Native OAuth clients (one per platform), registered in Google Cloud
+// Console project 1051327904371. We dropped the Web client + Expo auth
+// proxy because:
+//   - Expo's auth.expo.io proxy is deprecated and brittle.
+//   - "Custom scheme URIs are not allowed for WEB client type" was the
+//     recurring failure - native clients accept the seshat:// scheme that
+//     expo-auth-session generates by default.
+// Each native client is bound to (bundle_id) for iOS and (package_name +
+// SHA-1) for Android, so they only work for our specific app build.
+const GOOGLE_IOS_CLIENT_ID = '1051327904371-b8thnkjmc2v9siki084ferbn95r5fm6f.apps.googleusercontent.com';
+const GOOGLE_ANDROID_CLIENT_ID = '1051327904371-9i33rhse49f26j14h93jteaq8k68oipg.apps.googleusercontent.com';
 
 type AuthView =
   | 'login'
@@ -48,21 +58,16 @@ export default function AuthRouter() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Google sign-in. expo-auth-session opens the Google account picker in a
-  // Chrome Custom Tab / system browser; the response.params include `id_token`
-  // which we hand to the API for verification.
-  //
-  // The explicit redirectUri forces all traffic through the Expo auth proxy.
-  // Without it, expo-auth-session defaults to a `seshat://` custom-scheme
-  // URI on standalone builds, which Google's Web OAuth client rejects with
-  // "Custom scheme URIs are not allowed for 'WEB' client type". The proxy
-  // URL is one we registered in Google Cloud Console as an Authorized
-  // Redirect URI; auth.expo.io then deep-links the OAuth response back into
-  // the app via the seshat:// scheme.
+  // Google sign-in via native OAuth clients - no proxy, no Web client.
+  // expo-auth-session picks the platform-specific client at runtime and
+  // generates a redirectUri that the native client accepts (the iOS
+  // reversed-client-id scheme on iOS, the seshat:// scheme on Android).
+  // The response.params include `id_token` which we hand to the API for
+  // verification.
   const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
     scopes: ['openid', 'email', 'profile'],
-    redirectUri: 'https://auth.expo.io/@radar-app/seshat-mobile',
   });
 
   useEffect(() => {

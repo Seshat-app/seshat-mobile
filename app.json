@@ -19,7 +19,14 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Seshat uses the microphone so you can talk to her instead of typing - describe a transaction by voice and she records it.",
         "NSPhotoLibraryUsageDescription": "Pick a profile photo from your library to use as your Seshat avatar.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.1051327904371-b8thnkjmc2v9siki084ferbn95r5fm6f"
+            ]
+          }
+        ]
       }
     },
     "android": {
