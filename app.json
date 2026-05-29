@@ -59,6 +59,12 @@
         {
           "ios": {
             "deploymentTarget": "17.0"
+          },
+          "android": {
+            "extraGradleProperties": {
+              "org.gradle.jvmargs": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC",
+              "kotlin.daemon.jvm.options": "-Xmx2048m"
+            }
           }
         }
       ]
