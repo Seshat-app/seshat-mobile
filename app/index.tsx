@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
@@ -259,12 +259,19 @@ export default function AuthRouter() {
         footer={
           <>
             <RButton full onPress={submitLogin} disabled={busy}>{busy ? t('pleaseWait') : t('signIn')}</RButton>
-            <AuthOr />
-            <SSOButton
-              provider="google"
-              label={lang === 'ar' ? 'المتابعة بجوجل' : 'Continue with Google'}
-              onPress={submitGoogle}
-            />
+            {/* Google sign-in is Android-only for now. iOS requires a
+                separate review-friendly path (we'll wire Sign-In-with-Apple
+                + a re-thought Google flow there later). */}
+            {Platform.OS === 'android' && (
+              <>
+                <AuthOr />
+                <SSOButton
+                  provider="google"
+                  label={lang === 'ar' ? 'المتابعة بجوجل' : 'Continue with Google'}
+                  onPress={submitGoogle}
+                />
+              </>
+            )}
           </>
         }
       >

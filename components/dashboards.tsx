@@ -26,6 +26,19 @@ export type DashboardData = {
     emoji?: string;
     total: number;
   }>;
+  // Per-project mini P&L for the current month. Empty on personal
+  // ledgers. The dashboard renders a small "By project" panel when
+  // present; on the report screen it gets its own labeled section.
+  byProject?: Array<{
+    projectId: string | null;
+    name: string;
+    color?: string;
+    budget: number | null;
+    income: number;
+    expense: number;
+    net: number;
+    budgetPct: number | null;
+  }>;
   recentTransactions: TxRowData[];
 };
 
@@ -197,6 +210,62 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
                     <RAmount value={-cat.total} size={12} currency={currency} weight="regular" decimals={0} />
                   </View>
                   <RProgress value={pct} color={i === 0 ? tok.gold : tok.borderHi} height={3} />
+                </View>
+              );
+            })}
+          </RCard>
+        </View>
+      )}
+
+      {/* By project (org ledgers only) */}
+      {data.byProject && data.byProject.length > 0 && (
+        <View style={{ marginTop: 18 }}>
+          <SectionHeader label={lang === 'ar' ? 'حسب المشروع' : 'BY PROJECT'} />
+          <RCard style={{ marginTop: 8 }}>
+            {data.byProject.map((p, i) => {
+              const overBudget = p.budgetPct != null && p.budgetPct >= 100;
+              const nearBudget = p.budgetPct != null && p.budgetPct >= 80 && p.budgetPct < 100;
+              return (
+                <View key={p.projectId ?? '__unassigned__'} style={{ marginTop: i === 0 ? 0 : 14 }}>
+                  <View style={{
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                    justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6,
+                    gap: 8,
+                  }}>
+                    <View style={{
+                      flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                      alignItems: 'center', gap: 8, flex: 1, minWidth: 0,
+                    }}>
+                      <View style={{
+                        width: 8, height: 8, borderRadius: 4,
+                        backgroundColor: p.color ?? (p.projectId ? tok.gold : tok.muted),
+                      }} />
+                      <Text
+                        numberOfLines={1}
+                        style={{ color: tok.bone, fontFamily: fontBody(lang, 'medium'), fontSize: 13, flex: 1 }}
+                      >{p.name}</Text>
+                    </View>
+                    <RAmount value={-p.expense} size={12} currency={currency} weight="regular" decimals={0} />
+                  </View>
+                  {p.budget != null && p.budgetPct != null ? (
+                    <>
+                      <RProgress
+                        value={Math.min(100, p.budgetPct)}
+                        color={overBudget ? tok.alertText : nearBudget ? tok.gold : tok.posText}
+                        height={3}
+                      />
+                      <Text style={{
+                        marginTop: 4,
+                        color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10,
+                        letterSpacing: 1.2, textTransform: 'uppercase',
+                        textAlign: lang === 'ar' ? 'right' : 'left',
+                      }}>
+                        {p.budgetPct}% {lang === 'ar' ? 'من' : 'of'} {p.budget.toLocaleString()} {currency}
+                      </Text>
+                    </>
+                  ) : (
+                    <RProgress value={0} color={tok.borderHi} height={3} />
+                  )}
                 </View>
               );
             })}

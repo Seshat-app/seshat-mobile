@@ -276,6 +276,82 @@ export default function MonthlyReportScreen() {
               ))}
             </RCard>
 
+            {/* By project (org ledgers only; on personal this array is empty) */}
+            {report.byProject && report.byProject.length > 0 && (
+              <>
+                <REyebrow style={{ marginTop: 6, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                  {lang === 'ar' ? 'حسب المشروع' : 'By project'}
+                </REyebrow>
+                <RCard padding={0} style={{ paddingHorizontal: 16, paddingVertical: 4, marginBottom: 14 }}>
+                  {report.byProject.map((p, i) => {
+                    const overBudget = p.budgetPct != null && p.budgetPct >= 100;
+                    const nearBudget = p.budgetPct != null && p.budgetPct >= 80 && p.budgetPct < 100;
+                    const netColor = p.net >= 0 ? tok.posText : tok.alertText;
+                    const last = i === report.byProject.length - 1;
+                    return (
+                      <View key={p.projectId ?? '__unassigned__'} style={{
+                        paddingVertical: 12,
+                        borderBottomWidth: last ? 0 : 1, borderBottomColor: tok.border,
+                      }}>
+                        <View style={{
+                          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                          alignItems: 'center', gap: 10,
+                        }}>
+                          <View style={{
+                            width: 10, height: 10, borderRadius: 5,
+                            backgroundColor: p.color ?? (p.projectId ? tok.gold : tok.muted),
+                          }} />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                fontFamily: fontHead(lang), fontSize: 14, color: tok.bone,
+                                textAlign: lang === 'ar' ? 'right' : 'left',
+                              }}
+                            >{p.name}</Text>
+                            <Text style={{
+                              marginTop: 2,
+                              fontFamily: fontMono(), fontSize: 11, color: tok.muted,
+                              textAlign: lang === 'ar' ? 'right' : 'left',
+                            }}>
+                              {p.countTx}× {lang === 'ar' ? 'معاملة' : 'tx'}
+                              {p.budget != null && p.budgetPct != null ? `  ·  ${p.budgetPct}% ${lang === 'ar' ? 'من' : 'of'} ${p.budget.toLocaleString()}` : ''}
+                            </Text>
+                          </View>
+                          <View style={{ alignItems: lang === 'ar' ? 'flex-start' : 'flex-end' }}>
+                            <Text style={{
+                              fontFamily: fontMono(), fontSize: 14, color: tok.bone,
+                            }}>
+                              {fmtNum(p.expense)}
+                            </Text>
+                            <Text style={{
+                              marginTop: 2,
+                              fontFamily: fontMono(), fontSize: 10, color: netColor,
+                            }}>
+                              {p.net >= 0 ? '+' : ''}{fmtNum(p.net)} {lang === 'ar' ? 'صافي' : 'net'}
+                            </Text>
+                          </View>
+                        </View>
+                        {p.budget != null && p.budgetPct != null && (
+                          <View style={{
+                            marginTop: 8,
+                            height: 3, borderRadius: 2,
+                            backgroundColor: tok.border, overflow: 'hidden',
+                          }}>
+                            <View style={{
+                              width: `${Math.min(100, p.budgetPct)}%`,
+                              height: '100%',
+                              backgroundColor: overBudget ? tok.alertText : nearBudget ? tok.gold : tok.posText,
+                            }} />
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </RCard>
+              </>
+            )}
+
             {/* Top vendors */}
             {report.topVendors.length > 0 && (
               <>

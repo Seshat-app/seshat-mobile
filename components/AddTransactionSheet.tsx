@@ -18,11 +18,17 @@ import { uploadReceipt } from '../lib/cloudinary';
 
 export type ApiCategory = { _id: string; nameEn: string; nameAr?: string; emoji?: string; type?: 'income' | 'expense' | 'both' };
 
+// Subset of the ApiProject shape we need at the picker level. Kept loose
+// so callers can pass either the full appData type or a lite version.
+export type SheetProject = { _id: string; name: string; color?: string };
+
 export type AddTxPayload = {
   type: 'income' | 'expense';
   amount: number;
   currency: string;
   categoryId: string;
+  // Optional project tag. Org-only; never set on a personal ledger.
+  projectId?: string;
   description?: string;
   notes?: string;
   date: string; // YYYY-MM-DD
@@ -43,6 +49,7 @@ export type AddTxPrefill = {
   type?: 'income' | 'expense';
   amount?: number;
   categoryId?: string;
+  projectId?: string;
   description?: string;
   notes?: string;
   isMonthlyBaseline?: boolean;
@@ -86,16 +93,25 @@ type Props = {
   onSave: (payload: AddTxPayload) => Promise<void> | void;
   categories: ApiCategory[];
   defaultCurrency: string;
+  // Optional list of active projects in the current workspace. When
+  // non-empty, a horizontal chip row appears below the category strip
+  // so the user can tag the entry to a project. Empty/undefined hides
+  // the entire row (the personal-ledger case).
+  projects?: SheetProject[];
   // Optional pre-fill for capture / receipt / deep-link flows.
   prefill?: AddTxPrefill;
 };
 
-export function AddTransactionSheet({ visible, onClose, onSave, categories, defaultCurrency, prefill }: Props) {
+export function AddTransactionSheet({ visible, onClose, onSave, categories, defaultCurrency, projects, prefill }: Props) {
   const { tok, lang, t, dir } = useI18n();
 
   const [amount, setAmount] = useState('0');
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [catId, setCatId] = useState<string | null>(null);
+  // null = "No project" (the "general overhead" bucket). undefined = the
+  // initial unset state before the user opens the picker. We send null
+  // through to the API as no projectId, and a real id when tagged.
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [seshatMode, setSeshatMode] = useState(false);
   const [seshatText, setSeshatText] = useState('');
   const [notes, setNotes] = useState('');
@@ -120,7 +136,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   useEffect(() => {
     if (!visible) {
       setAmount('0'); setType('expense'); setSeshatMode(false); setSeshatText('');
-      setCatId(null); setSaving(false);
+      setCatId(null); setProjectId(null); setSaving(false);
       setNotes(''); setIsMonthlyBaseline(false); setShowNotes(false);
     }
   }, [visible]);
@@ -133,6 +149,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     if (prefill.type) setType(prefill.type);
     if (typeof prefill.amount === 'number' && prefill.amount > 0) setAmount(String(prefill.amount));
     if (prefill.categoryId) setCatId(prefill.categoryId);
+    if (prefill.projectId) setProjectId(prefill.projectId);
     if (prefill.description) { setSeshatMode(true); setSeshatText(prefill.description); }
     if (prefill.notes) { setNotes(prefill.notes); setShowNotes(true); }
     if (prefill.isMonthlyBaseline) setIsMonthlyBaseline(true);
@@ -178,6 +195,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
         amount: numericAmount,
         currency: defaultCurrency,
         categoryId: catId!,
+        projectId: projectId ?? undefined,
         description: seshatMode && seshatText.trim() ? seshatText.trim() : undefined,
         notes: notes.trim() ? notes.trim() : undefined,
         date: new Date().toISOString().slice(0, 10),
@@ -523,6 +541,68 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               );
             })}
           </ScrollView>
+
+          {/* Project chip row. Only rendered when the active workspace has
+              at least one project — i.e., an organization ledger. Personal
+              ledgers get this row hidden so the sheet stays compact. */}
+          {projects && projects.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ flexGrow: 0, flexShrink: 0, height: 38, marginBottom: 4 }}
+              contentContainerStyle={{ gap: 8, paddingHorizontal: 20, alignItems: 'center' }}
+            >
+              {/* "No project" sentinel — selected by default */}
+              <Pressable
+                onPress={() => setProjectId(null)}
+                style={{
+                  height: 28, paddingHorizontal: 12, borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: projectId === null ? tok.muted : tok.border,
+                  backgroundColor: projectId === null ? tok.surface : 'transparent',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Text style={{
+                  color: projectId === null ? tok.bone : tok.muted,
+                  fontFamily: fontMono('regular'), fontSize: 10,
+                  letterSpacing: lang === 'ar' ? 0 : 1.2,
+                  textTransform: lang === 'ar' ? 'none' : 'uppercase',
+                }}>
+                  {lang === 'ar' ? 'بدون مشروع' : 'no project'}
+                </Text>
+              </Pressable>
+              {projects.map((p) => {
+                const a = projectId === p._id;
+                return (
+                  <Pressable
+                    key={p._id}
+                    onPress={() => setProjectId(p._id)}
+                    style={{
+                      height: 28, paddingHorizontal: 12, borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: a ? (p.color ?? tok.gold) : tok.border,
+                      backgroundColor: a ? tok.surface : 'transparent',
+                      flexDirection: 'row', alignItems: 'center', gap: 6,
+                    }}
+                  >
+                    {p.color ? (
+                      <View style={{
+                        width: 7, height: 7, borderRadius: 3.5,
+                        backgroundColor: p.color,
+                      }} />
+                    ) : null}
+                    <Text style={{
+                      color: a ? tok.bone : tok.muted,
+                      fontFamily: fontMono('regular'), fontSize: 10,
+                      letterSpacing: lang === 'ar' ? 0 : 1.2,
+                      textTransform: lang === 'ar' ? 'none' : 'uppercase',
+                    }}>{p.name}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : null}
 
           {/* Body — keypad mode reserves 300px for the 4-row grid; Seshat
               mode uses natural height so the input sits above the system

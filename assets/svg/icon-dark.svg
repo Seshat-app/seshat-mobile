@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background gradient: deep void with subtle radial vignette -->
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.5" r="0.7">
+      <stop offset="0" stop-color="#15151A"/>
+      <stop offset="1" stop-color="#0A0A0C"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E8C97A"/>
+      <stop offset="1" stop-color="#C9A84C"/>
+    </linearGradient>
+    <linearGradient id="goldDeep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C9A84C"/>
+      <stop offset="1" stop-color="#8B6B14"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded-square iOS canvas (matches superellipse mask) -->
+  <rect x="0" y="0" width="1024" height="1024" rx="232" ry="232" fill="url(#bg)"/>
+
+  <!-- Subtle inner ring frame -->
+  <rect x="56" y="56" width="912" height="912" rx="200" ry="200"
+        fill="none" stroke="rgba(232,232,224,0.06)" stroke-width="2"/>
+
+  <!-- Radar mark — geometry based on the in-app RadarMark component
+       (cx=512, cy=512, r=380, ri=190, blip at -45°) -->
+  <g transform="translate(512 512)">
+    <!-- Outer faint ring -->
+    <circle cx="0" cy="0" r="380" fill="none"
+            stroke="rgba(232,232,224,0.35)" stroke-width="3"/>
+    <!-- Outer arc (top-right quadrant brighter) -->
+    <path d="M 380 0 A 380 380 0 0 0 0 -380"
+          fill="none" stroke="url(#gold)" stroke-width="6"
+          stroke-linecap="round" opacity="0.85"/>
+    <!-- Gold sweep wedge: from horizontal to NE blip -->
+    <path d="M 0 0 L 380 0 A 380 380 0 0 0 268.7 -268.7 Z"
+          fill="url(#gold)" opacity="0.18"/>
+
+    <!-- Inner ring -->
+    <circle cx="0" cy="0" r="190" fill="none"
+            stroke="rgba(232,232,224,0.30)" stroke-width="3"/>
+    <!-- Inner arc top-right -->
+    <path d="M 190 0 A 190 190 0 0 0 0 -190"
+          fill="none" stroke="url(#gold)" stroke-width="5"
+          stroke-linecap="round" opacity="0.9"/>
+
+    <!-- Crosshair -->
+    <line x1="-380" y1="0" x2="380" y2="0"
+          stroke="rgba(232,232,224,0.18)" stroke-width="2"/>
+    <line x1="0" y1="-380" x2="0" y2="380"
+          stroke="rgba(232,232,224,0.18)" stroke-width="2"/>
+
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="6" fill="#E8E8E0"/>
+
+    <!-- NE blip with soft glow -->
+    <circle cx="268.7" cy="-268.7" r="44" fill="url(#gold)" opacity="0.25"/>
+    <circle cx="268.7" cy="-268.7" r="22" fill="url(#gold)" opacity="0.55"/>
+    <circle cx="268.7" cy="-268.7" r="11" fill="#F4E3B6"/>
+  </g>
+</svg>

@@ -18,7 +18,22 @@ export type OrgSummary = {
 
 export type OrgDetail = OrgSummary & {
   createdAt: string;
+  // The project every message in the linked Telegram group auto-tags to.
+  // null when no default is set. Surfaced on org detail so the owner can
+  // pick one without diving into a separate screen.
+  telegramDefaultProjectId?: string | null;
 };
+
+export async function setTelegramDefaultProject(
+  orgId: string,
+  projectId: string | null,
+): Promise<OrgDetail> {
+  const r = await apiFetch<{ data: OrgDetail }>(`/orgs/${orgId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ telegramDefaultProjectId: projectId }),
+  });
+  return r.data;
+}
 
 export type OrgMember = {
   userId: string;

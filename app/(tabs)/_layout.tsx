@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Tabs, useSegments } from 'expo-router';
+import { Tabs, useSegments, withLayoutContext } from 'expo-router';
+import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { Home as HomeIcon, List, Sparkles, User } from 'lucide-react-native';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
@@ -12,36 +13,27 @@ import { AddOptionsSheet } from '../../components/AddOptionsSheet';
 import { RToast } from '../../components/ui';
 import { Tour, hasTourBeenSeen } from '../../components/Tour';
 
-// NOTE: this is the original JS tab bar. The native variant (using
-// react-native-bottom-tabs / @bottom-tabs/react-navigation, for Liquid
-// Glass on iOS 26) is installed and ready in package.json, but requires
-// an EAS build with proper Apple credentials. We'll swap back to the
-// native variant once that's unblocked.
+// On iOS we use react-native-bottom-tabs' native UITabBar (renders as Liquid
+// Glass on iOS 26+, regular blur on 17/18). On Android we keep the JS Tabs
+// from expo-router, since the native variant is iOS-tuned and Android's
+// Material 3 NavigationBar doesn't gain anything from going native here.
+const NativeTabsNavigator = withLayoutContext(createNativeBottomTabNavigator().Navigator);
 
 export default function TabsLayout() {
   const { tok, lang, t } = useI18n();
-  const { categories, profile, bumpVersion, refresh } = useAppData();
+  const { categories, projects, profile, bumpVersion, refresh } = useAppData();
 
-  // Re-fetch profile + categories whenever the tabs mount. Covers both fresh
-  // login (AppDataProvider's startup fetch fired before a token existed) and
-  // app-restart with an already-stored token.
   useEffect(() => { refresh(); }, [refresh]);
   const segments = useSegments();
   const currentTab = segments[segments.length - 1];
   const hideFab = currentTab === 'seshat';
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  // The FAB now opens this chooser first; selecting an option then opens
-  // the AddTransactionSheet with the right prefill (manual entry vs auto-
-  // trigger the receipt-scan flow).
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [sheetPrefill, setSheetPrefill] = useState<AddTxPrefill | undefined>(undefined);
   const [toast, setToast] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
 
-  // First-launch tour. Wait a beat so the screen actually paints behind the
-  // overlay — the goal is "user sees their app, then guidance arrives", not a
-  // tour-before-the-app-loads experience.
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -54,9 +46,6 @@ export default function TabsLayout() {
 
   const onSave = async (p: AddTxPayload) => {
     try {
-      // Fresh idempotency key per Save tap. If the network drops mid-request
-      // and the SDK retries, the server returns the same response without
-      // creating a second tx.
       await apiFetch('/transactions', {
         method: 'POST',
         body: JSON.stringify(p),
@@ -78,54 +67,91 @@ export default function TabsLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: tok.void }}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: tok.navBg,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            borderTopColor: tok.border,
-            height: Platform.OS === 'ios' ? 84 : 70,
-            paddingTop: 8,
-            paddingBottom: Platform.OS === 'ios' ? 26 : 8,
-          },
-          tabBarActiveTintColor: tok.gold,
-          tabBarInactiveTintColor: tok.muted,
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: t('home'),
-            tabBarIcon: ({ color }) => <HomeIcon size={22} color={color} strokeWidth={1.5} />,
-            tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('home')}</TabLabel>,
+      {Platform.OS === 'ios' ? (
+        <NativeTabsNavigator
+          tabBarActiveTintColor={tok.gold}
+          tabBarInactiveTintColor={tok.muted}
+          hapticFeedbackEnabled
+        >
+          <NativeTabsNavigator.Screen
+            name="index"
+            options={{
+              title: t('home'),
+              tabBarIcon: () => ({ sfSymbol: 'house' }),
+            }}
+          />
+          <NativeTabsNavigator.Screen
+            name="transactions"
+            options={{
+              title: t('transactions'),
+              tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
+            }}
+          />
+          <NativeTabsNavigator.Screen
+            name="seshat"
+            options={{
+              title: t('seshat'),
+              tabBarIcon: () => ({ sfSymbol: 'sparkles' }),
+            }}
+          />
+          <NativeTabsNavigator.Screen
+            name="profile"
+            options={{
+              title: t('profile'),
+              tabBarIcon: () => ({ sfSymbol: 'person.crop.circle' }),
+            }}
+          />
+        </NativeTabsNavigator>
+      ) : (
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: {
+              backgroundColor: tok.navBg,
+              borderTopWidth: StyleSheet.hairlineWidth,
+              borderTopColor: tok.border,
+              height: 70,
+              paddingTop: 8,
+              paddingBottom: 8,
+            },
+            tabBarActiveTintColor: tok.gold,
+            tabBarInactiveTintColor: tok.muted,
           }}
-        />
-        <Tabs.Screen
-          name="transactions"
-          options={{
-            title: t('transactions'),
-            tabBarIcon: ({ color }) => <List size={22} color={color} strokeWidth={1.5} />,
-            tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('transactions')}</TabLabel>,
-          }}
-        />
-        <Tabs.Screen
-          name="seshat"
-          options={{
-            title: t('seshat'),
-            tabBarIcon: ({ color }) => <Sparkles size={22} color={color} strokeWidth={1.5} />,
-            tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('seshat')}</TabLabel>,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: t('profile'),
-            tabBarIcon: ({ color }) => <User size={22} color={color} strokeWidth={1.5} />,
-            tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('profile')}</TabLabel>,
-          }}
-        />
-      </Tabs>
+        >
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: t('home'),
+              tabBarIcon: ({ color }) => <HomeIcon size={22} color={color} strokeWidth={1.5} />,
+              tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('home')}</TabLabel>,
+            }}
+          />
+          <Tabs.Screen
+            name="transactions"
+            options={{
+              title: t('transactions'),
+              tabBarIcon: ({ color }) => <List size={22} color={color} strokeWidth={1.5} />,
+              tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('transactions')}</TabLabel>,
+            }}
+          />
+          <Tabs.Screen
+            name="seshat"
+            options={{
+              title: t('seshat'),
+              tabBarIcon: ({ color }) => <Sparkles size={22} color={color} strokeWidth={1.5} />,
+              tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('seshat')}</TabLabel>,
+            }}
+          />
+          <Tabs.Screen
+            name="profile"
+            options={{
+              title: t('profile'),
+              tabBarIcon: ({ color }) => <User size={22} color={color} strokeWidth={1.5} />,
+              tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('profile')}</TabLabel>,
+            }}
+          />
+        </Tabs>
+      )}
 
       {!hideFab && <RFAB onPress={() => setOptionsOpen(true)} />}
 
@@ -136,8 +162,6 @@ export default function TabsLayout() {
         onClose={() => setOptionsOpen(false)}
         onPickManual={() => { setSheetPrefill(undefined); setSheetOpen(true); }}
         onPickReceipt={() => {
-          // Open the AddTransactionSheet with autoTriggerScan -> the sheet
-          // fires the Camera/Library prompt itself once it's mounted.
           setSheetPrefill({ autoTriggerScan: true, source: 'receipt-ocr' });
           setSheetOpen(true);
         }}
@@ -148,6 +172,7 @@ export default function TabsLayout() {
         onClose={() => { setSheetOpen(false); setSheetPrefill(undefined); }}
         onSave={onSave}
         categories={categories}
+        projects={projects}
         defaultCurrency={profile?.currency ?? 'EGP'}
         prefill={sheetPrefill}
       />
@@ -159,8 +184,6 @@ export default function TabsLayout() {
 
 function TabLabel({ focused, color, children }: { focused: boolean; color: string; children: string }) {
   const { lang } = useI18n();
-  // Design rule (radar-shared.jsx RBottomNav): show the tab label on every tab,
-  // active gets full opacity, inactive gets muted.
   return (
     <Text
       numberOfLines={1}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, Image, Linking, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Building2, ChevronRight, Mail, Plus, Send, UserPlus, Users, X } from 'lucide-react-native';
+import { Building2, ChevronRight, Layers, Mail, Plus, Send, Target, UserPlus, Users, X } from 'lucide-react-native';
 import { PlanScreen } from '../../components/PlanShell';
 import { RCard, REyebrow, RButton } from '../../components/ui';
 import { SkeletonRow } from '../../components/Skeleton';
@@ -10,6 +10,7 @@ import { useAppData } from '../../lib/appData';
 import {
   deleteOrg, getOrg, leaveOrg, listInvites, listMembers,
   mintTelegramOrgLinkToken, removeMember, revokeInvite,
+  setTelegramDefaultProject,
   type OrgDetail, type OrgInvite, type OrgMember,
 } from '../../lib/orgs';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
@@ -31,7 +32,7 @@ export default function OrgDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { tok, lang } = useI18n();
-  const { profile, switchLedger } = useAppData();
+  const { profile, switchLedger, projects, activeLedgerId } = useAppData();
   const [org, setOrg] = useState<OrgDetail | null>(null);
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [invites, setInvites] = useState<OrgInvite[]>([]);
@@ -368,6 +369,125 @@ export default function OrgDetailScreen() {
                   </Text>
                 </Pressable>
               )}
+
+              {/* Manage projects - all members can open; only owners can
+                  create/archive (server-enforced is permissive in v1 but
+                  we keep the entry point shared so members can browse). */}
+              <Pressable
+                onPress={async () => {
+                  // Make sure the active ledger points at this org before
+                  // navigating - the projects screen reads from the active
+                  // ledger header.
+                  if (activeLedgerId !== `o_${id}`) await switchLedger(`o_${id}`);
+                  router.push({ pathname: '/orgs/[id]/projects', params: { id: id! } });
+                }}
+                style={({ pressed }) => ({
+                  borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14,
+                  borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                  backgroundColor: tok.surface,
+                  flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                  alignItems: 'center', gap: 10,
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <Layers size={16} color={tok.gold} strokeWidth={1.6} />
+                <Text style={{
+                  flex: 1,
+                  color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
+                  textAlign: lang === 'ar' ? 'right' : 'left',
+                }}>
+                  {lang === 'ar' ? 'المشاريع' : 'Projects'}
+                </Text>
+                <ChevronRight
+                  size={16}
+                  color={tok.muted}
+                  style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }}
+                />
+              </Pressable>
+
+              {/* Default project for the linked Telegram group. Only shown
+                  when the group is linked AND the org has at least one
+                  active project (loaded into context). */}
+              {isOwner && org.telegramLinked && projects.length > 0 && activeLedgerId === `o_${id}` ? (
+                <View style={{
+                  borderRadius: 12, padding: 14,
+                  borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                  backgroundColor: tok.surface, gap: 8,
+                }}>
+                  <View style={{
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                    alignItems: 'center', gap: 8,
+                  }}>
+                    <Target size={14} color={tok.muted} strokeWidth={1.6} />
+                    <Text style={{
+                      color: tok.muted, fontFamily: fontMono('regular'),
+                      fontSize: 10, letterSpacing: 1.4,
+                    }}>
+                      {lang === 'ar' ? 'مشروع المجموعة الافتراضي' : 'GROUP DEFAULT PROJECT'}
+                    </Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+                    {/* None chip */}
+                    <Pressable
+                      onPress={async () => {
+                        try {
+                          const next = await setTelegramDefaultProject(id!, null);
+                          setOrg((prev) => prev ? { ...prev, telegramDefaultProjectId: next.telegramDefaultProjectId } : prev);
+                        } catch (err) {
+                          Alert.alert(lang === 'ar' ? 'فشل' : 'Failed', err instanceof Error ? err.message : String(err));
+                        }
+                      }}
+                      style={{
+                        height: 28, paddingHorizontal: 12, borderRadius: 14,
+                        borderWidth: 1,
+                        borderColor: !org.telegramDefaultProjectId ? tok.muted : tok.border,
+                        backgroundColor: !org.telegramDefaultProjectId ? tok.elevated : 'transparent',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{
+                        color: !org.telegramDefaultProjectId ? tok.bone : tok.muted,
+                        fontFamily: fontMono('regular'), fontSize: 10,
+                        letterSpacing: 1.2, textTransform: 'uppercase',
+                      }}>
+                        {lang === 'ar' ? 'بدون' : 'none'}
+                      </Text>
+                    </Pressable>
+                    {projects.map((p) => {
+                      const a = org.telegramDefaultProjectId === p._id;
+                      return (
+                        <Pressable
+                          key={p._id}
+                          onPress={async () => {
+                            try {
+                              const next = await setTelegramDefaultProject(id!, p._id);
+                              setOrg((prev) => prev ? { ...prev, telegramDefaultProjectId: next.telegramDefaultProjectId } : prev);
+                            } catch (err) {
+                              Alert.alert(lang === 'ar' ? 'فشل' : 'Failed', err instanceof Error ? err.message : String(err));
+                            }
+                          }}
+                          style={{
+                            height: 28, paddingHorizontal: 12, borderRadius: 14,
+                            borderWidth: 1,
+                            borderColor: a ? (p.color ?? tok.gold) : tok.border,
+                            backgroundColor: a ? tok.elevated : 'transparent',
+                            flexDirection: 'row', alignItems: 'center', gap: 6,
+                          }}
+                        >
+                          {p.color ? (
+                            <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: p.color }} />
+                          ) : null}
+                          <Text style={{
+                            color: a ? tok.bone : tok.muted,
+                            fontFamily: fontMono('regular'), fontSize: 10,
+                            letterSpacing: 1.2, textTransform: 'uppercase',
+                          }}>{p.name}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              ) : null}
             </View>
 
             {/* Danger zone */}

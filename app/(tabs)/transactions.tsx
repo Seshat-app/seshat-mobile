@@ -14,12 +14,20 @@ import { TxFiltersSheet, EMPTY_FILTERS, type TxFilters } from '../../components/
 
 export default function TransactionsScreen() {
   const { tok, lang, t } = useI18n();
-  const { dataVersion, categories, bumpVersion } = useAppData();
+  const { dataVersion, categories, projects, bumpVersion } = useAppData();
   const insets = useSafeAreaInsets();
   const [txs, setTxs] = useState<TxRowData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState<TxFilters>(EMPTY_FILTERS);
+  // Project filter is single-select and lives outside the FiltersSheet for
+  // quick switching: null = no filter, 'none' = only untagged tx, else id.
+  const [projectFilter, setProjectFilter] = useState<string | 'none' | null>(null);
+  // Whenever the workspace switches off an org ledger (projects becomes
+  // empty), drop any in-flight project filter so we don't ship a stale id.
+  useEffect(() => {
+    if (projects.length === 0 && projectFilter !== null) setProjectFilter(null);
+  }, [projects.length]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<EditingTx | null>(null);
@@ -83,6 +91,7 @@ export default function TransactionsScreen() {
       if (filters.to) params.set('to', filters.to);
       if (typeof filters.minAmount === 'number') params.set('minAmount', String(filters.minAmount));
       if (typeof filters.maxAmount === 'number') params.set('maxAmount', String(filters.maxAmount));
+      if (projectFilter) params.set('projectId', projectFilter);
       params.set('limit', '100');
       if (query.trim()) params.set('search', query.trim());
       const res = await apiFetch<{ data: TxRowData[] }>(`/transactions?${params.toString()}`);
@@ -93,7 +102,7 @@ export default function TransactionsScreen() {
       if (mode === 'initial') setLoading(false);
       else setRefreshing(false);
     }
-  }, [filters, query]);
+  }, [filters, query, projectFilter]);
 
   useEffect(() => { fetchTxs('initial'); }, [fetchTxs, dataVersion]);
 
@@ -174,6 +183,29 @@ export default function TransactionsScreen() {
             <SlidersHorizontal size={16} color={hasActiveFilters(filters) ? '#0D0D0D' : tok.muted} />
           </Pressable>
         </View>
+
+        {/* Project filter row - only rendered when the active workspace has
+            projects (an org ledger). Single-select: "All", "No project"
+            (untagged), then one chip per active project. */}
+        {projects.length > 0 ? (
+          <RHScroll style={{ marginBottom: 8 }}>
+            <RPill active={projectFilter === null} onPress={() => setProjectFilter(null)}>
+              {lang === 'ar' ? 'كل المشاريع' : 'All projects'}
+            </RPill>
+            <RPill active={projectFilter === 'none'} onPress={() => setProjectFilter('none')}>
+              {lang === 'ar' ? 'بدون مشروع' : 'No project'}
+            </RPill>
+            {projects.map((p) => (
+              <RPill
+                key={p._id}
+                active={projectFilter === p._id}
+                onPress={() => setProjectFilter(p._id)}
+              >
+                {p.name}
+              </RPill>
+            ))}
+          </RHScroll>
+        ) : null}
 
         {/* Active filter chips - one chip per active filter dimension. Tap an
             x on a chip to drop just that filter. Type segmented stays as the

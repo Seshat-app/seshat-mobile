@@ -36,13 +36,29 @@ export type WorkspaceSummary = {
   currency?: string;
 };
 
+export type ApiProject = {
+  _id: string;
+  ledgerId: string;
+  name: string;
+  currency: string;
+  status: 'active' | 'archived';
+  budget?: number;
+  color?: string;
+  description?: string;
+};
+
 type Ctx = {
   categories: ApiCategory[];
+  // Projects scoped to the currently active ledger. Empty array on personal
+  // ledgers (no projects there in v1) and on initial load. Reloaded on
+  // ledger switch and after project mutations via refreshProjects().
+  projects: ApiProject[];
   profile: Profile | null;
   workspaces: WorkspaceSummary[];
   activeLedgerId: string | null;
   switchLedger: (ledgerId: string) => Promise<void>;
   refresh: () => Promise<void>;
+  refreshProjects: () => Promise<void>;
   // Bump this counter to signal screens to refetch (e.g. after a new tx).
   dataVersion: number;
   bumpVersion: () => void;
@@ -68,11 +84,30 @@ type OrgListItem = {
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [projects, setProjects] = useState<ApiProject[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orgs, setOrgs] = useState<OrgListItem[]>([]);
   const [activeLedgerId, setActiveLedgerIdState] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
   const [workspaceSheetOpen, setWorkspaceSheetOpen] = useState(false);
+
+  // Projects only exist on org ledgers in v1. We fetch once at the right
+  // moment (refresh + ledger switch + after a mutation calls
+  // refreshProjects()) rather than on every render that touches them.
+  const refreshProjects = useCallback(async () => {
+    const ledger = getActiveLedger();
+    if (!ledger || !ledger.startsWith('o_')) {
+      setProjects([]);
+      return;
+    }
+    try {
+      const res = await apiFetch<{ data: ApiProject[] }>('/projects?status=active');
+      setProjects(res.data ?? []);
+    } catch (err) {
+      console.warn('refreshProjects failed', err);
+      setProjects([]);
+    }
+  }, []);
 
   const buildWorkspaces = useCallback((p: Profile | null, orgList: OrgListItem[]): WorkspaceSummary[] => {
     if (!p) return [];
@@ -124,6 +159,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setActiveLedger(next);
       setActiveLedgerIdState(next);
 
+      // Pull projects whenever we've resolved the active ledger. The helper
+      // is a no-op on personal ledgers, so this is cheap to call here.
+      void refreshProjects();
+
       // Fire-and-forget push registration. We only call this once we know
       // the user is signed in (refresh() short-circuits on no token above).
       // The helper is idempotent + cached, so calling on every refresh is
@@ -132,7 +171,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.warn('AppData refresh failed', err);
     }
-  }, []);
+  }, [refreshProjects]);
 
   // Persist + apply a workspace switch. Server updates User.activeLedgerId
   // so future app launches restore the same workspace. The PATCH is
@@ -192,11 +231,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   return (
     <AppDataContext.Provider value={{
       categories,
+      projects,
       profile,
       workspaces,
       activeLedgerId: activeLedgerId ?? getActiveLedger(),
       switchLedger,
       refresh,
+      refreshProjects,
       dataVersion,
       bumpVersion,
       workspaceSheetOpen,

@@ -4,18 +4,23 @@
     "slug": "seshat-mobile",
     "version": "1.1.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brand/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "scheme": "seshat",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/brand/splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#0C0C0E"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.seshat.app",
+      "icon": {
+        "light": "./assets/brand/icon-light.png",
+        "dark": "./assets/brand/icon.png",
+        "tinted": "./assets/brand/icon-tinted.png"
+      },
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Seshat uses the microphone so you can talk to her instead of typing - describe a transaction by voice and she records it.",
         "NSPhotoLibraryUsageDescription": "Pick a profile photo from your library to use as your Seshat avatar.",
@@ -31,13 +36,28 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/brand/icon.png",
         "backgroundColor": "#0C0C0E"
       },
       "package": "com.seshat.app",
       "edgeToEdgeEnabled": true,
+      "allowBackup": false,
       "permissions": [
         "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "com.googleusercontent.apps.1051327904371-9i33rhse49f26j14h93jteaq8k68oipg"
+            }
+          ]
+        }
       ]
     },
     "web": {
@@ -63,17 +83,20 @@
           "android": {
             "extraGradleProperties": {
               "org.gradle.jvmargs": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC",
-              "kotlin.daemon.jvm.options": "-Xmx2048m"
+              "kotlin.daemon.jvm.options": "-Xmx2048m",
+              "org.gradle.parallel": "false"
             }
           }
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "extra": {
       "router": {},
       "eas": {
         "projectId": "b025e9cc-0fa5-4c52-ab52-88831101c28d"
-      }
+      },
+      "sentryDsn": "https://31f367cde39775c604d069691940e0c6@o4511474205458432.ingest.de.sentry.io/4511474257494096"
     },
     "owner": "radar-app",
     "runtimeVersion": {

@@ -45,6 +45,17 @@ export type MonthlyReport = {
     saved: number;
     percent: number;
   }[];
+  byProject: {
+    projectId: string | null;
+    name: string;
+    color?: string;
+    budget: number | null;
+    income: number;
+    expense: number;
+    net: number;
+    budgetPct: number | null;
+    countTx: number;
+  }[];
   narrative?: {
     en: ReportInsight;
     ar: ReportInsight;

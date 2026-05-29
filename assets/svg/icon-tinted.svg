@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- iOS 18 tinted icon: monochrome white-on-transparent, the system
+       re-colors it to whatever tint the user has chosen. No background
+       needed - iOS draws its own behind. Use mostly opaque whites. -->
+
+  <g transform="translate(512 512)">
+    <circle cx="0" cy="0" r="380" fill="none"
+            stroke="rgba(255,255,255,0.55)" stroke-width="3"/>
+    <path d="M 380 0 A 380 380 0 0 0 0 -380"
+          fill="none" stroke="rgba(255,255,255,1)" stroke-width="8"
+          stroke-linecap="round"/>
+    <path d="M 0 0 L 380 0 A 380 380 0 0 0 268.7 -268.7 Z"
+          fill="rgba(255,255,255,0.18)"/>
+
+    <circle cx="0" cy="0" r="190" fill="none"
+            stroke="rgba(255,255,255,0.55)" stroke-width="3"/>
+    <path d="M 190 0 A 190 190 0 0 0 0 -190"
+          fill="none" stroke="rgba(255,255,255,1)" stroke-width="6"
+          stroke-linecap="round"/>
+
+    <line x1="-380" y1="0" x2="380" y2="0"
+          stroke="rgba(255,255,255,0.28)" stroke-width="2"/>
+    <line x1="0" y1="-380" x2="0" y2="380"
+          stroke="rgba(255,255,255,0.28)" stroke-width="2"/>
+
+    <circle cx="0" cy="0" r="8" fill="rgba(255,255,255,1)"/>
+
+    <circle cx="268.7" cy="-268.7" r="44" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="268.7" cy="-268.7" r="22" fill="rgba(255,255,255,0.65)"/>
+    <circle cx="268.7" cy="-268.7" r="13" fill="rgba(255,255,255,1)"/>
+  </g>
+</svg>
