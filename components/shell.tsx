@@ -1,5 +1,6 @@
-import { ReactNode, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarChart3, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -328,13 +329,120 @@ export function RFAB({
         elevation: 8,
         zIndex: 30,
       })}
-      accessibilityLabel={recording ? 'Recording — release to send' : 'Add transaction'}
+      accessibilityLabel={recording ? 'Recording, release to send' : 'Add transaction'}
       accessibilityHint={onVoiceStart ? 'Tap to choose, long-press to speak to Seshat' : undefined}
     >
       {recording
         ? <Mic size={26} color="#0D0D0D" strokeWidth={2.2} />
         : <Plus size={26} color="#0D0D0D" strokeWidth={2.2} />}
     </Pressable>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Recording banner — top-of-screen confirmation while the FAB
+// long-press voice capture is hot.
+//
+// The FAB itself turns red, but the user's finger covers it, so
+// there is no visible confirmation the mic is live. This banner
+// sits under the status bar with a pulsing red dot, the release
+// instruction, and a live waveform so the user can see the clip
+// is being captured. It is purely presentational (pointerEvents
+// none) — the press lifecycle stays owned by the FAB / layout.
+// ─────────────────────────────────────────────────────────────
+export function RecordingBanner({ visible }: { visible: boolean }) {
+  const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
+  const [mounted, setMounted] = useState(visible);
+  const slide = useRef(new Animated.Value(0)).current; // 0 hidden → 1 shown
+  const dot = useRef(new Animated.Value(0)).current;
+
+  // Drive the slide-in on show and a slide-out on hide. We keep the node
+  // mounted through the exit animation, then unmount once it settles.
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.timing(slide, {
+        toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+      }).start();
+    } else if (mounted) {
+      Animated.timing(slide, {
+        toValue: 0, duration: 160, easing: Easing.in(Easing.cubic), useNativeDriver: true,
+      }).start(({ finished }) => { if (finished) setMounted(false); });
+    }
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pulsing red dot loop, only while the banner is on screen.
+  useEffect(() => {
+    if (!mounted) return;
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(dot, { toValue: 1, duration: 620, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      Animated.timing(dot, { toValue: 0, duration: 620, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!mounted) return null;
+
+  const translateY = slide.interpolate({ inputRange: [0, 1], outputRange: [-32, 0] });
+  const dotScale = dot.interpolate({ inputRange: [0, 1], outputRange: [1, 1.45] });
+  const dotOpacity = dot.interpolate({ inputRange: [0, 1], outputRange: [1, 0.35] });
+  const label = lang === 'ar' ? 'جارٍ التسجيل، اترك للإرسال' : 'Recording, release to send';
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute', top: insets.top + 8, left: 0, right: 0,
+        alignItems: 'center', zIndex: 50,
+        opacity: slide, transform: [{ translateY }],
+      }}
+    >
+      <View style={{
+        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+        alignItems: 'center', gap: 10,
+        backgroundColor: tok.alertBg,
+        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.alertText,
+        paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+      }}>
+        <Animated.View style={{
+          width: 9, height: 9, borderRadius: 999, backgroundColor: tok.alertText,
+          transform: [{ scale: dotScale }], opacity: dotOpacity,
+        }} />
+        <Text style={{
+          fontFamily: fontBody(lang, 'medium'), fontSize: 13, color: tok.bone,
+          writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+        }}>{label}</Text>
+        <Waveform color={tok.alertText} />
+      </View>
+    </Animated.View>
+  );
+}
+
+// Live waveform — five thin bars looping at staggered phases so the strip
+// reads as a moving level meter rather than a synced blink.
+function Waveform({ color }: { color: string }) {
+  const bars = useRef([0, 1, 2, 3, 4].map(() => new Animated.Value(0.4))).current;
+  useEffect(() => {
+    const loops = bars.map((v, i) => Animated.loop(Animated.sequence([
+      Animated.timing(v, { toValue: 1, duration: 340 + i * 60, delay: i * 70, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      Animated.timing(v, { toValue: 0.35, duration: 340 + i * 60, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+    ])));
+    loops.forEach((l) => l.start());
+    return () => loops.forEach((l) => l.stop());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, height: 16 }}>
+      {bars.map((v, i) => (
+        <Animated.View key={i} style={{
+          width: 3, height: 16, borderRadius: 999, backgroundColor: color,
+          transform: [{ scaleY: v }],
+        }} />
+      ))}
+    </View>
   );
 }
 

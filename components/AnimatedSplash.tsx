@@ -3,6 +3,7 @@ import { Animated, View, Text, Easing, Platform } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useI18n } from '../lib/i18n';
 import { fontHead, fontMono } from '../lib/fonts';
+import { BRAND } from '../lib/brand';
 
 /**
  * Animated splash that takes over from the static native splash and runs
@@ -201,7 +202,7 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
             letterSpacing: lang === 'ar' ? 0 : 14,
             textTransform: lang === 'ar' ? 'none' : 'uppercase',
           }}>
-            {lang === 'ar' ? 'سيشات' : 'SESHAT'}
+            {lang === 'ar' ? BRAND.nameAr : BRAND.name.toUpperCase()}
           </Text>
           <View style={{ height: 1, width: 80, backgroundColor: tok.gold, opacity: 0.5, marginTop: 12 }} />
         </Animated.View>

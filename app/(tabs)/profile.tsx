@@ -18,6 +18,8 @@ import { SetSalarySheet } from '../../components/SalaryBanner';
 import { resetTour } from '../../components/Tour';
 import { WorkspaceCard } from '../../components/WorkspaceSwitcher';
 import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
+import { BRAND } from '../../lib/brand';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
 
@@ -41,6 +43,15 @@ export default function ProfileScreen() {
   const [currency, setCurrency] = useState('EGP');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Dirty check: the save button is only enabled when the current form
+  // state differs from the last server-confirmed profile. Without this,
+  // the button was always active even with no changes to save.
+  const isDirty = profile != null && (
+    (displayName ?? '') !== (profile.displayName ?? '') ||
+    (lang ?? 'en') !== (profile.language ?? 'en') ||
+    (currency ?? 'EGP') !== (profile.currency ?? 'EGP')
+  );
   const [salaryOpen, setSalaryOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   // Workspace switcher modal state lives in AppData context (see opener
@@ -466,7 +477,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={{ marginTop: 22 }}>
-          <RButton full onPress={handleSave} disabled={saving}>
+          <RButton full onPress={handleSave} disabled={!isDirty || saving}>
             {saving ? t('saving') : saved ? t('saved') : t('saveChanges')}
           </RButton>
         </View>
@@ -641,6 +652,12 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
         )}
+
+        {/* Build identity footer. Shows app version + the EAS update ID
+            so the user can confirm an OTA actually landed. The update ID
+            changes every push; if you tap "Check for updates" above and
+            the ID here doesn't change, you're already on the latest. */}
+        <BuildFooter />
       </ScrollView>
 
       <SetSalarySheet
@@ -653,6 +670,47 @@ export default function ProfileScreen() {
 
       {/* WorkspaceSheet is mounted globally at the tabs layout level so
           it can be summoned from any screen via openWorkspaceSheet(). */}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// BuildFooter — debug/test build identity at the bottom of profile.
+// Shows brand name + version + 6-char update id + channel so the
+// user can verify which bundle is running on the device. Especially
+// useful while iterating on OTAs.
+// ─────────────────────────────────────────────────────────────
+function BuildFooter() {
+  const { tok, lang } = useI18n();
+  const appVersion = Constants.expoConfig?.version ?? '0.0.0';
+  // updateId is a UUID; the first 6 chars are unique enough to spot
+  // when a fresh OTA has landed without dumping a long string.
+  const updateShort = Updates.updateId
+    ? Updates.updateId.split('-')[0]
+    : (Updates.isEmbeddedLaunch ? 'embedded' : 'dev');
+  const channel = Updates.channel ?? 'dev';
+  const createdAt = Updates.createdAt
+    ? new Date(Updates.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+      })
+    : null;
+  return (
+    <View style={{ marginTop: 40, alignItems: 'center', gap: 4 }}>
+      <Text style={{
+        color: tok.muted,
+        fontFamily: fontMono('regular'),
+        fontSize: 10, letterSpacing: 1.4,
+        textTransform: lang === 'ar' ? 'none' : 'uppercase',
+      }}>
+        {BRAND.name} · v{appVersion}
+      </Text>
+      <Text style={{
+        color: tok.muted,
+        fontFamily: fontMono('regular'),
+        fontSize: 9, letterSpacing: 0.6, opacity: 0.7,
+      }}>
+        {channel} · {updateShort}{createdAt ? ` · ${createdAt}` : ''}
+      </Text>
     </View>
   );
 }

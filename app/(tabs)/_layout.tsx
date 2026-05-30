@@ -7,7 +7,8 @@ import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { apiFetch, newIdempotencyKey } from '../../lib/api';
 import { fontMono } from '../../lib/fonts';
-import { RFAB } from '../../components/shell';
+import * as Haptics from 'expo-haptics';
+import { RFAB, RecordingBanner } from '../../components/shell';
 import { AddTransactionSheet, type AddTxPayload, type AddTxPrefill } from '../../components/AddTransactionSheet';
 import { AddOptionsSheet } from '../../components/AddOptionsSheet';
 import { RToast } from '../../components/ui';
@@ -40,6 +41,17 @@ export default function TabsLayout() {
   // the Seshat tab, and we still own the recording instance). useRecorder is
   // careful to clean up on unmount, so worst-case the press is cancelled.
   const fabRecorder = useRecorder();
+
+  // Drives the top-of-screen RecordingBanner. The FAB owns its own red
+  // visual, but the finger covers it, so this is the only confirmation the
+  // user can actually see while holding to record.
+  const [voiceRecording, setVoiceRecording] = useState(false);
+
+  // Haptics are guarded: expo-haptics may not be in an older installed
+  // binary, and a missing native module would otherwise throw mid-press.
+  const haptic = (fn: () => Promise<unknown>) => {
+    try { fn().catch(() => {}); } catch { /* native module absent → no-op */ }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -168,12 +180,18 @@ export default function TabsLayout() {
             // navigate yet so the user keeps holding on the FAB (sliding the
             // finger off cancels). On iOS the permission prompt fires here
             // the very first time; subsequent presses are silent.
-            await fabRecorder.start();
+            haptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+            setVoiceRecording(true);
+            const ok = await fabRecorder.start();
+            // Permission denied / mic failed → pull the banner back down.
+            if (!ok) setVoiceRecording(false);
           }}
           onVoiceRelease={async () => {
             // Release → stop, transcribe, navigate to Seshat with the
             // transcript as the initial message. The Seshat screen's
             // initialText effect auto-sends it on mount.
+            haptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+            setVoiceRecording(false);
             const audio = await fabRecorder.stop();
             if (!audio) return;
             try {
@@ -195,10 +213,14 @@ export default function TabsLayout() {
           }}
           onVoiceCancel={() => {
             // Finger left the button mid-recording → throw the clip away.
+            haptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning));
+            setVoiceRecording(false);
             void fabRecorder.cancel();
           }}
         />
       )}
+
+      <RecordingBanner visible={voiceRecording} />
 
       <RToast visible={!!toast}>{toast ?? ''}</RToast>
 

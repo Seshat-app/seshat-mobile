@@ -917,6 +917,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           <AddBySeshatPanel
             visible={addBySeshatOpen}
             initialText={addBySeshatText}
+            categories={categories}
+            defaultCurrency={defaultCurrency}
             onClose={() => {
               setAddBySeshatOpen(false);
               setAddBySeshatText('');
