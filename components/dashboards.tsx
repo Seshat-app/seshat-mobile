@@ -6,7 +6,7 @@ import { useI18n, monthYear } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RCard, REyebrow, RAmount, RProgress, RStatus } from './ui';
 import { SectionHeader, RTxRow, type TxRowData } from './shell';
-import { RadarMark } from './RadarMark';
+import { SeshatMark } from './SeshatMark';
 import { catIdFromName, catLabel } from '../lib/categoryMap';
 
 export type DashboardData = {
@@ -107,7 +107,7 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 8, marginBottom: 10,
       }}>
-        <RadarMark size={16} gold={tok.gold} lightRing animate={false} />
+        <SeshatMark size={16} gold={tok.gold} lightRing animate={false} />
         <Text style={{
           fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 2,
           color: tok.gold, textTransform: 'uppercase',
@@ -287,7 +287,7 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
 }
 
 // ─────────────────────────────────────────────────────────────
-// HUD (Dashboard B) — the radar mark scaled to a full instrument
+// HUD (Dashboard B) — the Seshat mark scaled to a full instrument
 // ─────────────────────────────────────────────────────────────
 export function DashboardHud({ data, currency }: { data: DashboardData; currency: string }) {
   const { tok, lang, t } = useI18n();
@@ -325,7 +325,7 @@ export function DashboardHud({ data, currency }: { data: DashboardData; currency
           <REyebrow color={tok.gold}>● live</REyebrow>
         </View>
 
-        {/* Radar SVG */}
+        {/* Mark SVG */}
         <View style={{ height: SIZE, marginTop: 4, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
           <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute', top: 0, left: 0 }}>
             {/* rings */}

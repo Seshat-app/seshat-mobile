@@ -7,9 +7,9 @@ import { BRAND } from '../lib/brand';
 
 /**
  * Animated splash that takes over from the static native splash and runs
- * a single radar-sweep animation before fading out and revealing the app.
+ * a single sweep animation before fading out and revealing the app.
  *
- * Geometry intentionally mirrors the RadarMark component (cx/cy = 0,
+ * Geometry intentionally mirrors the SeshatMark component (cx/cy = 0,
  * outer radius = 380, inner = 190, NE blip at -45 deg) so the transition
  * to the in-app brand mark feels continuous - the user's eye doesn't
  * "jump" when the splash ends.
@@ -215,7 +215,7 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
             letterSpacing: 3.6,
             textTransform: 'uppercase',
           }}>
-            {lang === 'ar' ? 'رادار أموالك' : 'AI · FINANCE COACH'}
+            {lang === 'ar' ? 'مساعدك المالي' : 'AI · FINANCE COACH'}
           </Text>
         </Animated.View>
       </Animated.View>

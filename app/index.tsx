@@ -14,7 +14,7 @@ import {
   AuthChrome, AuthHero, AuthField, AuthLink, AuthBackLink, AuthError, RButton,
   SSOButton, AuthOr,
 } from '../components/auth';
-import { RadarMark } from '../components/RadarMark';
+import { SeshatMark } from '../components/SeshatMark';
 
 // Required for expo-auth-session to dismiss the in-app browser cleanly after
 // the OAuth provider redirects back to the app. Safe to call at module scope.
@@ -552,7 +552,7 @@ export default function AuthRouter() {
         sub={lang === 'ar' ? 'الحد الأدنى 8 أحرف.' : 'At least 8 characters.'}
       />
       <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-        <RadarMark size={92} gold={tok.gold} lightRing />
+        <SeshatMark size={92} gold={tok.gold} lightRing />
       </View>
       <Text style={{
         color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10,

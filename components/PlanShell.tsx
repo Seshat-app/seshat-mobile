@@ -10,7 +10,7 @@ import { RefreshSpinner } from './shell';
 import { WorkspaceChip } from './WorkspaceSwitcher';
 
 // Shared top chrome for Budgets / Goals / Debts: back arrow, title, subtitle,
-// optional + action, and (when refreshing) a small spinning radar mark.
+// optional + action, and (when refreshing) a small spinning Seshat mark.
 export function PlanScreen({
   title, subtitle, onAdd, refreshing, children,
 }: { title: string; subtitle?: string; onAdd?: () => void; refreshing?: boolean; children: ReactNode }) {

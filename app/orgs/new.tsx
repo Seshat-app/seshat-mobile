@@ -86,7 +86,7 @@ export default function NewOrgScreen() {
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder={lang === 'ar' ? 'مثل: شركة الرادار' : 'e.g. Acme Corp'}
+          placeholder={lang === 'ar' ? 'مثل: شركة أكمي' : 'e.g. Acme Corp'}
           placeholderTextColor={tok.muted}
           autoFocus
           maxLength={80}

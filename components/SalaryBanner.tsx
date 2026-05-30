@@ -15,8 +15,8 @@ export function SalaryBanner({ onPress }: { onPress: () => void }) {
   const { tok, lang, t } = useI18n();
   const headline = lang === 'ar' ? 'حدّد راتبك الشهري' : 'Set your monthly salary';
   const sub = lang === 'ar'
-    ? 'حتى يعرف رادار ما الذي يجب أن يراقبه.'
-    : "So Radar knows what to watch over.";
+    ? 'حتى تعرف سيشات ما الذي يجب أن تراقبه.'
+    : "So Seshat knows what to watch over.";
   return (
     <Pressable
       onPress={onPress}
@@ -147,8 +147,8 @@ export function SetSalarySheet({
               textAlign: lang === 'ar' ? 'right' : 'left', lineHeight: 19,
             }}>
               {lang === 'ar'
-                ? 'سيقارن رادار صرفك بهذا الرقم. تقدر تعدّله متى ما شئت.'
-                : "Radar compares your spending against this number. You can change it anytime."}
+                ? 'ستقارن سيشات صرفك بهذا الرقم. تقدر تعدّله متى ما شئت.'
+                : "Seshat compares your spending against this number. You can change it anytime."}
             </Text>
 
             <View style={{

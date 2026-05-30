@@ -5,7 +5,7 @@ import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { hasToken } from '../../lib/api';
 import { acceptInvite } from '../../lib/orgs';
-import { RadarMark } from '../../components/RadarMark';
+import { SeshatMark } from '../../components/SeshatMark';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 
 type Status = 'pending' | 'success' | 'error' | 'needs-auth';
@@ -75,7 +75,7 @@ export default function AcceptInviteScreen() {
       alignItems: 'center', justifyContent: 'center',
       paddingHorizontal: 32,
     }}>
-      <RadarMark size={64} gold={tok.gold} lightRing />
+      <SeshatMark size={64} gold={tok.gold} lightRing />
 
       {status === 'pending' && (
         <>

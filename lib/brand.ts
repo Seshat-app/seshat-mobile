@@ -7,14 +7,17 @@
  * When the name changes, edit BRAND.name + BRAND.nameAr here AND in the
  * web mirror. Two-file commit, zero hunting through screens.
  *
- * Working name: "Mizan" (Arabic: ميزان, meaning "balance/scale"). The
- * radar mark + gold accent stay; the wordmark + page copy reference
- * this file.
+ * Product: "Seshat" (Arabic: "سيشات"). The AI assistant inside Seshat is
+ * "Maat" (Arabic: "ماعت"), read it from BRAND.aiName. The crosshair mark +
+ * gold accent carry the identity; the wordmark + copy reference this file.
  */
 
 export type BrandConfig = {
   name: string;
   nameAr: string;
+  // AI assistant name (distinct from the product).
+  aiName: string;
+  aiNameAr: string;
   tagline: string;
   taglineAr: string;
   domain: string;
@@ -33,15 +36,16 @@ export type BrandConfig = {
 
 export const BRAND: BrandConfig = {
   // Product name. The mobile splash, navbar, profile screen, monthly
-  // report header all read this. "Seshat" stays as the AI assistant's
-  // name; only the PRODUCT renames here.
-  name: 'Radar',
-  nameAr: 'رادار',
+  // report header all read this. The AI assistant is "Maat" (BRAND.aiName).
+  name: 'Seshat',
+  nameAr: 'سيشات',
+  aiName: 'Maat',
+  aiNameAr: 'ماعت',
   tagline: '',
   taglineAr: '',
   domain: 'seshat.site',
   supportEmail: 'hello@seshat.site',
-  legalName: 'Radar',
+  legalName: 'Seshat',
   founderName: "Mo'men Khaled",
   social: {
     instagram: '',

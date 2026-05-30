@@ -8,7 +8,7 @@ export type Lang = 'en' | 'ar';
 type Strings = Record<string, string>;
 
 const EN: Strings = {
-  appName: 'Radar',
+  appName: 'Seshat',
   seshat: 'Seshat',
   greetingMorning: 'Good morning',
   greetingAfternoon: 'Good afternoon',
@@ -64,7 +64,7 @@ const EN: Strings = {
   light: 'Light',
   mayShort: 'May',
   // Auth
-  authVersion: 'Radar · v1.0',
+  authVersion: 'Seshat · v1.0',
   loginTitle: 'Welcome back.',
   loginSub: 'Nothing flies under.',
   registerTitle: "Let's start watching.",
@@ -83,10 +83,10 @@ const EN: Strings = {
   forgotIt: 'Forgot it?',
   backToSignIn: 'Back to sign in',
   noAccount: "Don't have an account?",
-  haveAccount: 'Already on Radar?',
+  haveAccount: 'Already on Seshat?',
   signUp: 'Sign up',
   or: 'or',
-  emailPlaceholder: 'name@radar.app',
+  emailPlaceholder: 'name@seshat.site',
   namePlaceholder: 'Your name',
   passwordPlaceholder: '8+ characters',
   termsCopy: 'By continuing you accept the Terms and Privacy Policy.',
@@ -109,11 +109,11 @@ const EN: Strings = {
   somethingWrong: 'Something went wrong. Try again.',
   signInFirst: 'Please sign in first.',
   notEnoughData: 'Not enough data yet.',
-  notEnoughDataSub: 'Add a few transactions and the radar activates.',
+  notEnoughDataSub: 'Add a few transactions and Seshat starts watching.',
 };
 
 const AR: Strings = {
-  appName: 'رادار',
+  appName: 'سيشات',
   seshat: 'سيشات',
   greetingMorning: 'صباح الخير',
   greetingAfternoon: 'مساء الخير',
@@ -169,9 +169,9 @@ const AR: Strings = {
   light: 'فاتح',
   mayShort: 'مايو',
   // Auth
-  authVersion: 'رادار · إصدار ١٫٠',
+  authVersion: 'سيشات · إصدار ١٫٠',
   loginTitle: 'أهلاً بعودتك.',
-  loginSub: 'لا شيء يفوت الرادار.',
+  loginSub: 'لا شيء يفوت سيشات.',
   registerTitle: 'لنبدأ المراقبة.',
   registerSub: 'ثلاثة حقول. ثم تتولّى سيشات.',
   forgotTitle: 'ما بريدكِ الإلكتروني؟',
@@ -191,7 +191,7 @@ const AR: Strings = {
   haveAccount: 'لديكِ حساب بالفعل؟',
   signUp: 'إنشاء',
   or: 'أو',
-  emailPlaceholder: 'name@radar.app',
+  emailPlaceholder: 'name@seshat.site',
   namePlaceholder: 'اسمك',
   passwordPlaceholder: '٨+ أحرف',
   termsCopy: 'بالمتابعة أنتِ توافقين على الشروط وسياسة الخصوصية.',
@@ -214,7 +214,7 @@ const AR: Strings = {
   somethingWrong: 'حدث خطأ. حاولي مرة أخرى.',
   signInFirst: 'يجب تسجيل الدخول أولاً.',
   notEnoughData: 'لا توجد بيانات كافية بعد.',
-  notEnoughDataSub: 'أضف بعض المعاملات ليبدأ الرادار.',
+  notEnoughDataSub: 'أضف بعض المعاملات لتبدأ سيشات.',
 };
 
 type Ctx = {

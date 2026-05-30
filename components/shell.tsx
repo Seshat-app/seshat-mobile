@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarChart3, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RadarMark } from './RadarMark';
+import { SeshatMark } from './SeshatMark';
 import { REyebrow, RAmount } from './ui';
 import { WorkspaceChip } from './WorkspaceSwitcher';
 import { CategoryIcon, CategoryIconByKey } from './icons';
@@ -39,7 +39,7 @@ export function RViewSwitcher({ value, onChange }: { value: DashView; onChange: 
 }
 
 // ─────────────────────────────────────────────────────────────
-// Home header — greeting + view switcher + animated Radar mark
+// Home header — greeting + view switcher + animated Seshat mark
 // ─────────────────────────────────────────────────────────────
 export function RHomeHeader({
   userName, view, onViewChange, refreshing,
@@ -75,7 +75,7 @@ export function RHomeHeader({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <RViewSwitcher value={view} onChange={onViewChange} />
           <View style={{ width: 1, height: 18, backgroundColor: tok.border }} />
-          <RadarMark
+          <SeshatMark
             size={28}
             gold={tok.gold}
             lightRing
@@ -91,14 +91,14 @@ export function RHomeHeader({
 }
 
 // ─────────────────────────────────────────────────────────────
-// RefreshSpinner — small spinning RadarMark used as a refresh
+// RefreshSpinner — small spinning SeshatMark used as a refresh
 // indicator on screens that don't already have a header mark.
 // Drop it next to the screen title; pass `refreshing` from state.
 // ─────────────────────────────────────────────────────────────
 export function RefreshSpinner({ refreshing, size = 22 }: { refreshing: boolean; size?: number }) {
   const { tok } = useI18n();
   if (!refreshing) return null;
-  return <RadarMark size={size} gold={tok.gold} lightRing spinning />;
+  return <SeshatMark size={size} gold={tok.gold} lightRing spinning />;
 }
 
 // ─────────────────────────────────────────────────────────────

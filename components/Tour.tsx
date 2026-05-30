@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RadarMark } from './RadarMark';
+import { SeshatMark } from './SeshatMark';
 
 // First-launch spotlight tour. Each step (after a centered welcome) dims the
 // whole screen except a rectangle around the UI element being explained, with
@@ -261,10 +261,10 @@ export function Tour({ visible, onClose }: { visible: boolean; onClose: () => vo
             </Pressable>
           </View>
 
-          {/* Welcome step gets the RadarMark; the rest are tight and focused */}
+          {/* Welcome step gets the SeshatMark; the rest are tight and focused */}
           {!targetRect && (
             <View style={{ alignItems: 'center', paddingVertical: 4 }}>
-              <RadarMark size={56} gold={tok.gold} lightRing />
+              <SeshatMark size={56} gold={tok.gold} lightRing />
             </View>
           )}
 

@@ -23,7 +23,7 @@ function RootStack() {
   // root-level sub-screens like /budgets, /orgs/:id, /reports, /reminders,
   // etc.) can open it via openWorkspaceSheet() from AppData context.
   const { workspaceSheetOpen, closeWorkspaceSheet } = useAppData();
-  // Animated splash gate. Plays a one-shot radar-sweep animation on top of
+  // Animated splash gate. Plays a one-shot mark animation on top of
   // the app on first launch, then fades to reveal the routed content
   // underneath. The native static splash (from app.json) covers the very
   // first 200-400 ms before this component is mounted; this picks up from

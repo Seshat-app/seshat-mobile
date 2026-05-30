@@ -9,7 +9,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RButton, REyebrow } from './ui';
-import { RadarMark } from './RadarMark';
+import { SeshatMark } from './SeshatMark';
+import { brandName } from '../lib/brand';
 
 // ─────────────────────────────────────────────────────────────
 // Shared chrome for all auth screens
@@ -37,12 +38,12 @@ export function AuthChrome({
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           alignItems: 'center', gap: 10,
         }}>
-          <RadarMark size={20} gold={tok.gold} lightRing />
+          <SeshatMark size={20} gold={tok.gold} lightRing />
           <Text style={{
             // Syne ExtraBold for the wordmark - loaded in _layout.tsx
             fontFamily: 'Syne_800ExtraBold',
             fontSize: 14, color: tok.gold, letterSpacing: -0.6,
-          }}>Radar</Text>
+          }}>{brandName(lang)}</Text>
         </View>
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
