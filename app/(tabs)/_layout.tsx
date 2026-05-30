@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Tabs, useSegments, withLayoutContext } from 'expo-router';
+import { Tabs, useSegments, withLayoutContext, router } from 'expo-router';
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { Home as HomeIcon, List, Sparkles, User } from 'lucide-react-native';
 import { useI18n } from '../../lib/i18n';
@@ -12,6 +12,7 @@ import { AddTransactionSheet, type AddTxPayload, type AddTxPrefill } from '../..
 import { AddOptionsSheet } from '../../components/AddOptionsSheet';
 import { RToast } from '../../components/ui';
 import { Tour, hasTourBeenSeen } from '../../components/Tour';
+import { useRecorder } from '../../components/useRecorder';
 
 // On iOS we use react-native-bottom-tabs' native UITabBar (renders as Liquid
 // Glass on iOS 26+, regular blur on 17/18). On Android we keep the JS Tabs
@@ -33,6 +34,12 @@ export default function TabsLayout() {
   const [sheetPrefill, setSheetPrefill] = useState<AddTxPrefill | undefined>(undefined);
   const [toast, setToast] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+
+  // FAB long-press → voice flow: recorder lives at the layout level so the
+  // mic stays alive across navigation (the user can hold the FAB, release on
+  // the Seshat tab, and we still own the recording instance). useRecorder is
+  // careful to clean up on unmount, so worst-case the press is cancelled.
+  const fabRecorder = useRecorder();
 
   useEffect(() => {
     let alive = true;
@@ -153,7 +160,45 @@ export default function TabsLayout() {
         </Tabs>
       )}
 
-      {!hideFab && <RFAB onPress={() => setOptionsOpen(true)} />}
+      {!hideFab && (
+        <RFAB
+          onPress={() => setOptionsOpen(true)}
+          onVoiceStart={async () => {
+            // Long-press detected → kick off the mic immediately. We do NOT
+            // navigate yet so the user keeps holding on the FAB (sliding the
+            // finger off cancels). On iOS the permission prompt fires here
+            // the very first time; subsequent presses are silent.
+            await fabRecorder.start();
+          }}
+          onVoiceRelease={async () => {
+            // Release → stop, transcribe, navigate to Seshat with the
+            // transcript as the initial message. The Seshat screen's
+            // initialText effect auto-sends it on mount.
+            const audio = await fabRecorder.stop();
+            if (!audio) return;
+            try {
+              const res = await apiFetch<{ data: { transcript: string } }>('/voice/transcribe', {
+                method: 'POST',
+                body: JSON.stringify(audio),
+              });
+              const text = res.data.transcript?.trim();
+              if (!text) return;
+              router.push({
+                pathname: '/seshat/[id]',
+                params: { id: 'new', text },
+              });
+            } catch (err) {
+              console.warn('[fab voice] transcribe failed', err);
+              setToast(lang === 'ar' ? 'تعذر الإرسال' : 'Could not send');
+              setTimeout(() => setToast(null), 2400);
+            }
+          }}
+          onVoiceCancel={() => {
+            // Finger left the button mid-recording → throw the clip away.
+            void fabRecorder.cancel();
+          }}
+        />
+      )}
 
       <RToast visible={!!toast}>{toast ?? ''}</RToast>
 

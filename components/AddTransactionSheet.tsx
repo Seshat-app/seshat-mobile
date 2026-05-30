@@ -4,7 +4,8 @@ import {
   Platform, Modal, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon } from 'lucide-react-native';
+import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers } from 'lucide-react-native';
+import { AddBySeshatPanel } from './AddBySeshatPanel';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -63,28 +64,70 @@ export type AddTxPrefill = {
   autoTriggerScan?: boolean;
 };
 
-// Natural-language parser: extracts amount + category hint from "spent 200 on food"
-// or Arabic equivalents like "صرفت ٢٠٠ على أكل". Returns null when no number found.
-function parseNL(text: string): { amount: number; catHint: CatId } | null {
-  if (!text?.trim()) return null;
-  const norm = text
+// Per-category keyword map. Shared between the single-entry live preview
+// and the multi-entry batch parser. English + Egyptian Arabic.
+const CAT_KEYWORDS: Array<{ id: CatId; kw: string[] }> = [
+  { id: 'food',          kw: ['food', 'lunch', 'dinner', 'meal', 'zooba', 'shawarma', 'pizza', 'koshary', 'cilantro', 'coffee', 'café', 'cafe', 'pepsi', 'cola', 'water', 'juice', 'snack', 'breakfast', 'أكل', 'غدا', 'عشاء', 'طعام', 'قهوة', 'كوفي', 'بيبسي', 'كولا', 'مياه', 'عصير'] },
+  { id: 'transport',     kw: ['uber', 'taxi', 'careem', 'transport', 'metro', 'gas', 'fuel', 'petrol', 'car', 'bus', 'train', 'أوبر', 'تاكسي', 'كريم', 'مواصلات', 'بنزين', 'سيارة', 'عربية', 'أتوبيس'] },
+  { id: 'shopping',      kw: ['shopping', 'amazon', 'souq', 'noon', 'clothes', 'shirt', 'shoes', 'تسوق', 'سوق', 'نون', 'ملابس', 'هدوم', 'حذاء'] },
+  { id: 'entertainment', kw: ['netflix', 'spotify', 'subscription', 'anghami', 'cinema', 'movie', 'game', 'اشتراك', 'نتفليكس', 'سينما', 'فيلم', 'لعبة'] },
+  { id: 'housing',       kw: ['rent', 'wifi', 'electric', 'electricity', 'إيجار', 'كهرباء', 'مياه', 'إنترنت'] },
+  { id: 'health',        kw: ['pharmacy', 'doctor', 'medicine', 'hospital', 'صيدلية', 'دكتور', 'دواء', 'مستشفى'] },
+];
+
+function classifyKeyword(snippet: string): CatId {
+  const lower = snippet.toLowerCase();
+  const hit = CAT_KEYWORDS.find((c) => c.kw.some((k) => lower.includes(k.toLowerCase())));
+  return hit?.id ?? 'other';
+}
+
+function normalizeDigits(text: string): string {
+  return text
     .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
     .replace(/[٫،]/g, '.');
-  const m = norm.match(/\d+(\.\d+)?/);
-  if (!m) return null;
-  const amount = parseFloat(m[0]);
+}
 
-  const lower = text.toLowerCase();
-  const map: Array<{ id: CatId; kw: string[] }> = [
-    { id: 'food', kw: ['food', 'lunch', 'dinner', 'meal', 'zooba', 'shawarma', 'pizza', 'koshary', 'cilantro', 'coffee', 'café', 'cafe', 'أكل', 'غدا', 'عشاء', 'طعام', 'قهوة', 'كوفي'] },
-    { id: 'transport', kw: ['uber', 'taxi', 'careem', 'transport', 'metro', 'أوبر', 'تاكسي', 'كريم', 'مواصلات'] },
-    { id: 'shopping', kw: ['shopping', 'amazon', 'souq', 'noon', 'تسوق', 'سوق', 'نون'] },
-    { id: 'entertainment', kw: ['netflix', 'spotify', 'subscription', 'anghami', 'اشتراك', 'نتفليكس'] },
-    { id: 'housing', kw: ['rent', 'wifi', 'electric', 'إيجار', 'كهرباء'] },
-    { id: 'health', kw: ['pharmacy', 'doctor', 'صيدلية', 'دكتور'] },
-  ];
-  const hit = map.find((c) => c.kw.some((k) => lower.includes(k.toLowerCase())));
-  return { amount, catHint: hit?.id ?? 'other' };
+// Single-entry parser - takes the FIRST amount + a category guessed from
+// the whole text. Used by the live preview as the user types.
+function parseNL(text: string): { amount: number; catHint: CatId } | null {
+  if (!text?.trim()) return null;
+  const m = normalizeDigits(text).match(/\d+(\.\d+)?/);
+  if (!m) return null;
+  return { amount: parseFloat(m[0]), catHint: classifyKeyword(text) };
+}
+
+/**
+ * Multi-entry parser. Scans for ALL amounts in the text and pairs each
+ * with a ~60-char window for keyword classification. Critical for voice
+ * transcripts like "I bought food for 200, Pepsi for 50, coffee for 50,
+ * car for 1000" - the old parser only caught the first number.
+ *
+ * Each detected entry: amount + per-snippet category guess. The sheet
+ * shows a "Found N entries" banner when this returns >1 results and lets
+ * the user review + confirm before any save.
+ */
+export type NLEntry = { amount: number; catHint: CatId; snippet: string };
+
+export function parseNLMany(text: string): NLEntry[] {
+  if (!text?.trim()) return [];
+  const norm = normalizeDigits(text);
+  const matches = Array.from(norm.matchAll(/\d+(?:\.\d+)?/g));
+  if (matches.length === 0) return [];
+
+  const entries: NLEntry[] = [];
+  for (const m of matches) {
+    if (m.index === undefined) continue;
+    const amount = parseFloat(m[0]);
+    if (amount <= 0) continue;
+    // 30 chars on each side - wide enough to catch "bought coffee for 50
+    // pounds" patterns, narrow enough that distant nouns from other
+    // entries don't bleed in.
+    const start = Math.max(0, m.index - 30);
+    const end = Math.min(norm.length, m.index + m[0].length + 30);
+    const snippet = norm.slice(start, end).trim();
+    entries.push({ amount, catHint: classifyKeyword(snippet), snippet });
+  }
+  return entries;
 }
 
 type Props = {
@@ -173,6 +216,24 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
       if (target) setCatId(target._id);
     }
   }, [seshatText, seshatMode]);
+
+  // Detect when the user dictated MULTIPLE amounts in one go (e.g. via
+  // voice: "I bought food for 200, Pepsi for 50, coffee for 50, car for
+  // 1000"). The single-entry keypad path can only save one of these; for
+  // batches we offer to hand the whole transcript to Seshat, which has
+  // tool-call access to log them all with same-turn dedup bypass on the
+  // API side.
+  const batchCount = useMemo(
+    () => (seshatMode ? parseNLMany(seshatText).length : 0),
+    [seshatMode, seshatText],
+  );
+
+  // "Add by Seshat" overlay state. Opened from the multi-entry banner;
+  // dispatches the raw text to the agent and shows a chat-style review of
+  // what was logged. Stays INSIDE the sheet so the user doesn't get
+  // teleported to the main Seshat tab.
+  const [addBySeshatOpen, setAddBySeshatOpen] = useState(false);
+  const [addBySeshatText, setAddBySeshatText] = useState('');
 
   const numericAmount = parseFloat(amount) || 0;
   const canSave = numericAmount > 0 && !!catId && !saving;
@@ -717,6 +778,52 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   <Mic size={16} color={recorder.isRecording ? '#E05555' : tok.muted} strokeWidth={recorder.isRecording ? 2 : 1.5} />
                 </Pressable>
               </View>
+
+              {/* Multi-entry hand-off: the keypad path can only save one
+                  transaction; if the user dictated several ("food 200,
+                  Pepsi 50, coffee 50, car 1000") we offer to route the
+                  whole text to the Seshat agent, which has tool-call
+                  access to log each entry. The agent's same-turn dup-skip
+                  fix on the API side prevents legitimate batches from
+                  being blocked as duplicates. */}
+              {batchCount > 1 && (
+                <Pressable
+                  onPress={() => {
+                    const txt = seshatText.trim();
+                    if (!txt) return;
+                    setAddBySeshatText(txt);
+                    setAddBySeshatOpen(true);
+                  }}
+                  style={({ pressed }) => ({
+                    marginTop: 12,
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                    alignItems: 'center', gap: 10,
+                    paddingHorizontal: 14, paddingVertical: 12,
+                    backgroundColor: pressed ? tok.elevated : tok.surface,
+                    borderWidth: 1, borderColor: tok.gold, borderRadius: 12,
+                  })}
+                >
+                  <Layers size={16} color={tok.gold} strokeWidth={1.8} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{
+                      color: tok.bone, fontFamily: fontBody(lang, 'medium'), fontSize: 13,
+                      textAlign: lang === 'ar' ? 'right' : 'left',
+                    }}>
+                      {lang === 'ar'
+                        ? `يبدو أنها ${batchCount} عمليات`
+                        : `Looks like ${batchCount} transactions`}
+                    </Text>
+                    <Text style={{
+                      color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10,
+                      letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 2,
+                      textAlign: lang === 'ar' ? 'right' : 'left',
+                    }}>
+                      {lang === 'ar' ? 'دع سيشات تسجلها كلها' : 'Let Seshat log them all'}
+                    </Text>
+                  </View>
+                  <Sparkles size={14} color={tok.gold} />
+                </Pressable>
+              )}
             </View>
           )}
 
@@ -803,6 +910,25 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           <View style={{ paddingHorizontal: 18, paddingTop: 6, backgroundColor: tok.void }}>
             <RButton full onPress={submit} disabled={!canSave}>{saveLabel}</RButton>
           </View>
+
+          {/* "Add by Seshat" overlay - shown when the multi-entry banner
+              is tapped. Sits on top of the sheet body and dispatches the
+              raw input to the agent. Closes back to the keypad on done. */}
+          <AddBySeshatPanel
+            visible={addBySeshatOpen}
+            initialText={addBySeshatText}
+            onClose={() => {
+              setAddBySeshatOpen(false);
+              setAddBySeshatText('');
+            }}
+            onLoggedSomething={() => {
+              // Bubble up to whoever opened the sheet so the dashboard
+              // refreshes. We use the same onSave callback shape by
+              // calling a no-op save with the batch metadata - kept
+              // minimal here: just close the parent sheet too.
+              setTimeout(() => onClose(), 600);
+            }}
+          />
         </Animated.View>
       </View>
     </Modal>

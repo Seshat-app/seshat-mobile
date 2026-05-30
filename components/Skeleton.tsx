@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, View, StyleSheet, ViewStyle } from 'react-native';
 import { useI18n } from '../lib/i18n';
+import { radius as r } from '../lib/theme';
 
 // ─────────────────────────────────────────────────────────────
 // Skeleton — a shimmering placeholder block. Use it while data
@@ -50,7 +51,7 @@ export function SkeletonCard({ height = 120, style }: { height?: number; style?:
           backgroundColor: tok.surface,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: tok.border,
-          borderRadius: 12,
+          borderRadius: r.card,
           padding: 20,
           height,
           justifyContent: 'space-between',

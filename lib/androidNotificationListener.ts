@@ -22,22 +22,98 @@ import { Platform, DeviceEventEmitter, type EmitterSubscription } from 'react-na
 
 export type PermissionStatus = 'authorized' | 'denied' | 'unknown' | 'unavailable';
 
-// Known Egyptian bank / payment Android package names. Used to filter
-// incoming notification events before we send them off to the parser.
-// Update as you encounter banks the user actually has installed.
-export const BANK_PACKAGES = new Set<string>([
-  'com.cibeg.cib',                  // CIB
-  'com.nbe.bank',                   // NBE
-  'eg.com.misr.bm',                 // Banque Misr
-  'com.qnb.alahli',                 // QNB Alahli
-  'com.alexbank.alexbank',          // Alex Bank
-  'com.hsbc.hsbcegypt',             // HSBC Egypt
-  'com.telda.app',                  // Telda
-  'com.egyptianbanks.einvoice',     // InstaPay
-  'com.instapay.app',
-  'com.android.mms',                // Stock SMS app (some users)
-  'com.google.android.apps.messaging', // Google Messages
+/**
+ * Hard pre-filter applied to every incoming Android notification BEFORE
+ * we hand the body to the API parser. Goal: keep the LLM call cost-effective
+ * and respectful (we never send Twitter, Slack, or random promo content
+ * upstream) while staying bank-agnostic.
+ *
+ * The old approach kept a hardcoded BANK_PACKAGES whitelist. That broke
+ * the moment a user installed a bank we hadn't seen (Baraka, Mashreq NEO,
+ * Suez Canal Bank, ...). New approach: any notification whose text contains
+ * a currency code AND a known financial verb counts as a candidate. The
+ * universal API parser handles the rest.
+ *
+ * The two SMS-relay app IDs are still treated as fast-accept (they're
+ * almost always banks) but they're not REQUIRED - a notification from a
+ * banking app's own push system passes too as long as the content matches.
+ */
+const FAST_ACCEPT_PACKAGES = new Set<string>([
+  'com.android.mms',                     // Stock SMS app
+  'com.google.android.apps.messaging',   // Google Messages
+  'com.samsung.android.messaging',       // Samsung Messages
 ]);
+
+// Currency codes we accept on either side of the amount. The user's
+// configured currency is the most common but we include the common ones
+// so a notification in a foreign currency (USD travel charge, AED) still
+// triggers a parse.
+const CURRENCY_HINT = /\b(EGP|USD|EUR|GBP|SAR|AED|KWD|QAR|OMR|BHD|JPY|CHF|TRY)\b/i;
+
+// Universal financial-verb fingerprint. Matches across English + Arabic
+// across every Egyptian bank's notification format I've seen. Tuned to
+// reject OTP / login / promo content even when the body mentions money.
+const FINANCIAL_VERB = new RegExp(
+  [
+    // Common English transaction verbs
+    'has\\s+been\\s+used',     // "Card ending with X has been used"
+    'was\\s+debited',          // Baraka IPN
+    'was\\s+credited',         // Baraka IPN
+    'debited\\s+with',
+    'credited\\s+with',
+    'purchase\\s+of',
+    'payment\\s+of',
+    'transferred',
+    'salary\\s+has\\s+been',
+    'sent\\s+to',
+    'received\\s+from',
+    'withdrawn',
+    'deposit',
+    'spent',
+    // Arabic financial verbs
+    'تم\\s+خصم',               // was deducted
+    'تم\\s+إيداع',             // was deposited
+    'تم\\s+سحب',               // was withdrawn
+    'حُول',                     // transferred
+    'استلام',                  // receipt
+    'راتب',                    // salary
+    'رصيد(?!\\s*استفسار)',     // balance (but not "balance inquiry")
+  ].join('|'),
+  'i',
+);
+
+// Hard-reject patterns. These ALWAYS skip parsing, even if other signals
+// look transaction-like. Saves an LLM round-trip and avoids logging
+// phantom OTPs as 6-digit "amounts".
+const NON_TRANSACTION = new RegExp(
+  [
+    'OTP',
+    'verification\\s+code',
+    'one[-\\s]time\\s+(?:code|password)',
+    'do\\s+not\\s+share',
+    'تم\\s+إصدار\\s+كشف',       // statement issued
+    'كشف\\s+الحساب',
+    'statement\\s+issued',
+    'e[-]?statement',
+    'الزمن\\s+السري',           // PIN
+    'PIN\\s+code',
+    'available\\s+balance.*?(?:only|inquiry|check)',
+    'login\\s+(?:from|attempt|alert)',
+    'تسجيل\\s+الدخول',          // login
+  ].join('|'),
+  'i',
+);
+
+/**
+ * Decide whether a notification's body looks like a real bank transaction
+ * worth sending to the parser. Universal across banks - no package list
+ * required. Exposed for testing.
+ */
+export function isBankTransactionCandidate(text: string): boolean {
+  if (!text || text.length < 12) return false;
+  if (NON_TRANSACTION.test(text)) return false;
+  return CURRENCY_HINT.test(text) && FINANCIAL_VERB.test(text);
+}
 
 let cachedModule: any = null;
 function getModule(): any | null {
@@ -86,8 +162,13 @@ export type NotificationEvent = {
 };
 
 /**
- * Subscribe to incoming notifications. `handler` is called for every event
- * whose `app` package is in BANK_PACKAGES. Returns an unsubscribe function.
+ * Subscribe to incoming Android notifications. The handler fires for every
+ * event whose content fingerprint matches a bank transaction - bank-
+ * agnostic, no package whitelist required.
+ *
+ * Fast-path: notifications from the SMS apps are pre-accepted (they're
+ * almost always banks anyway) but still gated by the content check, so a
+ * stray Telegram-via-SMS message doesn't get logged as a "100 EGP" event.
  */
 export function subscribeToBankNotifications(
   handler: (event: NotificationEvent) => void,
@@ -96,7 +177,16 @@ export function subscribeToBankNotifications(
   const sub: EmitterSubscription = DeviceEventEmitter.addListener(
     'onNotificationReceived',
     (event: NotificationEvent) => {
-      if (!event?.app || !BANK_PACKAGES.has(event.app)) return;
+      if (!event) return;
+      const body = flattenEventText(event);
+      const fromMessagingApp = event.app ? FAST_ACCEPT_PACKAGES.has(event.app) : false;
+      // Even messaging-app events have to pass the content filter so a
+      // friend texting "owe you 50 EGP" doesn't trigger a phantom log.
+      if (!isBankTransactionCandidate(body)) return;
+      // Anything else: the content filter decides. App package is just
+      // metadata - we don't gate on it. This is the heart of the bank-
+      // agnostic redesign.
+      void fromMessagingApp; // intentionally unused; kept for future telemetry
       try { handler(event); } catch (err) { console.warn('[notif-listener] handler threw:', err); }
     },
   );

@@ -27,8 +27,13 @@ export default function ChatViewScreen() {
   const router = useRouter();
   const { tok, lang, t } = useI18n();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; text?: string }>();
   const initialId = typeof params.id === 'string' && params.id !== 'new' ? params.id : null;
+  // Optional pre-filled message - used by the FAB long-press → voice flow.
+  // When present we auto-send it once the screen mounts, so the user lands
+  // straight on Seshat's reply instead of an empty composer.
+  const initialText = typeof params.text === 'string' && params.text.trim() ? params.text.trim() : null;
+  const autoSentRef = useRef(false);
 
   const [sessionId, setSessionId] = useState<string | null>(initialId);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -102,6 +107,18 @@ export default function ChatViewScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
     }
   };
+
+  // FAB long-press → voice flow: when the screen mounts with ?text=...,
+  // auto-send that text as the user's first message. Guarded by autoSentRef
+  // so a re-render or route change doesn't fire it twice.
+  useEffect(() => {
+    if (!initialText || autoSentRef.current || sessionId !== null) return;
+    autoSentRef.current = true;
+    sendText(initialText);
+    // We deliberately leave `sendText` out of deps - it's recreated every
+    // render but the autoSentRef guard ensures we only fire once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialText]);
 
   // Voice: same flow as text + uses /voice/chat which now takes sessionId.
   const sendVoice = async () => {

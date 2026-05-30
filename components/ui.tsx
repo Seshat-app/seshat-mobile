@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useI18n, formatAmount, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
+import { radius } from '../lib/theme';
 
 // ─────────────────────────────────────────────────────────────
 // Card — surface with hair-line border, 12/16 radius. No shadows.
@@ -25,7 +26,10 @@ export function RCard({
           backgroundColor: tok.surface,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: tok.border,
-          borderRadius: large ? 16 : 12,
+          // Softer radius across the board to match the web's new tokens.
+          // Cards 14px (was 12), large variants 20px (was 16). Reads more
+          // Copilot/N26 less brutalist.
+          borderRadius: large ? radius.modal : radius.card,
         },
         sizing,
         accent && (dir === 'rtl'
@@ -251,7 +255,7 @@ export function RButton({
 }) {
   const { tok, lang } = useI18n();
   const base: ViewStyle = {
-    borderRadius: 10,
+    borderRadius: radius.btn,
     paddingVertical: 12,
     paddingHorizontal: 18,
     flexDirection: 'row',
@@ -303,7 +307,7 @@ export function RToast({ visible, children, bottomOffset = 110 }: { visible: boo
       style={{
         position: 'absolute', bottom: bottomOffset, left: 20, right: 20,
         backgroundColor: tok.elevated,
-        borderRadius: 12, padding: 14,
+        borderRadius: radius.card, padding: 14,
         borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
         borderLeftWidth: 3, borderLeftColor: tok.gold,
         flexDirection: 'row', alignItems: 'center', gap: 10,

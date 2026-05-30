@@ -1,6 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
-import { BarChart3, Crosshair, LayoutGrid, Plus } from 'lucide-react-native';
+import { BarChart3, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RadarMark } from './RadarMark';
@@ -239,25 +239,101 @@ export function RTxRow({
 // ─────────────────────────────────────────────────────────────
 // Floating Add button — gold disc, bottom-corner, always reachable
 // ─────────────────────────────────────────────────────────────
-export function RFAB({ onPress, bottomOffset = 92 }: { onPress: () => void; bottomOffset?: number }) {
+/**
+ * RFAB - the bottom-right floating add button.
+ *
+ * Tap (onPress)          -> opens the add-options chooser (manual / receipt)
+ * Long-press hold        -> opens Seshat chat AND starts the mic; recording
+ *                            runs while finger is down. Releasing the finger
+ *                            fires onVoiceRelease with the recorded audio.
+ *
+ * The long-press path skips the keypad entirely and lets the user just speak
+ * to Seshat. Matches the "the game is over" capture promise: the fastest
+ * possible path from impulse to logged transaction.
+ */
+export function RFAB({
+  onPress,
+  onVoiceStart,
+  onVoiceRelease,
+  onVoiceCancel,
+  bottomOffset = 92,
+}: {
+  onPress: () => void;
+  // Called when the long-press is detected (~280 ms hold). The caller should
+  // navigate to the Seshat tab and begin a recording. If absent, long-press
+  // falls back to the normal tap.
+  onVoiceStart?: () => void;
+  // Called when the finger lifts after a long-press recording. The recorder
+  // should stop, the audio should be sent to Seshat, and the FAB returns to
+  // its idle state.
+  onVoiceRelease?: () => void;
+  // Called if the press is cancelled (e.g. finger slides off the button)
+  // so the caller can abort the recording without sending.
+  onVoiceCancel?: () => void;
+  bottomOffset?: number;
+}) {
   const { tok, lang } = useI18n();
   const side = lang === 'ar' ? { left: 20 } : { right: 20 };
+
+  // recording = true between onLongPress and onPressOut. While recording the
+  // FAB doubles in shadow and shows a small pulse ring so the user has a
+  // clear visual confirmation the mic is hot.
+  const recordingRef = useRef(false);
+  const [recording, setRecording] = useState(false);
+
+  const handleLongPress = () => {
+    if (!onVoiceStart) return;
+    recordingRef.current = true;
+    setRecording(true);
+    onVoiceStart();
+  };
+
+  const handlePressOut = () => {
+    if (!recordingRef.current) return;
+    recordingRef.current = false;
+    setRecording(false);
+    onVoiceRelease?.();
+  };
+
+  // If the user's finger leaves the button while recording, treat it as a
+  // cancel. Avoids accidental sends when the user lifts off-screen.
+  const handlePressCancel = () => {
+    if (!recordingRef.current) return;
+    recordingRef.current = false;
+    setRecording(false);
+    onVoiceCancel?.();
+  };
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        // Don't fire onPress if the long-press already kicked in.
+        if (recordingRef.current) return;
+        onPress();
+      }}
+      onLongPress={handleLongPress}
+      onPressOut={handlePressOut}
+      onResponderTerminate={handlePressCancel}
+      delayLongPress={280}
       style={({ pressed }) => ({
         position: 'absolute', bottom: bottomOffset, ...side,
         width: 56, height: 56, borderRadius: 28,
-        backgroundColor: tok.gold,
+        backgroundColor: recording ? tok.alertText : tok.gold,
         alignItems: 'center', justifyContent: 'center',
-        transform: [{ scale: pressed ? 0.95 : 1 }],
-        shadowColor: tok.gold, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.32, shadowRadius: 16,
+        transform: [{ scale: pressed || recording ? 0.95 : 1 }],
+        shadowColor: recording ? tok.alertText : tok.gold,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: recording ? 0.5 : 0.32,
+        shadowRadius: recording ? 22 : 16,
         elevation: 8,
         zIndex: 30,
       })}
-      accessibilityLabel="Add transaction"
+      accessibilityLabel={recording ? 'Recording — release to send' : 'Add transaction'}
+      accessibilityHint={onVoiceStart ? 'Tap to choose, long-press to speak to Seshat' : undefined}
     >
-      <Plus size={26} color="#0D0D0D" strokeWidth={2.2} />
+      {recording
+        ? <Mic size={26} color="#0D0D0D" strokeWidth={2.2} />
+        : <Plus size={26} color="#0D0D0D" strokeWidth={2.2} />}
     </Pressable>
   );
 }

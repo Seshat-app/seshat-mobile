@@ -23,6 +23,57 @@ export type Tokens = {
   navBg: string;
 };
 
+// Radius scale - mirrors seshat-web/src/styles/tokens.scss so screens
+// look and feel like one product. Use these named exports instead of
+// hardcoding `borderRadius: 12` everywhere.
+export const radius = {
+  input: 10,
+  btn: 10,
+  card: 14,
+  modal: 20,
+  pill: 999,
+} as const;
+
+// Spacing scale, 8px base. Same shape as the web tokens.
+// Use as `s(3)` or directly as `S[3]` - same values, different ergonomics.
+export const S = {
+  1: 4,
+  2: 8,
+  3: 12,
+  4: 16,
+  5: 20,
+  6: 24,
+  7: 32,
+  8: 40,
+  9: 48,
+  10: 64,
+  11: 80,
+} as const;
+
+// Typography sizes - normalized so heads + bodies feel like one system
+// across mobile and web. Mobile values are slightly tighter than the
+// web's clamp() because phones don't have the breathing room.
+export const T = {
+  eyebrow: 11,
+  meta: 12,
+  bodyS: 13,
+  body: 15,
+  bodyL: 17,
+  h6: 18,
+  h5: 22,
+  h4: 26,
+  h3: 32,
+  h2: 38,
+  h1: 46,
+} as const;
+
+// Letter spacing for mono "eyebrow" text. Web uses em units; here we use
+// numbers since RN's letterSpacing is points.
+export const LS = {
+  mono: 1.4,     // standard eyebrows
+  monoLg: 2.4,   // hero / section labels
+} as const;
+
 const DARK: Tokens = {
   void: '#0D0D0D',
   surface: '#1A1A1A',
