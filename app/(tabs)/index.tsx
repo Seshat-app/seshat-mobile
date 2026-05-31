@@ -17,7 +17,6 @@ import {
 import { useRouter } from 'expo-router';
 
 const VIEW_KEY = 'seshat.dashboardView';
-const LEGACY_VIEW_KEY = 'radar.dashboardView'; // pre-rebrand; migrated on read
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -54,19 +53,10 @@ export default function HomeScreen() {
     }
   }, [router, refresh]);
 
-  // Restore last view choice (migrating the pre-rebrand key forward).
+  // Restore last view choice.
   useEffect(() => {
-    const apply = (v: string | null) => {
+    SecureStore.getItemAsync(VIEW_KEY).then((v) => {
       if (v === 'numbers' || v === 'hud' || v === 'bento') setView(v);
-    };
-    SecureStore.getItemAsync(VIEW_KEY).then(async (v) => {
-      if (v != null) { apply(v); return; }
-      const legacy = await SecureStore.getItemAsync(LEGACY_VIEW_KEY);
-      if (legacy != null) {
-        SecureStore.setItemAsync(VIEW_KEY, legacy).catch(() => {});
-        SecureStore.deleteItemAsync(LEGACY_VIEW_KEY).catch(() => {});
-        apply(legacy);
-      }
     });
   }, []);
 
