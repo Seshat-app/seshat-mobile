@@ -23,7 +23,8 @@
       },
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Seshat uses the microphone so you can talk to her instead of typing - describe a transaction by voice and she records it.",
-        "NSPhotoLibraryUsageDescription": "Pick a profile photo from your library to use as your Seshat avatar.",
+        "NSCameraUsageDescription": "Seshat uses the camera so you can snap a receipt and she reads the amount, vendor and date for you.",
+        "NSPhotoLibraryUsageDescription": "Pick a receipt or a profile photo from your library for Seshat to read or use as your avatar.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleURLTypes": [
           {
@@ -43,7 +44,8 @@
       "edgeToEdgeEnabled": true,
       "allowBackup": false,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
       ],
       "intentFilters": [
         {
