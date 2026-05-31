@@ -27,10 +27,10 @@ import { BRAND } from '../lib/brand';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedSvgPath = Animated.createAnimatedComponent(Path);
 
-const RADAR_R = 380;
-const RADAR_RI = 190;
-const BLIP_X = RADAR_R * Math.cos(-Math.PI / 4);
-const BLIP_Y = RADAR_R * Math.sin(-Math.PI / 4);
+const RING_R = 380;
+const RING_RI = 190;
+const BLIP_X = RING_R * Math.cos(-Math.PI / 4);
+const BLIP_Y = RING_R * Math.sin(-Math.PI / 4);
 
 const SPLASH_SIZE = 320; // px on screen — the SVG canvas, not the geometry units
 
@@ -126,26 +126,26 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
             </Defs>
 
             {/* Faint base rings */}
-            <Circle cx="0" cy="0" r={RADAR_R} fill="none" stroke="rgba(232,232,224,0.18)" strokeWidth="3" />
-            <Circle cx="0" cy="0" r={RADAR_RI} fill="none" stroke="rgba(232,232,224,0.18)" strokeWidth="3" />
+            <Circle cx="0" cy="0" r={RING_R} fill="none" stroke="rgba(232,232,224,0.18)" strokeWidth="3" />
+            <Circle cx="0" cy="0" r={RING_RI} fill="none" stroke="rgba(232,232,224,0.18)" strokeWidth="3" />
 
             {/* Crosshair */}
-            <Path d={`M ${-RADAR_R} 0 L ${RADAR_R} 0`} stroke="rgba(232,232,224,0.12)" strokeWidth="2" />
-            <Path d={`M 0 ${-RADAR_R} L 0 ${RADAR_R}`} stroke="rgba(232,232,224,0.12)" strokeWidth="2" />
+            <Path d={`M ${-RING_R} 0 L ${RING_R} 0`} stroke="rgba(232,232,224,0.12)" strokeWidth="2" />
+            <Path d={`M 0 ${-RING_R} L 0 ${RING_R}`} stroke="rgba(232,232,224,0.12)" strokeWidth="2" />
 
             {/* Gold arcs (top-right quadrant) - opacity ramps with goldOpacity */}
             <AnimatedSvgPath
-              d={`M ${RADAR_R} 0 A ${RADAR_R} ${RADAR_R} 0 0 0 0 ${-RADAR_R}`}
+              d={`M ${RING_R} 0 A ${RING_R} ${RING_R} 0 0 0 0 ${-RING_R}`}
               fill="none" stroke="url(#goldGrad)" strokeWidth="7" strokeLinecap="round"
               opacity={goldOpacity}
             />
             <AnimatedSvgPath
-              d={`M ${RADAR_RI} 0 A ${RADAR_RI} ${RADAR_RI} 0 0 0 0 ${-RADAR_RI}`}
+              d={`M ${RING_RI} 0 A ${RING_RI} ${RING_RI} 0 0 0 0 ${-RING_RI}`}
               fill="none" stroke="url(#goldGrad)" strokeWidth="5" strokeLinecap="round"
               opacity={goldOpacity}
             />
             <AnimatedSvgPath
-              d={`M 0 0 L ${RADAR_R} 0 A ${RADAR_R} ${RADAR_R} 0 0 0 ${BLIP_X} ${BLIP_Y} Z`}
+              d={`M 0 0 L ${RING_R} 0 A ${RING_R} ${RING_R} 0 0 0 ${BLIP_X} ${BLIP_Y} Z`}
               fill="url(#goldGrad)"
               opacity={Animated.multiply(goldOpacity, new Animated.Value(0.18))}
             />
@@ -171,8 +171,8 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
                   <Stop offset="1" stopColor="#C9A84C" stopOpacity="0.85" />
                 </LinearGradient>
               </Defs>
-              <Path d={`M 0 0 L ${RADAR_R} 0 L 0 0 Z`} stroke="url(#sweep)" strokeWidth="3" fill="none" />
-              <Path d={`M 0 0 L ${RADAR_R} -10 A ${RADAR_R} ${RADAR_R} 0 0 1 ${RADAR_R} 10 Z`} fill="url(#sweep)" opacity="0.5" />
+              <Path d={`M 0 0 L ${RING_R} 0 L 0 0 Z`} stroke="url(#sweep)" strokeWidth="3" fill="none" />
+              <Path d={`M 0 0 L ${RING_R} -10 A ${RING_R} ${RING_R} 0 0 1 ${RING_R} 10 Z`} fill="url(#sweep)" opacity="0.5" />
             </Svg>
           </Animated.View>
 

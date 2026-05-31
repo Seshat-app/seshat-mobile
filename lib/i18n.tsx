@@ -229,16 +229,31 @@ type Ctx = {
 
 const I18nContext = createContext<Ctx | null>(null);
 
-const LANG_KEY = 'radar.lang';
-const MODE_KEY = 'radar.mode';
+const LANG_KEY = 'seshat.lang';
+const MODE_KEY = 'seshat.mode';
+// Pre-rebrand keys. Read once and migrate forward so existing installs keep
+// their language/theme after the Radar -> Seshat rename.
+const LEGACY_LANG_KEY = 'radar.lang';
+const LEGACY_MODE_KEY = 'radar.mode';
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>('en');
   const [mode, setModeState] = useState<Mode>('dark');
 
   useEffect(() => {
-    SecureStore.getItemAsync(LANG_KEY).then((v) => { if (v === 'en' || v === 'ar') setLangState(v); });
-    SecureStore.getItemAsync(MODE_KEY).then((v) => { if (v === 'dark' || v === 'light') setModeState(v); });
+    const loadMigrating = async (key: string, legacy: string) => {
+      let v = await SecureStore.getItemAsync(key);
+      if (v == null) {
+        v = await SecureStore.getItemAsync(legacy);
+        if (v != null) {
+          SecureStore.setItemAsync(key, v).catch(() => {});
+          SecureStore.deleteItemAsync(legacy).catch(() => {});
+        }
+      }
+      return v;
+    };
+    loadMigrating(LANG_KEY, LEGACY_LANG_KEY).then((v) => { if (v === 'en' || v === 'ar') setLangState(v); });
+    loadMigrating(MODE_KEY, LEGACY_MODE_KEY).then((v) => { if (v === 'dark' || v === 'light') setModeState(v); });
   }, []);
 
   const setLang = (l: Lang) => {
