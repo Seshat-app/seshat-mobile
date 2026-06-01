@@ -280,11 +280,16 @@ export function RFAB({
   // FAB doubles in shadow and shows a small pulse ring so the user has a
   // clear visual confirmation the mic is hot.
   const recordingRef = useRef(false);
+  // Armed when the finger slides well off the button while recording, so the
+  // release cancels instead of sending. (Pressable doesn't emit the raw
+  // responder-terminate event, so we track movement via onTouchMove.)
+  const cancelArmedRef = useRef(false);
   const [recording, setRecording] = useState(false);
 
   const handleLongPress = () => {
     if (!onVoiceStart) return;
     recordingRef.current = true;
+    cancelArmedRef.current = false;
     setRecording(true);
     onVoiceStart();
   };
@@ -293,16 +298,8 @@ export function RFAB({
     if (!recordingRef.current) return;
     recordingRef.current = false;
     setRecording(false);
-    onVoiceRelease?.();
-  };
-
-  // If the user's finger leaves the button while recording, treat it as a
-  // cancel. Avoids accidental sends when the user lifts off-screen.
-  const handlePressCancel = () => {
-    if (!recordingRef.current) return;
-    recordingRef.current = false;
-    setRecording(false);
-    onVoiceCancel?.();
+    if (cancelArmedRef.current) onVoiceCancel?.();
+    else onVoiceRelease?.();
   };
 
   return (
@@ -314,7 +311,14 @@ export function RFAB({
       }}
       onLongPress={handleLongPress}
       onPressOut={handlePressOut}
-      onResponderTerminate={handlePressCancel}
+      onTouchMove={(e) => {
+        if (!recordingRef.current) return;
+        const { locationX, locationY } = e.nativeEvent;
+        // Finger slid well outside the 56px button -> arm cancel (moving back
+        // in disarms it). Release then cancels rather than sending.
+        cancelArmedRef.current =
+          locationX < -44 || locationX > 100 || locationY < -44 || locationY > 100;
+      }}
       delayLongPress={280}
       style={({ pressed }) => ({
         position: 'absolute', bottom: bottomOffset, ...side,

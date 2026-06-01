@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { ChevronLeft, Trash2, Plus, Sparkles, Check } from 'lucide-react-native';
-import { useI18n } from '../lib/i18n';
+import { useI18n, localDateStr } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { radius as r } from '../lib/theme';
@@ -144,7 +144,7 @@ export function AddBySeshatPanel({
             currency: defaultCurrency,
             categoryId: e.categoryId,
             description: e.description.trim() || undefined,
-            date: new Date().toISOString().slice(0, 10),
+            date: localDateStr(),
             source: 'seshat',
           }),
           idempotencyKey: newIdempotencyKey(),

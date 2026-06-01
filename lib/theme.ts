@@ -21,6 +21,11 @@ export type Tokens = {
   infoBg: string;
   infoText: string;
   navBg: string;
+  // Premium "lit glass" accents (see RCard glow): a gold-tinted edge, a lit
+  // top bevel, and the colour used for the soft glow shadow on hero cards.
+  glowBorder: string;
+  sheen: string;
+  glowShadow: string;
 };
 
 // Radius scale - mirrors seshat-web/src/styles/tokens.scss so screens
@@ -95,6 +100,9 @@ const DARK: Tokens = {
   infoBg: '#1A3A5A',
   infoText: '#4A8ACA',
   navBg: '#141414',
+  glowBorder: 'rgba(201, 168, 76, 0.22)',
+  sheen: 'rgba(255, 255, 255, 0.08)',
+  glowShadow: '#C9A84C',
 };
 
 const LIGHT: Tokens = {
@@ -118,6 +126,9 @@ const LIGHT: Tokens = {
   infoBg: '#D7E2EF',
   infoText: '#2A5A8A',
   navBg: '#EEEDE8',
+  glowBorder: 'rgba(139, 107, 20, 0.24)',
+  sheen: 'rgba(255, 255, 255, 0.7)',
+  glowShadow: '#8B6B14',
 };
 
 export function tokens(mode: Mode): Tokens {

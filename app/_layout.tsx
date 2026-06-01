@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Stack } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { DMMono_300Light, DMMono_400Regular, DMMono_500Medium } from '@expo-goog
 import { Cairo_400Regular, Cairo_500Medium, Cairo_600SemiBold, Cairo_700Bold, Cairo_800ExtraBold } from '@expo-google-fonts/cairo';
 import { I18nProvider, useI18n } from '../lib/i18n';
 import { AppDataProvider, useAppData } from '../lib/appData';
+import { setUnauthorizedHandler } from '../lib/api';
 import { WorkspaceSheet } from '../components/WorkspaceSwitcher';
 import { AnimatedSplash } from '../components/AnimatedSplash';
 import { initSentry, Sentry } from '../lib/sentry';
@@ -29,6 +30,15 @@ function RootStack() {
   // first 200-400 ms before this component is mounted; this picks up from
   // there for a smooth handoff.
   const [splashDone, setSplashDone] = useState(false);
+
+  // When any API call gets a 401, the session is cleared and we route back to
+  // sign-in instead of leaving the user on silently-empty screens.
+  const router = useRouter();
+  useEffect(() => {
+    setUnauthorizedHandler(() => router.replace('/'));
+    return () => setUnauthorizedHandler(null);
+  }, [router]);
+
   return (
     <>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} backgroundColor={tok.void} />

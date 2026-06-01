@@ -27,9 +27,16 @@ export default function TransactionsScreen() {
   // empty), drop any in-flight project filter so we don't ship a stale id.
   useEffect(() => {
     if (projects.length === 0 && projectFilter !== null) setProjectFilter(null);
-  }, [projects.length]);
+  }, [projects.length, projectFilter]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [query, setQuery] = useState('');
+  // Debounce the search box so we fetch once the user pauses, not on every
+  // keystroke (which also avoids out-of-order responses).
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(id);
+  }, [query]);
   const [editing, setEditing] = useState<EditingTx | null>(null);
 
   const onRowAction = (tx: TxRowData) => {
@@ -93,7 +100,7 @@ export default function TransactionsScreen() {
       if (typeof filters.maxAmount === 'number') params.set('maxAmount', String(filters.maxAmount));
       if (projectFilter) params.set('projectId', projectFilter);
       params.set('limit', '100');
-      if (query.trim()) params.set('search', query.trim());
+      if (debouncedQuery.trim()) params.set('search', debouncedQuery.trim());
       const res = await apiFetch<{ data: TxRowData[] }>(`/transactions?${params.toString()}`);
       setTxs(res.data);
     } catch (err) {
@@ -102,7 +109,7 @@ export default function TransactionsScreen() {
       if (mode === 'initial') setLoading(false);
       else setRefreshing(false);
     }
-  }, [filters, query, projectFilter]);
+  }, [filters, debouncedQuery, projectFilter]);
 
   useEffect(() => { fetchTxs('initial'); }, [fetchTxs, dataVersion]);
 

@@ -5,6 +5,7 @@ import { ArrowUp, ArrowDown } from 'lucide-react-native';
 import { useI18n, monthYear } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RCard, REyebrow, RAmount, RProgress, RStatus } from './ui';
+import { useRouter } from 'expo-router';
 import { SectionHeader, RTxRow, type TxRowData } from './shell';
 import { SeshatMark } from './SeshatMark';
 import { catIdFromName, catLabel } from '../lib/categoryMap';
@@ -158,6 +159,7 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
 // ─────────────────────────────────────────────────────────────
 export function DashboardNumbers({ data, currency }: { data: DashboardData; currency: string }) {
   const { tok, lang, t } = useI18n();
+  const router = useRouter();
   const max = data.categoryBreakdown[0]?.total ?? 1;
   const list = data.recentTransactions.slice(0, 5);
 
@@ -276,7 +278,7 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
       {/* Recent activity */}
       {list.length > 0 && (
         <View style={{ marginTop: 18 }}>
-          <SectionHeader label={t('recentActivity')} action={t('seeAll')} />
+          <SectionHeader label={t('recentActivity')} action={t('seeAll')} onActionPress={() => router.push('/(tabs)/transactions')} />
           <RCard style={{ marginTop: 8, paddingHorizontal: 18, paddingVertical: 6 }}>
             {list.map((tx, i) => <RTxRow key={tx._id} tx={tx} last={i === list.length - 1} />)}
           </RCard>

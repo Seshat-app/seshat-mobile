@@ -259,7 +259,7 @@ function AddCategorySheet({
             onChangeText={setNameAr}
             placeholder={lang === 'ar' ? 'الاسم بالعربية' : 'Arabic name'}
             placeholderTextColor={tok.muted}
-            style={[inputStyle(tok), { textAlign: 'right' }]}
+            style={[inputStyle(tok), { textAlign: 'right', writingDirection: 'rtl' }]}
           />
         </View>
 

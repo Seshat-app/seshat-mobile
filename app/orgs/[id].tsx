@@ -230,7 +230,6 @@ export default function OrgDetailScreen() {
                       }}
                     >
                       {m.displayName ?? m.email ?? '—'}
-                      {m.userId === profile?.email ? '' : ''}
                     </Text>
                     <Text
                       numberOfLines={1}

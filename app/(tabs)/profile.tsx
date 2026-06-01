@@ -81,6 +81,9 @@ export default function ProfileScreen() {
     setSaving(true); setSaved(false);
     try {
       await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ displayName, language: lang, currency }) });
+      // Sync the local baseline so the dirty check clears (otherwise the Save
+      // button stays "active" after a successful save with no real change).
+      setProfile((p) => (p ? { ...p, displayName, language: lang, currency } : p));
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
       refresh();

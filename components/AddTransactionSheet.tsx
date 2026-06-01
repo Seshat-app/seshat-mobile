@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers } from 'lucide-react-native';
 import { AddBySeshatPanel } from './AddBySeshatPanel';
 import * as ImagePicker from 'expo-image-picker';
-import { useI18n, currencyLabel } from '../lib/i18n';
+import { useI18n, currencyLabel, localDateStr } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RSegmented, RButton, REyebrow } from './ui';
 import { CategoryIcon, CatIconAlias } from './icons';
@@ -259,7 +259,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
         projectId: projectId ?? undefined,
         description: seshatMode && seshatText.trim() ? seshatText.trim() : undefined,
         notes: notes.trim() ? notes.trim() : undefined,
-        date: new Date().toISOString().slice(0, 10),
+        date: localDateStr(),
         isMonthlyBaseline: type === 'income' ? isMonthlyBaseline : undefined,
         source: prefill?.source ?? 'manual',
       });

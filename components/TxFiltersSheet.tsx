@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Check, RotateCcw } from 'lucide-react-native';
-import { useI18n } from '../lib/i18n';
+import { useI18n, localDateStr } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { REyebrow, RButton } from './ui';
 import type { ApiCategory } from './AddTransactionSheet';
@@ -44,7 +44,7 @@ export const EMPTY_FILTERS: TxFilters = {
 type Preset = 'this-month' | 'last-month' | 'last-7' | 'last-30' | 'custom';
 
 function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return localDateStr(d);
 }
 
 function presetRange(p: Preset): { from?: string; to?: string } {

@@ -41,6 +41,19 @@ export async function hasToken(): Promise<boolean> {
   return !!token;
 }
 
+// Global session-expiry handler. The app root registers this (see
+// app/_layout.tsx) to clear state and route back to sign-in when the server
+// rejects the token (401). Without it the app would silently render empty
+// screens forever after a token expires.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
+async function handleUnauthorized(): Promise<void> {
+  await clearToken();
+  if (onUnauthorized) onUnauthorized();
+}
+
 // Generates a fresh idempotency key. Use this once per "save intent" — e.g.
 // when the user taps a Save button — and pass into apiFetch via the
 // `idempotencyKey` option. If the request fails and you retry, REUSE the
@@ -89,6 +102,10 @@ export async function apiFetchText(path: string, options: ApiFetchOptions = {}):
   const effectiveLedger = ledgerId ?? activeLedgerId;
   if (effectiveLedger) headers['X-Ledger-Id'] = effectiveLedger;
   const res = await fetch(`${API_BASE}${path}`, { ...rest, headers });
+  if (res.status === 401) {
+    await handleUnauthorized();
+    throw new Error('Session expired. Please sign in again.');
+  }
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.text();
 }
@@ -119,9 +136,22 @@ export async function apiFetch<T = unknown>(
     headers,
   });
 
-  // Handle non-JSON responses (e.g. Express HTML error pages)
+  // Token rejected -> clear session and route to sign-in.
+  if (res.status === 401) {
+    await handleUnauthorized();
+    throw new Error('Session expired. Please sign in again.');
+  }
+
+  // Success with no body (e.g. 204 from a DELETE) -> nothing to parse.
+  if (res.status === 204 || res.status === 205) {
+    return undefined as T;
+  }
+
+  // Non-JSON responses: a 2xx without a JSON body is still a success (some
+  // endpoints return empty/204-like bodies); anything else is a real error.
   const contentType = res.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
+    if (res.ok) return undefined as T;
     throw new Error(`API error: ${res.status} (non-JSON response)`);
   }
 

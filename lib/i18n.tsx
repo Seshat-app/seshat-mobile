@@ -278,6 +278,17 @@ export function useI18n(): Ctx {
   return ctx;
 }
 
+// Local YYYY-MM-DD for the given date (defaults to now). Built from local
+// calendar components, NOT toISOString() — the latter is UTC, so a late-evening
+// transaction in Egypt (UTC+2/+3) would otherwise be saved/grouped on the
+// wrong day.
+export function localDateStr(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // Number formatting — always LTR-ish, Western Arabic numerals are fine
 // because the design brief makes that configurable; we keep numbers in
 // Latin digits with thousand separators to match the prototype default.
