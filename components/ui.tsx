@@ -10,8 +10,8 @@ import { radius } from '../lib/theme';
 // Card — surface with hair-line border, 12/16 radius. No shadows.
 // ─────────────────────────────────────────────────────────────
 export function RCard({
-  children, style, large, accent, padding,
-}: { children: ReactNode; style?: ViewStyle | ViewStyle[]; large?: boolean; accent?: boolean; padding?: number }) {
+  children, style, large, accent, padding, glow,
+}: { children: ReactNode; style?: ViewStyle | ViewStyle[]; large?: boolean; accent?: boolean; padding?: number; glow?: boolean }) {
   const { tok, dir } = useI18n();
   const sizing = padding !== undefined
     ? { padding }
@@ -35,6 +35,19 @@ export function RCard({
         accent && (dir === 'rtl'
           ? { borderRightWidth: 2, borderRightColor: tok.gold }
           : { borderLeftWidth: 2, borderLeftColor: tok.gold }),
+        // "Lit glass" variant: a gold-tinted edge, a lit top bevel, and a soft
+        // gold glow shadow — the web's double-bezel feel without backdrop-blur
+        // (which is a perf foot-gun on scrolling RN lists).
+        glow && {
+          borderWidth: 1,
+          borderColor: tok.glowBorder,
+          borderTopColor: tok.sheen,
+          shadowColor: tok.glowShadow,
+          shadowOpacity: 0.14,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 5,
+        },
         style as any,
       ]}
     >

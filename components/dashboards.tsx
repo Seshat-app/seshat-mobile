@@ -103,7 +103,7 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
   const { tok, lang } = useI18n();
   const insight = buildInsight(data, lang);
   return (
-    <RCard padding={16}>
+    <RCard padding={16} glow>
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 8, marginBottom: 10,
@@ -166,7 +166,7 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}>
       {/* Hero net balance */}
-      <RCard large>
+      <RCard large glow>
         <REyebrow>{t('netBalance')}</REyebrow>
         <View style={{ marginTop: 10 }}>
           <RAmount value={data.current.balance} size={lang === 'ar' ? 40 : 44} currency={currency} decimals={0} />
@@ -448,7 +448,7 @@ export function DashboardBento({ data, currency }: { data: DashboardData; curren
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}>
       {/* Hero net */}
-      <RCard large>
+      <RCard large glow>
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           justifyContent: 'space-between', alignItems: 'flex-start',
