@@ -163,7 +163,7 @@ export function AnimatedSplash({ onDone }: { onDone: () => void }) {
             letterSpacing: lang === 'ar' ? 0 : 3.6,
             textTransform: 'uppercase',
           }}>
-            {lang === 'ar' ? 'مساعدك المالي' : 'AI · FINANCE COACH'}
+            {lang === 'ar' ? 'مساعدك المالي' : 'YOUR FINANCIAL ASSISTANT'}
           </Text>
         </Animated.View>
       </Animated.View>

@@ -89,7 +89,7 @@ function buildInsight(data: DashboardData, lang: 'en' | 'ar'): SeshatInsightData
 }
 
 /**
- * Seshat insight card - the conversational "noticed by your AI coach"
+ * Seshat insight card - the conversational "noticed by your AI assistant"
  * block that lives on every dashboard layout. One implementation, used
  * everywhere, so the design stays consistent and any future tweak
  * propagates once.
