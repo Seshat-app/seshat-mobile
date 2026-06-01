@@ -195,8 +195,8 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
           }}>{err}</Text>
         ) : null}
 
-        <RButton full onPress={submit} disabled={saving}>
-          {saving ? '…' : (lang === 'ar' ? 'حفظ التعديل' : 'Save changes')}
+        <RButton full onPress={submit} loading={saving}>
+          {lang === 'ar' ? 'حفظ التعديل' : 'Save changes'}
         </RButton>
       </View>
     </Modal>

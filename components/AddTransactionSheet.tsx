@@ -908,7 +908,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
 
           {/* Save */}
           <View style={{ paddingHorizontal: 18, paddingTop: 6, backgroundColor: tok.void }}>
-            <RButton full onPress={submit} disabled={!canSave}>{saveLabel}</RButton>
+            <RButton full onPress={submit} disabled={!canSave && !saving} loading={saving}>{saveLabel}</RButton>
           </View>
 
           {/* "Add by Seshat" overlay - shown when the multi-entry banner

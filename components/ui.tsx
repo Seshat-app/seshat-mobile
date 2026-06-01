@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, ScrollView,
+  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useI18n, formatAmount, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -243,7 +243,7 @@ export function RProgress({
 // Button — primary (gold), secondary (bordered), ghost
 // ─────────────────────────────────────────────────────────────
 export function RButton({
-  variant = 'primary', onPress, children, full, icon, disabled, style,
+  variant = 'primary', onPress, children, full, icon, disabled, loading, style,
 }: {
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
   onPress?: () => void;
@@ -251,6 +251,8 @@ export function RButton({
   full?: boolean;
   icon?: ReactNode;
   disabled?: boolean;
+  /** Shows a spinner and blocks taps while an async action is in flight. */
+  loading?: boolean;
   style?: ViewStyle;
 }) {
   const { tok, lang } = useI18n();
@@ -268,15 +270,16 @@ export function RButton({
   if (variant === 'secondary') { bg = 'transparent'; fg = tok.bone; border = { borderWidth: 1, borderColor: tok.borderHi }; }
   if (variant === 'ghost') { bg = 'transparent'; fg = tok.muted; }
   if (variant === 'destructive') { bg = 'transparent'; fg = tok.alertText; }
+  const blocked = disabled || loading;
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
+      onPress={blocked ? undefined : onPress}
+      disabled={blocked}
       style={({ pressed }) => [
         base, border, { backgroundColor: bg, opacity: disabled ? 0.45 : pressed ? 0.9 : 1 }, style,
       ]}
     >
-      {icon}
+      {loading ? <ActivityIndicator size="small" color={fg} /> : icon}
       <Text style={{
         color: fg,
         fontFamily: fontBody(lang, 'semibold'),
