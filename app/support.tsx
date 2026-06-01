@@ -172,7 +172,7 @@ export default function SupportScreen() {
         />
 
         <View style={{ marginTop: 22 }}>
-          <RButton full onPress={submit} disabled={!canSend}>
+          <RButton full onPress={submit} disabled={!canSend} loading={sending}>
             {sending
               ? (lang === 'ar' ? 'يتم الإرسال…' : 'Sending…')
               : (lang === 'ar' ? 'إرسال' : 'Send to support')}

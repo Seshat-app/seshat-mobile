@@ -130,7 +130,7 @@ export default function NewOrgScreen() {
           })}
         </View>
 
-        <RButton full onPress={submit} disabled={submitting || !name.trim()}>
+        <RButton full onPress={submit} disabled={submitting || !name.trim()} loading={submitting}>
           {submitting
             ? (lang === 'ar' ? 'جارٍ الإنشاء...' : 'Creating...')
             : (lang === 'ar' ? 'إنشاء المنظمة' : 'Create organization')}

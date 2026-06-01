@@ -326,7 +326,7 @@ function AddCategorySheet({
           }}>{err}</Text>
         ) : null}
 
-        <RButton full onPress={submit} disabled={saving}>
+        <RButton full onPress={submit} disabled={saving} loading={saving}>
           {saving ? '…' : (lang === 'ar' ? 'إضافة' : 'Add category')}
         </RButton>
       </View>

@@ -258,7 +258,7 @@ export default function AuthRouter() {
         }
         footer={
           <>
-            <RButton full onPress={submitLogin} disabled={busy}>{busy ? t('pleaseWait') : t('signIn')}</RButton>
+            <RButton full onPress={submitLogin} disabled={busy} loading={busy}>{busy ? t('pleaseWait') : t('signIn')}</RButton>
             {/* Google sign-in is Android-only for now. iOS requires a
                 separate review-friendly path (we'll wire Sign-In-with-Apple
                 + a re-thought Google flow there later). */}
@@ -298,7 +298,7 @@ export default function AuthRouter() {
       <AuthChrome
         footer={
           <>
-            <RButton full onPress={submitRegister} disabled={busy}>
+            <RButton full onPress={submitRegister} disabled={busy} loading={busy}>
               {busy ? t('pleaseWait') : (lang === 'ar' ? 'إرسال رمز التحقق' : 'Send verification code')}
             </RButton>
             <View style={{
@@ -331,7 +331,7 @@ export default function AuthRouter() {
       <AuthChrome
         footer={
           <>
-            <RButton full onPress={submitVerify} disabled={busy}>
+            <RButton full onPress={submitVerify} disabled={busy} loading={busy}>
               {busy ? t('pleaseWait') : t('verifyAction')}
             </RButton>
             <ResendCodeRow
@@ -371,7 +371,7 @@ export default function AuthRouter() {
       <AuthChrome
         footer={
           <>
-            <RButton full onPress={submitComplete} disabled={busy || (!!pwd2 && pwd !== pwd2)}>
+            <RButton full onPress={submitComplete} disabled={busy || (!!pwd2 && pwd !== pwd2)} loading={busy}>
               {busy ? t('pleaseWait') : t('createAccount')}
             </RButton>
             <Text style={{
@@ -457,7 +457,7 @@ export default function AuthRouter() {
       <AuthChrome
         footer={
           <>
-            <RButton full onPress={submitForgot} disabled={busy}>
+            <RButton full onPress={submitForgot} disabled={busy} loading={busy}>
               {busy ? t('pleaseWait') : t('sendResetLink')}
             </RButton>
             <AuthBackLink onPress={() => switchView('login')} label={t('backToSignIn')} />
@@ -481,7 +481,7 @@ export default function AuthRouter() {
       <AuthChrome
         footer={
           <>
-            <RButton full onPress={submitForgotVerify} disabled={busy}>
+            <RButton full onPress={submitForgotVerify} disabled={busy} loading={busy}>
               {busy ? t('pleaseWait') : t('verifyAction')}
             </RButton>
             <ResendCodeRow
@@ -541,7 +541,7 @@ export default function AuthRouter() {
   return (
     <AuthChrome
       footer={
-        <RButton full onPress={submitForgotComplete} disabled={busy || (!!pwd2 && pwd !== pwd2)}>
+        <RButton full onPress={submitForgotComplete} disabled={busy || (!!pwd2 && pwd !== pwd2)} loading={busy}>
           {busy ? t('pleaseWait') : (lang === 'ar' ? 'تعيين كلمة السر' : 'Set new password')}
         </RButton>
       }

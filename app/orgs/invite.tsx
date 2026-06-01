@@ -105,7 +105,7 @@ export default function InviteScreen() {
           }}
         />
 
-        <RButton full onPress={submit} disabled={submitting || !email.trim()}>
+        <RButton full onPress={submit} disabled={submitting || !email.trim()} loading={submitting}>
           {submitting
             ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...')
             : (lang === 'ar' ? 'إرسال الدعوة' : 'Send invitation')}

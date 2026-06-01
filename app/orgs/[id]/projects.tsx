@@ -196,7 +196,7 @@ export default function OrgProjectsScreen() {
                     textAlign: lang === 'ar' ? 'right' : 'left',
                   }}
                 />
-                <RButton full disabled={!name.trim() || creating} onPress={submitCreate}>
+                <RButton full disabled={!name.trim() || creating} loading={creating} onPress={submitCreate}>
                   <View style={{
                     flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                     alignItems: 'center', gap: 8,

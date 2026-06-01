@@ -305,7 +305,7 @@ function EditSheet({
             </View>
           </View>
           <View style={{ paddingHorizontal: 18, paddingTop: 16, gap: 10 }}>
-            <RButton full onPress={submit} disabled={!canSave}>
+            <RButton full onPress={submit} disabled={!canSave} loading={busy}>
               {busy ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : t('save')}
             </RButton>
             {onDelete && (

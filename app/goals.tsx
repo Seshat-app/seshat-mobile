@@ -254,7 +254,7 @@ function EditGoalSheet({
             <Field label={lang === 'ar' ? 'المُدخر' : 'Saved so far'} value={saved} onChange={(v) => setSaved(v.replace(/[^0-9.]/g, ''))} placeholder="0" numeric />
           </View>
           <View style={{ paddingHorizontal: 18, paddingTop: 18, gap: 10 }}>
-            <RButton full onPress={submit} disabled={!canSave}>
+            <RButton full onPress={submit} disabled={!canSave} loading={busy}>
               {busy ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : t('save')}
             </RButton>
             {onDelete && (

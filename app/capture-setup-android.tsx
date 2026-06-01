@@ -163,7 +163,7 @@ export default function CaptureSetupAndroidScreen() {
           </Text>
         </View>
 
-        <RButton full onPress={onRequest} disabled={checking || authorized}>
+        <RButton full onPress={onRequest} disabled={checking || authorized} loading={checking}>
           {authorized
             ? (lang === 'ar' ? 'تم — يعمل بالفعل' : 'Done — already active')
             : (lang === 'ar' ? 'أوافق وفتح إعدادات Android' : 'I agree, open Android settings')}

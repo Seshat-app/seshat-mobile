@@ -176,7 +176,7 @@ export function SetSalarySheet({
           </View>
 
           <View style={{ paddingHorizontal: 18, paddingTop: 16 }}>
-            <RButton full onPress={submit} disabled={!canSave}>
+            <RButton full onPress={submit} disabled={!canSave} loading={saving}>
               {saving
                 ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…')
                 : t('save')}

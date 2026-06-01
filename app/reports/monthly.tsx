@@ -430,7 +430,7 @@ export default function MonthlyReportScreen() {
               </>
             )}
 
-            <RButton full onPress={sharePdf} disabled={exporting}>
+            <RButton full onPress={sharePdf} disabled={exporting} loading={exporting}>
               <View style={{
                 flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                 alignItems: 'center', gap: 8,

@@ -208,7 +208,7 @@ export function SalaryCheckInSheet({
           </Text>
         </View>
 
-        <RButton full onPress={() => submit('received')} disabled={!canConfirm}>
+        <RButton full onPress={() => submit('received')} disabled={!canConfirm} loading={saving}>
           <View style={{
             flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
             alignItems: 'center', gap: 6,
