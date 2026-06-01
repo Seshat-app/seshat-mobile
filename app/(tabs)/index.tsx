@@ -74,7 +74,11 @@ export default function HomeScreen() {
     (async () => setCheckIn(await fetchSalaryCheckIn()))();
   }, [dataVersion]);
 
-  const userName = profile?.displayName || (lang === 'ar' ? 'ليلى' : 'there');
+  // In Arabic, greet with the user's Arabic name when they've set one; fall
+  // back to their display name, then a friendly default.
+  const userName =
+    (lang === 'ar' ? (profile?.displayNameAr || profile?.displayName) : profile?.displayName)
+    || (lang === 'ar' ? 'ليلى' : 'there');
   const currency = profile?.currency ?? 'EGP';
 
   const needsSalary = profile !== null && (profile.monthlySalary == null || profile.monthlySalary === 0);

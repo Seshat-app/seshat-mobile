@@ -8,6 +8,7 @@ import type { ApiCategory } from '../components/AddTransactionSheet';
 
 type Profile = {
   displayName?: string;
+  displayNameAr?: string;
   avatarUrl?: string;
   email: string;
   language: 'en' | 'ar';

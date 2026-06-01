@@ -25,6 +25,7 @@ const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
 
 type Profile = {
   displayName?: string;
+  displayNameAr?: string;
   avatarUrl?: string;
   email: string;
   language: 'en' | 'ar';
@@ -40,6 +41,7 @@ export default function ProfileScreen() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [displayName, setDisplayName] = useState('');
+  const [displayNameAr, setDisplayNameAr] = useState('');
   const [currency, setCurrency] = useState('EGP');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -49,6 +51,7 @@ export default function ProfileScreen() {
   // the button was always active even with no changes to save.
   const isDirty = profile != null && (
     (displayName ?? '') !== (profile.displayName ?? '') ||
+    (displayNameAr ?? '') !== (profile.displayNameAr ?? '') ||
     (lang ?? 'en') !== (profile.language ?? 'en') ||
     (currency ?? 'EGP') !== (profile.currency ?? 'EGP')
   );
@@ -69,6 +72,7 @@ export default function ProfileScreen() {
         const res = await apiFetch<{ data: Profile }>('/me');
         setProfile(res.data);
         setDisplayName(res.data.displayName ?? '');
+        setDisplayNameAr(res.data.displayNameAr ?? '');
         setCurrency(res.data.currency);
         if (res.data.language === 'en' || res.data.language === 'ar') setLang(res.data.language);
       } catch (err) {
@@ -80,10 +84,10 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     setSaving(true); setSaved(false);
     try {
-      await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ displayName, language: lang, currency }) });
+      await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ displayName, displayNameAr, language: lang, currency }) });
       // Sync the local baseline so the dirty check clears (otherwise the Save
       // button stays "active" after a successful save with no real change).
-      setProfile((p) => (p ? { ...p, displayName, language: lang, currency } : p));
+      setProfile((p) => (p ? { ...p, displayName, displayNameAr, language: lang, currency } : p));
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
       refresh();
@@ -288,6 +292,16 @@ export default function ProfileScreen() {
                       fontFamily: fontHead(lang),
                       fontSize: 20, color: tok.bone, letterSpacing: -0.4, padding: 0,
                       textAlign: lang === 'ar' ? 'right' : 'left',
+                    }}
+                  />
+                  <TextInput
+                    value={displayNameAr}
+                    onChangeText={setDisplayNameAr}
+                    placeholder={lang === 'ar' ? 'الاسم بالعربي (للترحيب)' : 'Arabic name (for greetings)'}
+                    placeholderTextColor={tok.muted}
+                    style={{
+                      fontFamily: fontBody(lang), fontSize: 13, color: tok.muted,
+                      padding: 0, marginTop: 6, textAlign: 'right', writingDirection: 'rtl',
                     }}
                   />
                   <REyebrow style={{ marginTop: 4, writingDirection: 'ltr' }}>{profile.email}</REyebrow>
