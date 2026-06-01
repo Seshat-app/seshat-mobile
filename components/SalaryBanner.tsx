@@ -147,8 +147,8 @@ export function SetSalarySheet({
               textAlign: lang === 'ar' ? 'right' : 'left', lineHeight: 19,
             }}>
               {lang === 'ar'
-                ? 'ستقارن سيشات صرفك بهذا الرقم. تقدر تعدّله متى ما شئت.'
-                : "Seshat compares your spending against this number. You can change it anytime."}
+                ? 'ستقارن ماعت صرفك بهذا الرقم. تقدر تعدّله متى ما شئت.'
+                : "Maat compares your spending against this number. You can change it anytime."}
             </Text>
 
             <View style={{

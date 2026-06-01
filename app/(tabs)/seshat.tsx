@@ -106,7 +106,7 @@ export default function SeshatSessionsScreen() {
           <Text style={{
             fontFamily: fontHead(lang), fontSize: 24, color: tok.bone, letterSpacing: -0.4,
           }}>
-            {lang === 'ar' ? 'سيشات' : 'Seshat'}
+            {lang === 'ar' ? 'ماعت' : 'Maat'}
           </Text>
           <REyebrow style={{ marginTop: 4, textAlign: lang === 'ar' ? 'right' : 'left' }}>
             {lang === 'ar' ? 'محادثاتك' : 'Your conversations'}

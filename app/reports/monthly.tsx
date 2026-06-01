@@ -92,7 +92,7 @@ export default function MonthlyReportScreen() {
   return (
     <PlanScreen
       title={report ? report.period.label : (lang === 'ar' ? 'التقرير الشهري' : 'Monthly report')}
-      subtitle={lang === 'ar' ? 'مدعوم بالذكاء الاصطناعي' : 'Powered by Seshat'}
+      subtitle={lang === 'ar' ? 'مدعوم بماعت' : 'Powered by Maat'}
       refreshing={refreshing}
     >
       <ScrollView
@@ -478,8 +478,8 @@ function BrewingState({
           textAlign: 'center', paddingHorizontal: 6,
         }}>
           {lang === 'ar'
-            ? 'سيشات تحتاج بعض السجلات لتعطيك ملاحظات ذات قيمة بدلاً من إعادة سرد ما تراه أصلاً.'
-            : 'Seshat needs more history to give you insights worth your time — not just a restatement of what the dashboard already shows.'}
+            ? 'ماعت تحتاج بعض السجلات لتعطيك ملاحظات ذات قيمة بدلاً من إعادة سرد ما تراه أصلاً.'
+            : 'Maat needs more history to give you insights worth your time, not just a restatement of what the dashboard already shows.'}
         </Text>
 
         <View style={{

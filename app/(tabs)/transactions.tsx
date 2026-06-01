@@ -359,8 +359,8 @@ function summarizeFilters(
     });
   }
   const sourceLabel: Record<string, string> = lang === 'ar'
-    ? { manual: 'يدوي', seshat: 'سيشات', voice: 'صوت', bot: 'تيليجرام', notification: 'إشعار', 'receipt-ocr': 'إيصال' }
-    : { manual: 'manual', seshat: 'seshat', voice: 'voice', bot: 'telegram', notification: 'notification', 'receipt-ocr': 'receipt' };
+    ? { manual: 'يدوي', seshat: 'ماعت', voice: 'صوت', bot: 'تيليجرام', notification: 'إشعار', 'receipt-ocr': 'إيصال' }
+    : { manual: 'manual', seshat: 'maat', voice: 'voice', bot: 'telegram', notification: 'notification', 'receipt-ocr': 'receipt' };
   for (const s of f.sources) {
     chips.push({
       key: `src-${s}`,

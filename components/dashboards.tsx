@@ -112,7 +112,7 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
           fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 2,
           color: tok.gold, textTransform: 'uppercase',
         }}>
-          {lang === 'ar' ? 'سيشات لاحظت' : 'Seshat noticed'}
+          {lang === 'ar' ? 'ماعت لاحظت' : 'Maat noticed'}
         </Text>
       </View>
 

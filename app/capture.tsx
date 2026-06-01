@@ -105,8 +105,8 @@ export default function CaptureScreen() {
     isMonthlyBaseline: parsed.isMonthlyBaselineHint,
     source: 'notification',
     detectionBanner: lang === 'ar'
-      ? `رصدت سيشات ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. تأكد وحفظ.`
-      : `Seshat detected ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. Confirm and save.`,
+      ? `رصدت ماعت ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. تأكد وحفظ.`
+      : `Maat detected ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. Confirm and save.`,
   } : undefined;
 
   return (
@@ -133,8 +133,8 @@ export default function CaptureScreen() {
               fontFamily: fontBody(lang), fontSize: 14, color: tok.muted, textAlign: 'center',
             }}>
               {lang === 'ar'
-                ? `لم تتعرف سيشات على هذه الرسالة كمعاملة (${parsed?.reason ?? '—'}).`
-                : `Seshat couldn't recognize this as a transaction (${parsed?.reason ?? '—'}).`}
+                ? `لم تتعرف ماعت على هذه الرسالة كمعاملة (${parsed?.reason ?? '—'}).`
+                : `Maat couldn't recognize this as a transaction (${parsed?.reason ?? '—'}).`}
             </Text>
           </RCard>
         )}

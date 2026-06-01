@@ -10,6 +10,7 @@ type Strings = Record<string, string>;
 const EN: Strings = {
   appName: 'Seshat',
   seshat: 'Seshat',
+  maat: 'Maat',
   greetingMorning: 'Good morning',
   greetingAfternoon: 'Good afternoon',
   greetingEvening: 'Good evening',
@@ -38,7 +39,7 @@ const EN: Strings = {
   overBudget: 'over',
   left: 'left',
   of: 'of',
-  talkToSeshat: 'Talk to Seshat',
+  talkToSeshat: 'Talk to Maat',
   detected: 'detected',
   onTrack: 'on track',
   near: 'near limit',
@@ -102,7 +103,7 @@ const EN: Strings = {
   seshatPrompt: 'Tell me what you spent.',
   seshatExample: '"spent 200 on food"',
   seshatPlaceholder: 'Tell me what you spent...',
-  seshatTabIntro: "I'm Seshat. Ask me about your spending.",
+  seshatTabIntro: "I'm Maat. Ask me about your spending.",
   seshatAvailable: 'available',
   message: 'Message...',
   // Empty / errors
@@ -115,6 +116,7 @@ const EN: Strings = {
 const AR: Strings = {
   appName: 'سيشات',
   seshat: 'سيشات',
+  maat: 'ماعت',
   greetingMorning: 'صباح الخير',
   greetingAfternoon: 'مساء الخير',
   greetingEvening: 'مساء الخير',
@@ -143,7 +145,7 @@ const AR: Strings = {
   overBudget: 'فوق',
   left: 'متبقي',
   of: 'من',
-  talkToSeshat: 'تحدث مع سيشات',
+  talkToSeshat: 'تحدث مع ماعت',
   detected: 'تم رصده',
   onTrack: 'في المسار',
   near: 'قرب الحد',
@@ -207,7 +209,7 @@ const AR: Strings = {
   seshatPrompt: 'أخبريني ماذا صرفتِ.',
   seshatExample: '«صرفت ٢٠٠ على أكل»',
   seshatPlaceholder: 'أخبريني ماذا صرفتِ...',
-  seshatTabIntro: 'أنا سيشات. اسأليني عن مصروفاتكِ.',
+  seshatTabIntro: 'أنا ماعت. اسأليني عن مصروفاتكِ.',
   seshatAvailable: 'متاحة',
   message: 'رسالة...',
   // Empty / errors

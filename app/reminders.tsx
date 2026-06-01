@@ -66,7 +66,7 @@ export default function RemindersScreen() {
   return (
     <PlanScreen
       title={lang === 'ar' ? 'التذكيرات' : 'Reminders'}
-      subtitle={lang === 'ar' ? 'العادات التي رصدتها سيشات' : 'Habits Seshat has noticed'}
+      subtitle={lang === 'ar' ? 'العادات التي رصدتها ماعت' : 'Habits Maat has noticed'}
       refreshing={refreshing}
     >
       <ScrollView
@@ -92,8 +92,8 @@ export default function RemindersScreen() {
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>
             {lang === 'ar'
-              ? 'عند تسجيل المعاملات بانتظام في وقت محدد، تتعلم سيشات هذا النمط وترسل لك تذكيراً لتسجيل المعاملة. يمكنك إيقاف أي تذكير في أي وقت.'
-              : 'When you log transactions at the same time consistently, Seshat learns the pattern and reminds you so nothing slips through. You can mute any reminder for 7 days at any time.'}
+              ? 'عند تسجيل المعاملات بانتظام في وقت محدد، تتعلم ماعت هذا النمط وترسل لك تذكيراً لتسجيل المعاملة. يمكنك إيقاف أي تذكير في أي وقت.'
+              : 'When you log transactions at the same time consistently, Maat learns the pattern and reminds you so nothing slips through. You can mute any reminder for 7 days at any time.'}
           </Text>
         </RCard>
 
@@ -183,7 +183,7 @@ function EmptyState({ tok, lang }: { tok: any; lang: 'en' | 'ar' }) {
         textAlign: 'center',
       }}>
         {lang === 'ar'
-          ? 'لم ترصد سيشات أي عادات بعد. سجّل معاملاتك بشكل منتظم وستظهر هنا.'
+          ? 'لم ترصد ماعت أي عادات بعد. سجّل معاملاتك بشكل منتظم وستظهر هنا.'
           : 'No habits yet. Keep logging your transactions consistently and patterns will show up here.'}
       </Text>
     </RCard>

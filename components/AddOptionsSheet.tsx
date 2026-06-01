@@ -80,8 +80,8 @@ export function AddOptionsSheet({ visible, onClose, onPickManual, onPickReceipt 
             icon={<Receipt size={20} color={tok.gold} strokeWidth={1.6} />}
             title={lang === 'ar' ? 'تصوير إيصال' : 'Scan a receipt'}
             subtitle={lang === 'ar'
-              ? 'صوّر إيصال أو اختر من المعرض - سيشات ستملأ التفاصيل.'
-              : 'Take a photo or pick one - Seshat will fill in the details.'}
+              ? 'صوّر إيصال أو اختر من المعرض، وماعت تملأ التفاصيل.'
+              : 'Take a photo or pick one, and Maat fills in the details.'}
             onPress={() => { onClose(); onPickReceipt(); }}
             tok={tok}
             lang={lang}

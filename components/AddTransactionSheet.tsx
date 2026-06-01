@@ -301,8 +301,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
         Alert.alert(
           lang === 'ar' ? 'لم يتم رصد الإيصال' : 'Could not read the receipt',
           d?.reason || (lang === 'ar'
-            ? 'لم تتعرف سيشات على هذه الصورة كإيصال. حاول بصورة أوضح أو أدخل المعاملة يدوياً.'
-            : 'Seshat couldn\'t recognize this image as a receipt. Try a clearer photo or add it manually.'),
+            ? 'لم تتعرف ماعت على هذه الصورة كإيصال. حاول بصورة أوضح أو أدخل المعاملة يدوياً.'
+            : 'Maat couldn\'t recognize this image as a receipt. Try a clearer photo or add it manually.'),
         );
         return;
       }
@@ -537,7 +537,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   backgroundColor: pressed ? tok.surface : 'transparent',
                   zIndex: 10,
                 })}
-                accessibilityLabel="Talk to Seshat"
+                accessibilityLabel="Talk to Maat"
               >
                 <Sparkles size={18} color={tok.gold} />
               </Pressable>

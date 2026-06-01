@@ -109,7 +109,7 @@ export default function TabsLayout() {
           <NativeTabsNavigator.Screen
             name="seshat"
             options={{
-              title: t('seshat'),
+              title: t('maat'),
               tabBarIcon: () => ({ sfSymbol: 'sparkles' }),
             }}
           />
@@ -156,9 +156,9 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="seshat"
             options={{
-              title: t('seshat'),
+              title: t('maat'),
               tabBarIcon: ({ color }) => <Sparkles size={22} color={color} strokeWidth={1.5} />,
-              tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('seshat')}</TabLabel>,
+              tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('maat')}</TabLabel>,
             }}
           />
           <Tabs.Screen
