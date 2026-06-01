@@ -49,6 +49,7 @@ export default function CaptureScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
+    let alive = true;
     (async () => {
       // Auth gate: if no token, kick to the auth flow. The deep link
       // survives a relaunch so once they sign in they can land here again.
@@ -57,7 +58,7 @@ export default function CaptureScreen() {
         return;
       }
       if (!text.trim()) {
-        setLoading(false);
+        if (alive) setLoading(false);
         return;
       }
       try {
@@ -65,15 +66,17 @@ export default function CaptureScreen() {
           method: 'POST',
           body: JSON.stringify({ text, source }),
         });
+        if (!alive) return;
         setParsed(res.data);
         if (res.data?.ok) setSheetOpen(true);
       } catch (err) {
         console.warn('capture parse failed', err);
-        setParsed({ ok: false, reason: 'Parser unreachable' });
+        if (alive) setParsed({ ok: false, reason: 'Parser unreachable' });
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
+    return () => { alive = false; };
   }, [text, source]);
 
   const onSave = async (p: AddTxPayload) => {

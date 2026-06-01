@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert,
+  View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -295,10 +295,12 @@ export default function ChatViewScreen() {
             onPress={attachImage}
             disabled={sending || uploading}
             hitSlop={8}
-            style={{ padding: 4, opacity: (sending || uploading) ? 0.4 : 1 }}
+            style={{ padding: 4, opacity: sending && !uploading ? 0.4 : 1 }}
             accessibilityLabel="Attach receipt"
           >
-            <ImagePlus size={20} color={uploading ? tok.gold : tok.muted} strokeWidth={1.5} />
+            {uploading
+              ? <ActivityIndicator size="small" color={tok.gold} />
+              : <ImagePlus size={20} color={tok.muted} strokeWidth={1.5} />}
           </Pressable>
           <Pressable
             onPressIn={() => { if (!sending) recorder.start(); }}

@@ -133,7 +133,7 @@ export type TxRowData = {
   currency: string;
   description?: string;
   date: string;
-  categoryId?: { nameEn?: string; nameAr?: string; emoji?: string; icon?: string };
+  categoryId?: { _id?: string; nameEn?: string; nameAr?: string; emoji?: string; icon?: string };
   // Origin of the transaction. Renders as a tiny chip on the row when
   // anything other than 'manual'. Lets the user spot AI-created, voice,
   // receipt, or bot-created entries at a glance.

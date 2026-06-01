@@ -480,7 +480,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={{ marginTop: 22 }}>
-          <RButton full onPress={handleSave} disabled={!isDirty || saving}>
+          <RButton full onPress={handleSave} disabled={!isDirty && !saving} loading={saving}>
             {saving ? t('saving') : saved ? t('saved') : t('saveChanges')}
           </RButton>
         </View>

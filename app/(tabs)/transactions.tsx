@@ -288,7 +288,7 @@ export default function TransactionsScreen() {
                     paddingHorizontal: 4, paddingBottom: 8,
                   }}>
                     <REyebrow>{day}</REyebrow>
-                    <RAmount value={total} size={11} weight="regular" currency={list[0]?.currency ?? 'EGP'} sign={total > 0} decimals={0} />
+                    <RAmount value={total} size={11} weight="regular" currency={list[0]?.currency ?? 'EGP'} sign decimals={0} />
                   </View>
                   <RCard padding={0} style={{ paddingHorizontal: 18 }}>
                     {list.map((tx, i) => (
