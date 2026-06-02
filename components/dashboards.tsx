@@ -1,12 +1,15 @@
-import { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, useWindowDimensions,
+  NativeSyntheticEvent, NativeScrollEvent,
+} from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { ArrowUp, ArrowDown } from 'lucide-react-native';
 import { useI18n, monthYear } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RCard, REyebrow, RAmount, RProgress, RStatus } from './ui';
 import { useRouter } from 'expo-router';
-import { SectionHeader, RTxRow, type TxRowData } from './shell';
+import { SectionHeader, RTxRow, type TxRowData, type DashView } from './shell';
 import { SeshatMark } from './SeshatMark';
 import { catIdFromName, catLabel } from '../lib/categoryMap';
 
@@ -581,6 +584,248 @@ export function DashboardBento({ data, currency}: { data: DashboardData; currenc
       {list.length > 0 && (
         <View style={{ marginTop: 14 }}>
           <SectionHeader label={t('recentActivity')} />
+          <RCard style={{ marginTop: 8, paddingHorizontal: 18, paddingVertical: 6 }}>
+            {list.map((tx, i) => <RTxRow key={tx._id} tx={tx} last={i === list.length - 1} />)}
+          </RCard>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Charts-only carousel + shared body — the live home dashboard.
+//
+// The hero is a swipeable carousel of three NET-this-month chart styles, all
+// at a uniform height (CHART_INNER) so they line up; the page dots sit under
+// it. Income/expenses, top category, the Maat insight, and recent activity
+// live in one shared body below that stays put while you swipe the chart.
+// (DashboardNumbers/Hud/Bento above are retained for reference, now unused.)
+// ═══════════════════════════════════════════════════════════════
+const CHART_INNER = 184;
+
+function ChartNumbers({ data, currency }: { data: DashboardData; currency: string }) {
+  const { lang, t } = useI18n();
+  return (
+    <RCard large glow>
+      <View style={{ height: CHART_INNER, justifyContent: 'center' }}>
+        <View style={{
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          justifyContent: 'space-between', alignItems: 'flex-start',
+        }}>
+          <REyebrow>{t('netBalance')}</REyebrow>
+          {data.current.balance >= 0
+            ? <RStatus kind="positive">{t('onTrack')}</RStatus>
+            : <RStatus kind="alert">{t('deficit')}</RStatus>}
+        </View>
+        <View style={{ marginTop: 16 }}>
+          <RAmount value={data.current.balance} size={lang === 'ar' ? 44 : 50} currency={currency} decimals={0} />
+        </View>
+        <REyebrow style={{ marginTop: 16 }}>{monthYear(lang)} · {t('detected')}</REyebrow>
+      </View>
+    </RCard>
+  );
+}
+
+function ChartSparkbar({ data, currency }: { data: DashboardData; currency: string }) {
+  const { tok, lang, t } = useI18n();
+  return (
+    <RCard large glow>
+      <View style={{ height: CHART_INNER, justifyContent: 'center' }}>
+        <REyebrow>{t('netBalance')}</REyebrow>
+        <View style={{ marginTop: 12 }}>
+          <RAmount value={data.current.balance} size={lang === 'ar' ? 38 : 42} currency={currency} decimals={0} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 3, alignItems: 'flex-end', height: 40, marginTop: 18 }}>
+          {Array.from({ length: 30 }).map((_, i) => {
+            const v = 0.3 + Math.abs(Math.sin(i * 0.7 + 1.4)) * 0.7;
+            const isToday = i === 27;
+            return (
+              <View key={i} style={{ flex: 1, height: `${v * 100}%`, backgroundColor: isToday ? tok.gold : tok.borderHi, borderRadius: 1, opacity: isToday ? 1 : 0.5 + (i / 30) * 0.5 }} />
+            );
+          })}
+        </View>
+        <REyebrow style={{ marginTop: 10 }}>30 {lang === 'ar' ? 'يوماً' : 'days'} · {lang === 'ar' ? 'الصافي اليومي' : 'daily net'}</REyebrow>
+      </View>
+    </RCard>
+  );
+}
+
+function ChartRadar({ data, currency }: { data: DashboardData; currency: string }) {
+  const { tok, lang, t } = useI18n();
+  const top = data.categoryBreakdown.slice(0, 6);
+  const hasEnough = top.length >= 3;
+  const max = top[0]?.total ?? 1;
+  const SIZE = CHART_INNER;
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const R = SIZE / 2 - 4;
+  const blips = top.map((cat, i) => {
+    const angle = -Math.PI / 2 + (i / Math.max(top.length, 1)) * Math.PI * 2 + 0.3;
+    const radius = R * 0.42 + (i / Math.max(top.length - 1, 1)) * R * 0.5;
+    return { cat, x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), size: 3 + (cat.total / max) * 5 };
+  });
+  return (
+    <RCard large glow>
+      <View style={{ height: CHART_INNER, alignItems: 'center', justifyContent: 'center' }}>
+        <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute' }}>
+          {[R * 0.45, R * 0.72, R].map((r, idx) => (
+            <Circle key={idx} cx={cx} cy={cy} r={r} fill="none" stroke={tok.border} strokeWidth={0.6} />
+          ))}
+          <Line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke={tok.border} strokeWidth={0.6} />
+          <Line x1={cx} y1={cy - R} x2={cx} y2={cy + R} stroke={tok.border} strokeWidth={0.6} />
+          {hasEnough && (
+            <>
+              <Path d={`M ${cx + R} ${cy} A ${R} ${R} 0 0 0 ${cx} ${cy - R}`} stroke={tok.gold} strokeWidth={1.4} fill="none" opacity={0.4} strokeLinecap="round" />
+              {blips.map((b, i) => (
+                <Circle key={b.cat.categoryId} cx={b.x} cy={b.y} r={b.size} fill={tok.gold} opacity={1 - i * 0.1} />
+              ))}
+            </>
+          )}
+        </Svg>
+        <View pointerEvents="none" style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
+          {hasEnough ? (
+            <>
+              <REyebrow>{t('netBalance')}</REyebrow>
+              <View style={{ marginTop: 4 }}>
+                <RAmount value={data.current.balance} size={lang === 'ar' ? 22 : 26} currency={currency} decimals={0} />
+              </View>
+            </>
+          ) : (
+            <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: tok.bone, letterSpacing: 0.4, textAlign: 'center', paddingHorizontal: 24 }}>
+              {t('notEnoughData')}
+            </Text>
+          )}
+        </View>
+      </View>
+    </RCard>
+  );
+}
+
+// ChartCarousel — swipeable hero. Full-width pages (so the resting card lines
+// up with the body's 16px inset) and a 32px gutter between cards while swiping.
+export function ChartCarousel({
+  data, currency, view, onViewChange,
+}: { data: DashboardData; currency: string; view: DashView; onViewChange: (v: DashView) => void }) {
+  const { tok } = useI18n();
+  const { width } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
+  const VIEWS: DashView[] = ['numbers', 'hud', 'bento'];
+  const activeIndex = Math.max(0, VIEWS.indexOf(view));
+
+  useEffect(() => {
+    const id = setTimeout(() => scrollRef.current?.scrollTo({ x: activeIndex * width, y: 0, animated: false }), 0);
+    return () => clearTimeout(id);
+  }, [activeIndex, width]);
+
+  const onEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (VIEWS[i] && VIEWS[i] !== view) onViewChange(VIEWS[i]);
+  };
+
+  return (
+    <View>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        contentOffset={{ x: activeIndex * width, y: 0 }}
+        onMomentumScrollEnd={onEnd}
+        decelerationRate="fast"
+      >
+        {VIEWS.map((v) => (
+          <View key={v} style={{ width, paddingHorizontal: 16 }}>
+            {v === 'numbers' && <ChartNumbers data={data} currency={currency} />}
+            {v === 'hud' && <ChartRadar data={data} currency={currency} />}
+            {v === 'bento' && <ChartSparkbar data={data} currency={currency} />}
+          </View>
+        ))}
+      </ScrollView>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 12 }}>
+        {VIEWS.map((v, i) => (
+          <View key={v} style={{
+            width: i === activeIndex ? 18 : 6, height: 6, borderRadius: 3,
+            backgroundColor: i === activeIndex ? tok.gold : tok.borderHi,
+          }} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// DashboardBody — the shared content below the chart carousel (stays put).
+export function DashboardBody({ data, currency }: { data: DashboardData; currency: string }) {
+  const { tok, lang, t } = useI18n();
+  const router = useRouter();
+  const list = data.recentTransactions.slice(0, 4);
+  const topCat = data.categoryBreakdown[0];
+  const incomeDelta = useMemo(() => {
+    if (!data.previous || data.previous.income.total === 0) return null;
+    return ((data.current.income.total - data.previous.income.total) / data.previous.income.total) * 100;
+  }, [data]);
+  const expenseDelta = useMemo(() => {
+    if (!data.previous || data.previous.expense.total === 0) return null;
+    return ((data.current.expense.total - data.previous.expense.total) / data.previous.expense.total) * 100;
+  }, [data]);
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+      {/* Income / expenses */}
+      <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 10 }}>
+        <RCard padding={16} style={{ flex: 1 }}>
+          <REyebrow>{t('income')}</REyebrow>
+          <View style={{ marginTop: 6 }}>
+            <RAmount value={data.current.income.total} short size={20} currency={currency} decimals={0} />
+          </View>
+          {incomeDelta !== null && (
+            <View style={{ marginTop: 8, flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
+              {incomeDelta >= 0 ? <ArrowUp size={11} color={tok.posText} strokeWidth={2} /> : <ArrowDown size={11} color={tok.alertText} strokeWidth={2} />}
+              <Text style={{ color: incomeDelta >= 0 ? tok.posText : tok.alertText, fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 0.6 }}>{incomeDelta >= 0 ? '+' : ''}{incomeDelta.toFixed(0)}% mom</Text>
+            </View>
+          )}
+        </RCard>
+        <RCard padding={16} style={{ flex: 1 }}>
+          <REyebrow>{t('expenses')}</REyebrow>
+          <View style={{ marginTop: 6 }}>
+            <RAmount value={-data.current.expense.total} short size={20} currency={currency} decimals={0} />
+          </View>
+          {expenseDelta !== null && (
+            <View style={{ marginTop: 8, flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 4 }}>
+              {expenseDelta >= 0 ? <ArrowUp size={11} color={tok.alertText} strokeWidth={2} /> : <ArrowDown size={11} color={tok.posText} strokeWidth={2} />}
+              <Text style={{ color: expenseDelta >= 0 ? tok.alertText : tok.posText, fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 0.6 }}>{expenseDelta >= 0 ? '+' : ''}{expenseDelta.toFixed(0)}% mom</Text>
+            </View>
+          )}
+        </RCard>
+      </View>
+
+      {/* Top category */}
+      {topCat && (
+        <View style={{ marginTop: 10 }}>
+          <RCard padding={16}>
+            <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <REyebrow>{t('topCategory')}</REyebrow>
+                <Text style={{ marginTop: 6, fontFamily: fontHead(lang), fontSize: lang === 'ar' ? 19 : 17, color: tok.bone, textAlign: lang === 'ar' ? 'right' : 'left' }}>{catLabel(topCat, lang)}</Text>
+              </View>
+              <RAmount value={-topCat.total} size={20} currency={currency} decimals={0} />
+            </View>
+            <View style={{ marginTop: 12 }}>
+              <RProgress value={topCat.total} max={topCat.total * 1.3} color={tok.gold} height={3} />
+              <REyebrow style={{ marginTop: 6 }}>{Math.round(topCat.total / Math.max(data.current.expense.total, 1) * 100)}% {t('expenses').toLowerCase()}</REyebrow>
+            </View>
+          </RCard>
+        </View>
+      )}
+
+      {/* Maat insight */}
+      <View style={{ marginTop: 14 }}>
+        <SeshatInsightCard data={data} currency={currency} />
+      </View>
+
+      {/* Recent activity */}
+      {list.length > 0 && (
+        <View style={{ marginTop: 18 }}>
+          <SectionHeader label={t('recentActivity')} action={t('seeAll')} onActionPress={() => router.push('/(tabs)/transactions')} />
           <RCard style={{ marginTop: 8, paddingHorizontal: 18, paddingVertical: 6 }}>
             {list.map((tx, i) => <RTxRow key={tx._id} tx={tx} last={i === list.length - 1} />)}
           </RCard>

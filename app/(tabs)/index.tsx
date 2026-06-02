@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ScrollView, View, Text, RefreshControl, StyleSheet, useWindowDimensions,
-  NativeSyntheticEvent, NativeScrollEvent,
-} from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, View, Text, RefreshControl, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Glass } from '../../components/Glass';
 import * as SecureStore from 'expo-secure-store';
@@ -12,7 +9,7 @@ import { useAppData } from '../../lib/appData';
 import { fontBody } from '../../lib/fonts';
 import { RHomeHeader, type DashView } from '../../components/shell';
 import { ScreenAtmosphere } from '../../components/ScreenAtmosphere';
-import { DashboardNumbers, DashboardHud, DashboardBento, type DashboardData } from '../../components/dashboards';
+import { ChartCarousel, DashboardBody, type DashboardData } from '../../components/dashboards';
 import { SkeletonCard, Skeleton, SkeletonRow } from '../../components/Skeleton';
 import { RCard } from '../../components/ui';
 import { SalaryBanner, SetSalarySheet } from '../../components/SalaryBanner';
@@ -87,9 +84,6 @@ export default function HomeScreen() {
     || (lang === 'ar' ? 'ليلى' : 'there');
   const currency = profile?.currency ?? 'EGP';
 
-  // Dashboard views the user swipes between; the choice persists on settle.
-  const VIEWS: DashView[] = ['numbers', 'hud', 'bento'];
-
   const needsSalary = profile !== null && (profile.monthlySalary == null || profile.monthlySalary === 0);
 
   const saveSalary = async (amount: number) => {
@@ -124,31 +118,22 @@ export default function HomeScreen() {
         );
         if (loading) return <DashboardSkeleton topPad={headerH + 14} />;
         const isEmpty = !data || (data.current.income.count === 0 && data.current.expense.count === 0);
-        if (isEmpty) {
-          return (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingTop: headerH + 14, flexGrow: 1 }}
-              refreshControl={refreshCtl}
-            >
-              {banners}
-              <View style={{ flex: 1, minHeight: 400 }}><EmptyState /></View>
-            </ScrollView>
-          );
-        }
         return (
-          <DashboardViewPager
-            views={VIEWS}
-            view={view}
-            onViewChange={onViewChange}
-            headerH={headerH}
-            bottomInset={insets.bottom}
-            refreshing={refreshing}
-            onRefresh={() => fetchDashboard('refresh')}
-            banners={banners}
-            data={data!}
-            currency={currency}
-          />
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingTop: headerH + 14, paddingBottom: insets.bottom + 24, flexGrow: 1 }}
+            refreshControl={refreshCtl}
+          >
+            {banners}
+            {isEmpty ? (
+              <View style={{ flex: 1, minHeight: 400 }}><EmptyState /></View>
+            ) : (
+              <>
+                <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
+                <DashboardBody data={data!} currency={currency} />
+              </>
+            )}
+          </ScrollView>
         );
       })()}
 
@@ -184,98 +169,6 @@ export default function HomeScreen() {
         status={checkIn}
         onDone={() => { bumpVersion(); }}
       />
-    </View>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// DashboardViewPager — the dashboard is a horizontal carousel of the three
-// views (Numbers / Instrument / Bento). Each page is the real, full view in
-// its own vertical scroll; swiping between them shows the actual charts (no
-// placeholder) and the chosen view persists on settle. The horizontal gutter
-// between pages comes from each view's own 16px side padding.
-// ─────────────────────────────────────────────────────────────
-function DashboardViewPager({
-  views, view, onViewChange, headerH, bottomInset, refreshing, onRefresh, banners, data, currency,
-}: {
-  views: DashView[];
-  view: DashView;
-  onViewChange: (v: DashView) => void;
-  headerH: number;
-  bottomInset: number;
-  refreshing: boolean;
-  onRefresh: () => void;
-  banners: React.ReactNode;
-  data: DashboardData;
-  currency: string;
-}) {
-  const { tok } = useI18n();
-  const { width } = useWindowDimensions();
-  const ref = useRef<ScrollView>(null);
-  const activeIndex = Math.max(0, views.indexOf(view));
-
-  // Keep the carousel aligned to the active view (mount + external changes).
-  useEffect(() => {
-    const id = setTimeout(() => ref.current?.scrollTo({ x: activeIndex * width, y: 0, animated: false }), 0);
-    return () => clearTimeout(id);
-  }, [activeIndex, width]);
-
-  const onEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / width);
-    if (views[i] && views[i] !== view) onViewChange(views[i]);
-  };
-
-  return (
-    <ScrollView
-      ref={ref}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      contentOffset={{ x: activeIndex * width, y: 0 }}
-      onMomentumScrollEnd={onEnd}
-      decelerationRate="fast"
-    >
-      {views.map((v) => (
-        <View key={v} style={{ width }}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingTop: headerH + 14, paddingBottom: bottomInset + 24 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={tok.gold}
-                colors={[tok.gold]}
-                progressBackgroundColor={tok.surface}
-                progressViewOffset={headerH}
-              />
-            }
-          >
-            <PageDots count={views.length} active={activeIndex} />
-            {banners}
-            {v === 'numbers' && <DashboardNumbers data={data} currency={currency} />}
-            {v === 'hud' && <DashboardHud data={data} currency={currency} />}
-            {v === 'bento' && <DashboardBento data={data} currency={currency} />}
-          </ScrollView>
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
-
-function PageDots({ count, active }: { count: number; active: number }) {
-  const { tok } = useI18n();
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingBottom: 12 }}>
-      {Array.from({ length: count }).map((_, i) => (
-        <View
-          key={i}
-          style={{
-            width: i === active ? 18 : 6, height: 6, borderRadius: 3,
-            backgroundColor: i === active ? tok.gold : tok.borderHi,
-          }}
-        />
-      ))}
     </View>
   );
 }
