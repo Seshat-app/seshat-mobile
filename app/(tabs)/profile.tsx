@@ -16,7 +16,6 @@ import { RCard, REyebrow, RButton, RField, RPill } from '../../components/ui';
 import { ScreenScaffold } from '../../components/Screen';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
-import { resetTour } from '../../components/Tour';
 import { WorkspaceCard } from '../../components/WorkspaceSwitcher';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
@@ -219,8 +218,8 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
-        {/* Identity card */}
-        <RCard large>
+        {/* Identity card — gold-glow shield, matching the home hero. */}
+        <RCard large glow>
           <View style={{
             flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
             alignItems: 'center', gap: 14,
@@ -489,79 +488,6 @@ export default function ProfileScreen() {
           <RButton full variant="destructive" onPress={handleSignOut}>{t('signOut')}</RButton>
         </View>
 
-        {/* Manual OTA check. Useful when the background updater hasn't applied
-            a new bundle yet and the user wants to force-pull the latest. */}
-        <Pressable
-          onPress={async () => {
-            try {
-              const check = await Updates.checkForUpdateAsync();
-              if (check.isAvailable) {
-                await Updates.fetchUpdateAsync();
-                Alert.alert(
-                  lang === 'ar' ? 'تم تحميل التحديث' : 'Update downloaded',
-                  lang === 'ar'
-                    ? 'سيتم إعادة تشغيل التطبيق الآن.'
-                    : 'The app will reload now.',
-                  [{
-                    text: 'OK',
-                    onPress: () => Updates.reloadAsync().catch(() => {}),
-                  }],
-                );
-              } else {
-                Alert.alert(
-                  lang === 'ar' ? 'محدّث' : 'Up to date',
-                  lang === 'ar'
-                    ? 'أنتِ بالفعل على آخر إصدار.'
-                    : 'You are already on the latest build.',
-                );
-              }
-            } catch (e) {
-              Alert.alert(
-                lang === 'ar' ? 'فشل التحقق' : 'Check failed',
-                e instanceof Error ? e.message : String(e),
-              );
-            }
-          }}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            marginTop: 18, paddingVertical: 10,
-            alignItems: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{
-            color: tok.gold,
-            fontFamily: fontMono('regular'),
-            fontSize: 11,
-            letterSpacing: lang === 'ar' ? 0 : 1.4,
-            textTransform: lang === 'ar' ? 'none' : 'uppercase',
-          }}>
-            {lang === 'ar' ? 'تحقّق من التحديثات' : 'Check for updates'}
-          </Text>
-        </Pressable>
-
-        {/* Replay first-launch tour. Useful if the user dismissed it accidentally
-            or wants a refresher after new features ship. */}
-        <Pressable
-          onPress={async () => { await resetTour(); router.replace('/(tabs)'); }}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            marginTop: 4, paddingVertical: 10,
-            alignItems: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{
-            color: tok.muted,
-            fontFamily: fontMono('regular'),
-            fontSize: 11,
-            letterSpacing: lang === 'ar' ? 0 : 1.4,
-            textTransform: lang === 'ar' ? 'none' : 'uppercase',
-          }}>
-            {lang === 'ar' ? 'إعادة التعريف بالتطبيق' : 'Replay app tour'}
-          </Text>
-        </Pressable>
-
         {/* Danger zone. Collapsed by default so the delete button isn't a
             single careless tap away. Tapping the toggle reveals the typed-
             email confirmation gate; the actual delete button is disabled
@@ -632,9 +558,8 @@ export default function ProfileScreen() {
         )}
 
         {/* Build identity footer. Shows app version + the EAS update ID
-            so the user can confirm an OTA actually landed. The update ID
-            changes every push; if you tap "Check for updates" above and
-            the ID here doesn't change, you're already on the latest. */}
+            so the user can confirm which bundle is running. The update ID
+            changes every OTA push. */}
         <BuildFooter />
       </ScrollView>
 
