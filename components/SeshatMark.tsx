@@ -17,7 +17,8 @@ type Props = {
 /**
  * SeshatMark - the Seshat brand mark for mobile: the original crosshair-burst
  * (vertical + horizontal axes, the headdress dome on top, four rays, centre
- * dot). Mirrors the web LogoMark exactly. Replaces the previous mark.
+ * dot). Mirrors the web LogoMark, with a slightly heavier stroke on
+ * mobile for a bolder, more premium read. Replaces the previous mark.
  *
  * - animate: the mark scales + fades in, then emits one soft gold pulse ring.
  * - spinning: the mark rotates once every 3s at reduced opacity (loading).
@@ -67,16 +68,16 @@ export function SeshatMark({ size = 32, gold = '#C9A84C', animate = false, spinn
       <Animated.View style={{ width: size, height: size, opacity, transform: [{ rotate }, { scale }] }}>
         <Svg width={size} height={size} viewBox="0 0 160 160">
           <G stroke={gold} strokeLinecap="round">
-            <Line x1={80} y1={10} x2={80} y2={150} strokeWidth={3} />
-            <Line x1={10} y1={80} x2={150} y2={80} strokeWidth={3} />
-            <Path d="M80 24 Q46 24 34 56" strokeWidth={3} fill="none" />
-            <Path d="M80 24 Q114 24 126 56" strokeWidth={3} fill="none" />
-            <Line x1={80} y1={80} x2={60} y2={60} strokeWidth={2.5} />
-            <Line x1={80} y1={80} x2={100} y2={60} strokeWidth={2.5} />
-            <Line x1={80} y1={80} x2={60} y2={100} strokeWidth={2.5} />
-            <Line x1={80} y1={80} x2={100} y2={100} strokeWidth={2.5} />
+            <Line x1={80} y1={10} x2={80} y2={150} strokeWidth={3.6} />
+            <Line x1={10} y1={80} x2={150} y2={80} strokeWidth={3.6} />
+            <Path d="M80 24 Q46 24 34 56" strokeWidth={3.6} fill="none" />
+            <Path d="M80 24 Q114 24 126 56" strokeWidth={3.6} fill="none" />
+            <Line x1={80} y1={80} x2={60} y2={60} strokeWidth={3} />
+            <Line x1={80} y1={80} x2={100} y2={60} strokeWidth={3} />
+            <Line x1={80} y1={80} x2={60} y2={100} strokeWidth={3} />
+            <Line x1={80} y1={80} x2={100} y2={100} strokeWidth={3} />
           </G>
-          <Circle cx={80} cy={80} r={5.5} fill={gold} />
+          <Circle cx={80} cy={80} r={6.2} fill={gold} />
         </Svg>
       </Animated.View>
     </View>
