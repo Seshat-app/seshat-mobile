@@ -71,20 +71,25 @@ export function RHomeHeader({
         <View style={{ flexShrink: 1, flex: 1 }}>
           {/* Workspace switching now lives on the swipeable hero card; the
               header is just the greeting + date. */}
-          <Text style={{
-            fontFamily: fontHead(lang),
-            fontSize: lang === 'ar' ? 24 : 25, color: tok.bone,
-            letterSpacing: lang === 'ar' ? 0 : -0.6,
-            lineHeight: lang === 'ar' ? 34 : 29,
-            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-          }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontFamily: fontHead(lang),
+              fontSize: lang === 'ar' ? 19 : 19, color: tok.bone,
+              letterSpacing: lang === 'ar' ? 0 : -0.4,
+              lineHeight: lang === 'ar' ? 27 : 24,
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+            }}
+          >
             {greeting(lang, userName)}
           </Text>
           <REyebrow style={{ marginTop: 7, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
             {monthYear(lang)}
           </REyebrow>
         </View>
-        <RViewSwitcher value={view} onChange={onViewChange} />
+        {/* Workspace / org switcher — tap to switch ledgers. Lives where the
+            view switcher used to be; the view now changes by swiping the hero. */}
+        <WorkspaceChip />
       </View>
     </View>
   );

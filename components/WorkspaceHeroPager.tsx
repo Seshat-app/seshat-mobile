@@ -3,38 +3,37 @@ import {
   View, Text, ScrollView, useWindowDimensions,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import { Building2, User as UserIcon } from 'lucide-react-native';
+import { BarChart3, Crosshair, LayoutGrid } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontHead } from '../lib/fonts';
 import { RCard, REyebrow } from './ui';
-import type { WorkspaceSummary } from '../lib/appData';
 
 // ─────────────────────────────────────────────────────────────
-// WorkspaceHeroPager — turns the hero card into a horizontal carousel of the
-// user's workspaces. The active workspace's page shows the real hero (passed
-// as children); the others show a light "release to switch" placeholder.
-// Settling on a different page switches the active ledger (persisted server-
-// side) and the rest of the dashboard refetches to match.
-//
-// With a single workspace there's nothing to switch, so it just renders the
-// hero as-is.
+// HeroPager — turns the hero card into a horizontal carousel of dashboard
+// views (Numbers / Instrument / Bento). The active view's page shows the real
+// hero (passed as children); the others show a light "release to switch"
+// placeholder. Settling on another page selects that view (persisted), and
+// the whole dashboard re-renders to it.
 // ─────────────────────────────────────────────────────────────
-export function WorkspaceHeroPager({
-  workspaces, activeIndex, onSwitch, children,
+export type HeroPage = { label: string; icon: 'numbers' | 'hud' | 'bento' };
+
+const ICONS = { numbers: BarChart3, hud: Crosshair, bento: LayoutGrid } as const;
+
+export function HeroPager({
+  pages, activeIndex, onSelect, children,
 }: {
-  workspaces: WorkspaceSummary[];
+  pages: HeroPage[];
   activeIndex: number;
-  onSwitch: (w: WorkspaceSummary) => void;
+  onSelect: (index: number) => void;
   children: ReactNode;
 }) {
   const { tok } = useI18n();
   const { width } = useWindowDimensions();
   const pageW = width - 32; // dashboard uses paddingHorizontal: 16
   const scrollRef = useRef<ScrollView>(null);
-  const safeIndex = Math.max(0, Math.min(activeIndex, workspaces.length - 1));
+  const safeIndex = Math.max(0, Math.min(activeIndex, pages.length - 1));
 
-  // Keep the carousel aligned to the active workspace (initial mount + when
-  // the active ledger changes from elsewhere, e.g. the Profile switcher).
+  // Keep the carousel aligned to the active view (mount + external changes).
   useEffect(() => {
     const id = setTimeout(() => {
       scrollRef.current?.scrollTo({ x: safeIndex * pageW, y: 0, animated: false });
@@ -42,11 +41,11 @@ export function WorkspaceHeroPager({
     return () => clearTimeout(id);
   }, [safeIndex, pageW]);
 
-  if (workspaces.length <= 1) return <>{children}</>;
+  if (pages.length <= 1) return <>{children}</>;
 
   const onEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / pageW);
-    if (idx !== safeIndex && workspaces[idx]) onSwitch(workspaces[idx]);
+    if (idx !== safeIndex && pages[idx]) onSelect(idx);
   };
 
   return (
@@ -60,18 +59,18 @@ export function WorkspaceHeroPager({
         onMomentumScrollEnd={onEnd}
         decelerationRate="fast"
       >
-        {workspaces.map((w, i) => (
-          <View key={w.ledgerId || `${w.kind}-${w.name}`} style={{ width: pageW }}>
-            {i === safeIndex ? children : <PlaceholderHero w={w} />}
+        {pages.map((p, i) => (
+          <View key={p.label} style={{ width: pageW }}>
+            {i === safeIndex ? children : <PlaceholderHero page={p} />}
           </View>
         ))}
       </ScrollView>
 
-      {/* Page dots */}
+      {/* Page dots — one per view */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 12 }}>
-        {workspaces.map((w, i) => (
+        {pages.map((p, i) => (
           <View
-            key={w.ledgerId || `${w.kind}-${w.name}-dot`}
+            key={`${p.label}-dot`}
             style={{
               width: i === safeIndex ? 18 : 6, height: 6, borderRadius: 3,
               backgroundColor: i === safeIndex ? tok.gold : tok.borderHi,
@@ -83,43 +82,25 @@ export function WorkspaceHeroPager({
   );
 }
 
-function PlaceholderHero({ w }: { w: WorkspaceSummary }) {
+function PlaceholderHero({ page }: { page: HeroPage }) {
   const { tok, lang } = useI18n();
-  const isOrg = w.kind === 'org';
+  const Icon = ICONS[page.icon];
   return (
     <RCard large>
-      <View style={{ minHeight: 150, justifyContent: 'center' }}>
+      <View style={{ minHeight: 150, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
         <View style={{
-          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          alignItems: 'center', gap: 12,
+          width: 48, height: 48, borderRadius: 16,
+          backgroundColor: tok.elevated,
+          alignItems: 'center', justifyContent: 'center',
         }}>
-          <View style={{
-            width: 44, height: 44, borderRadius: 14,
-            backgroundColor: tok.elevated,
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            {isOrg
-              ? <Building2 size={20} color={tok.gold} strokeWidth={1.6} />
-              : <UserIcon size={20} color={tok.gold} strokeWidth={1.6} />}
-          </View>
-          <View style={{ flex: 1 }}>
-            <REyebrow>{lang === 'ar' ? 'مساحة العمل' : 'Workspace'}</REyebrow>
-            <Text
-              numberOfLines={1}
-              style={{
-                marginTop: 4, fontFamily: fontHead(lang), fontSize: 24, color: tok.bone,
-                letterSpacing: lang === 'ar' ? 0 : -0.5,
-                textAlign: lang === 'ar' ? 'right' : 'left',
-              }}
-            >{w.name}</Text>
-          </View>
+          <Icon size={22} color={tok.gold} strokeWidth={1.6} />
         </View>
-        <Text style={{
-          marginTop: 16, color: tok.muted, fontFamily: fontHead(lang), fontSize: 13,
-          textAlign: 'center',
-        }}>
-          {lang === 'ar' ? 'اترك للتبديل إلى هذه المساحة' : 'Release to switch to this workspace'}
-        </Text>
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <Text style={{
+            fontFamily: fontHead(lang), fontSize: 20, color: tok.bone, letterSpacing: -0.4,
+          }}>{page.label}</Text>
+          <REyebrow>{lang === 'ar' ? 'اترك للعرض' : 'Release to view'}</REyebrow>
+        </View>
       </View>
     </RCard>
   );

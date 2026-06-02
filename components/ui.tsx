@@ -80,9 +80,18 @@ export function RCard({
       : { paddingVertical: 20, paddingHorizontal: 22 };
 
   const { shell, core } = splitCardStyle(style);
-  const bezel = 4;
+  // Non-glow cards are a single clean plate — no outer tray frame — so panels
+  // don't show a faint outline/seam against the void (this was visible on most
+  // cards app-wide). Glow cards keep the gold double-bezel + soft glow as the
+  // focal treatment.
+  const bezel = glow ? 4 : 0;
   const outerRadius = large ? 26 : 22;
-  const innerRadius = outerRadius - bezel;
+  const innerRadius = Math.max(0, outerRadius - bezel);
+  const accentRail: ViewStyle | null = accent
+    ? (dir === 'rtl'
+        ? { borderRightWidth: 2, borderRightColor: tok.gold }
+        : { borderLeftWidth: 2, borderLeftColor: tok.gold })
+    : null;
 
   return (
     <View
@@ -90,9 +99,9 @@ export function RCard({
         {
           padding: bezel,
           borderRadius: outerRadius,
-          backgroundColor: glow ? tok.glowShellBg : tok.shellBg,
-          borderWidth: 1,
-          borderColor: glow ? tok.glowShellBorder : tok.shellBorder,
+          backgroundColor: glow ? tok.glowShellBg : 'transparent',
+          borderWidth: glow ? 1 : 0,
+          borderColor: glow ? tok.glowShellBorder : 'transparent',
         },
         // Gold glow lifts focal cards off the void — kept soft and faint.
         glow && {
@@ -102,10 +111,6 @@ export function RCard({
           shadowOffset: { width: 0, height: 8 },
           elevation: 3,
         },
-        // Accent rail rides the shell's leading edge.
-        accent && (dir === 'rtl'
-          ? { borderRightWidth: 2, borderRightColor: tok.gold }
-          : { borderLeftWidth: 2, borderLeftColor: tok.gold }),
         shell,
       ]}
     >
@@ -115,7 +120,7 @@ export function RCard({
         fallbackColor={tok.coreBg}
         dark={mode !== 'light'}
         intensity={glow ? 48 : 32}
-        style={[corePad, core]}
+        style={[corePad, ...(accentRail ? [accentRail] : []), core]}
       >
         <CardSheen glow={glow} />
         {children}
