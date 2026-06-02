@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, View, Text, RefreshControl } from 'react-native';
+import { ScrollView, View, Text, RefreshControl, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Glass } from '../../components/Glass';
 import * as SecureStore from 'expo-secure-store';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { fontBody } from '../../lib/fonts';
 import { RHomeHeader, type DashView } from '../../components/shell';
-import { ScreenAtmosphere, ScrollEdgeFade } from '../../components/ScreenAtmosphere';
+import { ScreenAtmosphere } from '../../components/ScreenAtmosphere';
 import { DashboardNumbers, DashboardHud, DashboardBento, type DashboardData } from '../../components/dashboards';
 import { SkeletonCard, Skeleton, SkeletonRow } from '../../components/Skeleton';
 import { RCard } from '../../components/ui';
@@ -21,9 +22,10 @@ const VIEW_KEY = 'seshat.dashboardView';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { tok, lang, t } = useI18n();
+  const { tok, lang, t, mode } = useI18n();
   const { profile, dataVersion, refresh, bumpVersion } = useAppData();
   const insets = useSafeAreaInsets();
+  const [headerH, setHeaderH] = useState(0);
   const [view, setView] = useState<DashView>('bento');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,21 +94,15 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: tok.void }}>
       <ScreenAtmosphere />
-      <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
 
-      {needsSalary && <SalaryBanner onPress={() => setSalaryOpen(true)} />}
-      {!needsSalary && checkIn.needed && (
-        <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
-      )}
-
-      <View style={{ flex: 1 }}>
       {loading ? (
-        <DashboardSkeleton />
+        <DashboardSkeleton topPad={headerH} />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: headerH }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -114,9 +110,14 @@ export default function HomeScreen() {
               tintColor={tok.gold}
               colors={[tok.gold]}
               progressBackgroundColor={tok.surface}
+              progressViewOffset={headerH}
             />
           }
         >
+          {needsSalary && <SalaryBanner onPress={() => setSalaryOpen(true)} />}
+          {!needsSalary && checkIn.needed && (
+            <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
+          )}
           {!data || (data.current.income.count === 0 && data.current.expense.count === 0) ? (
             <View style={{ flex: 1, minHeight: 400 }}>
               <EmptyState />
@@ -130,7 +131,25 @@ export default function HomeScreen() {
           )}
         </ScrollView>
       )}
-      <ScrollEdgeFade />
+
+      {/* Overlay glass header — content scrolls and blurs beneath it (iOS 26
+          Liquid Glass where available, frosted blur otherwise). */}
+      <View
+        onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}
+      >
+        <Glass
+          variant="liquid"
+          dark={mode !== 'light'}
+          fallbackColor={mode === 'light' ? 'rgba(245,244,239,0.72)' : 'rgba(13,13,13,0.6)'}
+          style={{
+            paddingTop: insets.top,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: tok.shellBorder,
+          }}
+        >
+          <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
+        </Glass>
       </View>
 
       <SetSalarySheet
@@ -167,10 +186,10 @@ function EmptyState() {
   );
 }
 
-function DashboardSkeleton() {
+function DashboardSkeleton({ topPad = 0 }: { topPad?: number }) {
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 4, gap: 10, paddingBottom: 120 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: topPad + 4, gap: 10, paddingBottom: 120 }}>
         <SkeletonCard height={172} />
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <SkeletonCard height={96} style={{ flex: 1 }} />

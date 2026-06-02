@@ -6,6 +6,7 @@ import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useI18n, formatAmount, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
+import { Glass } from './Glass';
 
 // Soft top-down reflection painted inside a card's core. Replaces the old
 // hard `borderTopColor` hairline — gold on focal/glow cards, a faint white
@@ -69,7 +70,7 @@ function splitCardStyle(style?: ViewStyle | ViewStyle[]): { shell: ViewStyle; co
 export function RCard({
   children, style, large, accent, padding, glow,
 }: { children: ReactNode; style?: ViewStyle | ViewStyle[]; large?: boolean; accent?: boolean; padding?: number; glow?: boolean }) {
-  const { tok, dir } = useI18n();
+  const { tok, dir, mode } = useI18n();
   const corePad = padding !== undefined
     ? { padding }
     : large
@@ -107,20 +108,17 @@ export function RCard({
         shell,
       ]}
     >
-      <View
-        style={[
-          {
-            borderRadius: innerRadius,
-            backgroundColor: tok.coreBg,
-            overflow: 'hidden',
-          },
-          corePad,
-          core,
-        ]}
+      <Glass
+        variant="frost"
+        radius={innerRadius}
+        fallbackColor={tok.coreBg}
+        dark={mode !== 'light'}
+        intensity={glow ? 48 : 32}
+        style={[corePad, core]}
       >
         <CardSheen glow={glow} />
         {children}
-      </View>
+      </Glass>
     </View>
   );
 }
