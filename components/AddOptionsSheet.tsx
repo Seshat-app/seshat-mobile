@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Receipt, Sparkles, X } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
+import { radius } from '../lib/theme';
+import { RCard } from './ui';
 
 /**
  * The bottom-sheet chooser that pops when the user taps the + FAB.
@@ -53,14 +55,21 @@ export function AddOptionsSheet({ visible, onClose, onPickManual, onPickReceipt 
           style={{
             position: 'absolute', left: 0, right: 0, bottom: 0,
             backgroundColor: tok.void,
-            borderTopLeftRadius: 22, borderTopRightRadius: 22,
+            borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
             borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            paddingHorizontal: 18, paddingTop: 18,
+            paddingHorizontal: 18, paddingTop: 12,
             paddingBottom: insets.bottom + 18,
             transform: [{ translateY }],
             gap: 10,
           }}
         >
+          <View style={{
+            alignSelf: 'center',
+            width: 40, height: 4, borderRadius: 999,
+            backgroundColor: tok.border,
+            marginBottom: 6,
+          }} />
+
           <View style={{
             flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
             justifyContent: 'space-between', alignItems: 'center',
@@ -68,6 +77,7 @@ export function AddOptionsSheet({ visible, onClose, onPickManual, onPickReceipt 
           }}>
             <Text style={{
               fontFamily: fontHead(lang), fontSize: 18, color: tok.bone, letterSpacing: -0.3,
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
             }}>
               {lang === 'ar' ? 'إضافة معاملة' : 'Add a transaction'}
             </Text>
@@ -107,43 +117,42 @@ function OptionRow({
   icon, title, subtitle, onPress, tok, lang,
 }: { icon: React.ReactNode; title: string; subtitle: string; onPress: () => void; tok: any; lang: 'en' | 'ar' }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 12,
-        paddingVertical: 14, paddingHorizontal: 14,
-        borderRadius: 14,
-        backgroundColor: pressed ? tok.elevated : tok.surface,
-        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-      })}
-    >
-      <View style={{
-        width: 42, height: 42, borderRadius: 12,
-        backgroundColor: tok.elevated,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        {icon}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{
-          fontFamily: fontBody(lang, 'semibold'), fontSize: 15, color: tok.bone,
-          textAlign: lang === 'ar' ? 'right' : 'left',
+    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+      <RCard padding={14}>
+        <View style={{
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 12,
         }}>
-          {title}
-        </Text>
-        <Text
-          numberOfLines={2}
-          style={{
-            marginTop: 2,
-            fontFamily: fontBody(lang), fontSize: 12, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-            lineHeight: 17,
-          }}
-        >
-          {subtitle}
-        </Text>
-      </View>
+          <View style={{
+            width: 42, height: 42, borderRadius: radius.input,
+            backgroundColor: tok.elevated,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            {icon}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              fontFamily: fontBody(lang, 'semibold'), fontSize: 15, color: tok.bone,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+            }}>
+              {title}
+            </Text>
+            <Text
+              numberOfLines={2}
+              style={{
+                marginTop: 2,
+                fontFamily: fontBody(lang), fontSize: 12, color: tok.muted,
+                textAlign: lang === 'ar' ? 'right' : 'left',
+                writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+                lineHeight: 17,
+              }}
+            >
+              {subtitle}
+            </Text>
+          </View>
+        </View>
+      </RCard>
     </Pressable>
   );
 }

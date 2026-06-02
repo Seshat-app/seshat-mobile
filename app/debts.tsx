@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, Animated, TextInput, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
@@ -7,7 +7,8 @@ import { apiFetch, hasToken, newIdempotencyKey } from '../lib/api';
 import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RCard, REyebrow, RButton, RProgress } from '../components/ui';
+import { radius } from '../lib/theme';
+import { RCard, REyebrow, RButton, RProgress, RField } from '../components/ui';
 import { PlanScreen } from '../components/PlanShell';
 import { SkeletonRow } from '../components/Skeleton';
 
@@ -24,6 +25,7 @@ type Debt = {
 export default function DebtsScreen() {
   const { tok, lang, t } = useI18n();
   const { profile } = useAppData();
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,7 +81,7 @@ export default function DebtsScreen() {
       refreshing={refreshing}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -233,9 +235,9 @@ function EditDebtSheet({
         </Animated.View>
         <Animated.View style={{
           backgroundColor: tok.void,
-          borderTopLeftRadius: 24, borderTopRightRadius: 24,
+          borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
           borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-          paddingBottom: 26,
+          paddingBottom: 26 + insets.bottom,
           marginBottom: kbHeight,
           paddingTop: kbHeight > 0 ? insets.top : 0,
           transform: [{ translateY: translate }],
@@ -252,9 +254,9 @@ function EditDebtSheet({
             <Pressable onPress={onClose} hitSlop={8}><X size={20} color={tok.muted} /></Pressable>
           </View>
           <View style={{ paddingHorizontal: 22, paddingTop: 6, gap: 14 }}>
-            <Field label={lang === 'ar' ? 'الدائن' : 'Creditor'} value={creditor} onChange={setCreditor} placeholder={lang === 'ar' ? 'مثلاً: البنك' : 'e.g. The Bank'} autoFocus />
-            <Field label={lang === 'ar' ? 'إجمالي الدين' : 'Total amount'} value={total} onChange={(v) => setTotal(v.replace(/[^0-9.]/g, ''))} placeholder="0" numeric />
-            <Field label={lang === 'ar' ? 'المسدَّد' : 'Paid so far'} value={paid} onChange={(v) => setPaid(v.replace(/[^0-9.]/g, ''))} placeholder="0" numeric />
+            <RField label={lang === 'ar' ? 'الدائن' : 'Creditor'} value={creditor} onChange={setCreditor} placeholder={lang === 'ar' ? 'مثلاً: البنك' : 'e.g. The Bank'} autoFocus />
+            <RField label={lang === 'ar' ? 'إجمالي الدين' : 'Total amount'} value={total} onChange={(v) => setTotal(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
+            <RField label={lang === 'ar' ? 'المسدَّد' : 'Paid so far'} value={paid} onChange={(v) => setPaid(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
           </View>
           <View style={{ paddingHorizontal: 18, paddingTop: 18, gap: 10 }}>
             <RButton full onPress={submit} disabled={!canSave} loading={busy}>
@@ -269,34 +271,5 @@ function EditDebtSheet({
         </Animated.View>
       </View>
     </Modal>
-  );
-}
-
-function Field({
-  label, value, onChange, placeholder, numeric, autoFocus,
-}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; numeric?: boolean; autoFocus?: boolean }) {
-  const { tok, lang } = useI18n();
-  return (
-    <View>
-      <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>{label}</REyebrow>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={tok.muted}
-        keyboardType={numeric ? 'decimal-pad' : 'default'}
-        autoCapitalize="none"
-        autoCorrect={false}
-        autoFocus={autoFocus}
-        style={{
-          backgroundColor: tok.surface,
-          borderWidth: 1, borderColor: tok.border, borderRadius: 10,
-          paddingHorizontal: 14, paddingVertical: 13,
-          color: tok.bone, fontFamily: numeric ? fontMono('regular') : fontBody(lang), fontSize: 14,
-          writingDirection: numeric ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
-          textAlign: numeric ? 'left' : (lang === 'ar' ? 'right' : 'left'),
-        }}
-      />
-    </View>
   );
 }

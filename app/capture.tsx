@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PlanScreen } from '../components/PlanShell';
-import { RCard } from '../components/ui';
+import { RCard, RButton } from '../components/ui';
 import { AddTransactionSheet, type AddTxPayload, type AddTxPrefill } from '../components/AddTransactionSheet';
 import { useI18n } from '../lib/i18n';
 import { apiFetch, newIdempotencyKey, hasToken } from '../lib/api';
 import { useAppData } from '../lib/appData';
 import { fontBody } from '../lib/fonts';
+import { T, S } from '../lib/theme';
 
 /**
  * /capture - the landing screen for both iOS (Shortcut deep link) and
@@ -117,28 +118,50 @@ export default function CaptureScreen() {
       title={lang === 'ar' ? 'رصد المعاملة' : 'Capture'}
       subtitle={lang === 'ar' ? 'تأكيد الإشعار البنكي' : 'Confirm a bank notification'}
     >
-      <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+      <View style={{ paddingHorizontal: S[4], paddingTop: S[3] }}>
         {loading ? (
-          <RCard padding={32}><ActivityIndicator color={tok.gold} /></RCard>
+          <RCard padding={S[7]}><ActivityIndicator color={tok.gold} /></RCard>
         ) : !text.trim() ? (
-          <RCard padding={20}>
+          <RCard padding={S[5]}>
             <Text style={{
-              fontFamily: fontBody(lang), fontSize: 14, color: tok.muted, textAlign: 'center',
+              fontFamily: fontBody(lang), fontSize: T.bodyS, color: tok.muted, textAlign: 'center',
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
             }}>
               {lang === 'ar'
-                ? 'لم يصل أي نص. عد للرئيسية وسجّل المعاملة يدوياً.'
-                : 'No text was passed in. Head back to home and log the entry manually.'}
+                ? 'لم يصل أي نص. سجّل المعاملة يدوياً أو عد للرئيسية.'
+                : 'No text was passed in. Log the entry manually or head back to home.'}
             </Text>
+            <View style={{ gap: S[2], marginTop: S[4] }}>
+              <RButton full onPress={() => setSheetOpen(true)}>
+                {lang === 'ar' ? 'تسجيل يدوي' : 'Log manually'}
+              </RButton>
+              <RButton variant="secondary" full onPress={() => router.replace('/(tabs)/')}>
+                {lang === 'ar' ? 'العودة للرئيسية' : 'Back to home'}
+              </RButton>
+            </View>
           </RCard>
         ) : parsed?.ok ? null : (
-          <RCard padding={20}>
+          <RCard padding={S[5]}>
             <Text style={{
-              fontFamily: fontBody(lang), fontSize: 14, color: tok.muted, textAlign: 'center',
+              fontFamily: fontBody(lang), fontSize: T.bodyS, color: tok.muted, textAlign: 'center',
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
             }}>
               {lang === 'ar'
-                ? `لم تتعرف ماعت على هذه الرسالة كمعاملة (${parsed?.reason ?? '—'}).`
-                : `Maat couldn't recognize this as a transaction (${parsed?.reason ?? '—'}).`}
+                ? (parsed?.reason
+                    ? `لم تتعرف ماعت على هذه الرسالة كمعاملة (${parsed.reason}).`
+                    : 'لم تتعرف ماعت على هذه الرسالة كمعاملة.')
+                : (parsed?.reason
+                    ? `Maat couldn't recognize this as a transaction (${parsed.reason}).`
+                    : "Maat couldn't recognize this as a transaction.")}
             </Text>
+            <View style={{ gap: S[2], marginTop: S[4] }}>
+              <RButton full onPress={() => setSheetOpen(true)}>
+                {lang === 'ar' ? 'تسجيل يدوي' : 'Log manually'}
+              </RButton>
+              <RButton variant="secondary" full onPress={() => router.replace('/(tabs)/')}>
+                {lang === 'ar' ? 'العودة للرئيسية' : 'Back to home'}
+              </RButton>
+            </View>
           </RCard>
         )}
       </View>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, Modal, TextInput, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, X, Wallet } from 'lucide-react-native';
 import { useI18n, currencyLabel } from '../lib/i18n';
 import { apiFetch } from '../lib/api';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { REyebrow, RButton } from './ui';
+import { radius } from '../lib/theme';
+import { REyebrow, RButton, RCard, RField } from './ui';
 import { useKeyboardHeight } from './useKeyboardHeight';
 
 /**
@@ -59,42 +60,41 @@ export function SalaryCheckInBanner({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        marginHorizontal: 16, marginTop: 6,
-        backgroundColor: tok.surface,
-        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
-        borderRadius: 12, padding: 14,
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 12,
-        opacity: pressed ? 0.9 : 1,
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
     >
-      <View style={{
-        width: 36, height: 36, borderRadius: 10,
-        backgroundColor: tok.elevated,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Wallet size={18} color={tok.gold} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{
-          color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-          textAlign: lang === 'ar' ? 'right' : 'left',
+      <RCard accent padding={14} style={{ marginHorizontal: 16, marginTop: 6 }}>
+        <View style={{
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 12,
         }}>
-          {lang === 'ar' ? `هل استلمت راتب ${label}؟` : `Did you get paid for ${label}?`}
-        </Text>
-        <Text style={{
-          marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12,
-          textAlign: lang === 'ar' ? 'right' : 'left',
-        }}>
-          {lang === 'ar'
-            ? 'سجّل الراتب وأنهِ شهر — أو تخطى.'
-            : 'Log it to close the month — or skip if you didn\'t.'}
-        </Text>
-      </View>
-      <Text style={{ color: tok.gold, fontFamily: fontMono('regular'), fontSize: 14 }}>
-        {lang === 'ar' ? '←' : '→'}
-      </Text>
+          <View style={{
+            width: 36, height: 36, borderRadius: 10,
+            backgroundColor: tok.elevated,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Wallet size={18} color={tok.gold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}>
+              {lang === 'ar' ? `هل استلمت راتب ${label}؟` : `Did you get paid for ${label}?`}
+            </Text>
+            <Text style={{
+              marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}>
+              {lang === 'ar'
+                ? 'سجّل الراتب وأنهِ الشهر، أو تخطى.'
+                : 'Log it to close the month, or skip if you didn\'t.'}
+            </Text>
+          </View>
+          <Text style={{ color: tok.gold, fontFamily: fontMono('regular'), fontSize: 14 }}>
+            {lang === 'ar' ? '←' : '→'}
+          </Text>
+        </View>
+      </RCard>
     </Pressable>
   );
 }
@@ -144,15 +144,21 @@ export function SalaryCheckInSheet({
       <View style={{
         position: 'absolute', left: 0, right: 0, bottom: 0,
         backgroundColor: tok.void,
-        borderTopLeftRadius: 22, borderTopRightRadius: 22,
-        paddingHorizontal: 18, paddingTop: 18,
-        // When the keyboard is open, lift the sheet so the input stays
-        // visible above it; otherwise sit on the safe-area bottom inset.
-        paddingBottom: kbHeight > 0 ? 18 : insets.bottom + 18,
+        borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
+        paddingHorizontal: 18, paddingTop: 10,
+        // Seat on the safe-area bottom inset; when the keyboard is open the
+        // sheet is lifted above it via marginBottom so the input stays visible.
+        paddingBottom: insets.bottom + 18,
         marginBottom: kbHeight,
         borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
         gap: 14,
       }}>
+        <View style={{
+          alignSelf: 'center',
+          width: 36, height: 4, borderRadius: 999,
+          backgroundColor: tok.border,
+          marginBottom: 4,
+        }} />
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           justifyContent: 'space-between', alignItems: 'center',
@@ -182,31 +188,20 @@ export function SalaryCheckInSheet({
             : 'Enter the amount you actually received. It\'s logged as income and counted toward your monthly baseline.'}
         </Text>
 
-        <View style={{
-          backgroundColor: tok.surface,
-          borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-          paddingHorizontal: 14, paddingVertical: 10,
-          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          alignItems: 'center', gap: 10,
-        }}>
-          <TextInput
-            value={amount}
-            onChangeText={(v) => setAmount(v.replace(/[^\d.]/g, ''))}
-            placeholder={status.suggestedAmount ? String(status.suggestedAmount) : '0'}
-            placeholderTextColor={tok.muted}
-            keyboardType="numeric"
-            autoFocus
-            style={{
-              flex: 1, color: tok.bone,
-              fontFamily: fontHead(lang), fontSize: 26, letterSpacing: -0.4,
-              paddingVertical: Platform.OS === 'ios' ? 6 : 2,
-              textAlign: lang === 'ar' ? 'right' : 'left',
-            }}
-          />
-          <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 14 }}>
-            {currencyLabel(currency, lang)}
-          </Text>
-        </View>
+        <RField
+          mono
+          value={amount}
+          onChange={(v) => setAmount(v.replace(/[^\d.]/g, ''))}
+          placeholder={status.suggestedAmount ? String(status.suggestedAmount) : '0'}
+          keyboardType="numeric"
+          autoFocus
+          label={lang === 'ar' ? 'المبلغ' : 'Amount'}
+          secondary={
+            <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 14 }}>
+              {currencyLabel(currency, lang)}
+            </Text>
+          }
+        />
 
         <RButton full onPress={() => submit('received')} disabled={!canConfirm} loading={saving}>
           <View style={{

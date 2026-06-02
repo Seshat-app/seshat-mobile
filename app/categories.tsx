@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, TextInput, Platform, RefreshControl, Alert, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, RefreshControl, Alert, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
 import { apiFetch, hasToken, newIdempotencyKey } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RCard, RButton } from '../components/ui';
+import { RCard, RButton, RField, RSegmented } from '../components/ui';
 import { PlanScreen } from '../components/PlanShell';
 import { SkeletonRow } from '../components/Skeleton';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
@@ -24,6 +25,7 @@ type ApiCategory = {
 
 export default function CategoriesScreen() {
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const { bumpVersion } = useAppData();
   const [items, setItems] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function CategoriesScreen() {
       onAdd={() => setAdding(true)}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -186,7 +188,8 @@ function AddCategorySheet({
   visible, onClose, onCreated,
 }: { visible: boolean; onClose: () => void; onCreated: () => void }) {
   const { tok, lang } = useI18n();
-  const insets = useKeyboardHeight();
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
   const [nameEn, setNameEn] = useState('');
   const [nameAr, setNameAr] = useState('');
   const [iconKey, setIconKey] = useState<string>('other');
@@ -231,10 +234,15 @@ function AddCategorySheet({
       </Pressable>
       <View style={{
         backgroundColor: tok.surface,
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        paddingHorizontal: 20, paddingTop: 18, paddingBottom: 24 + insets,
+        borderTopLeftRadius: 20, borderTopRightRadius: 20,
+        paddingHorizontal: 20, paddingTop: 12,
+        paddingBottom: Math.max(insets.bottom, keyboardHeight) + 24,
         gap: 14, maxHeight: '85%',
       }}>
+        <View style={{
+          alignSelf: 'center', width: 36, height: 4, borderRadius: 999,
+          backgroundColor: tok.border, marginBottom: 6,
+        }} />
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           justifyContent: 'space-between', alignItems: 'center',
@@ -247,44 +255,30 @@ function AddCategorySheet({
 
         {/* Names */}
         <View style={{ gap: 8 }}>
-          <TextInput
+          <RField
             value={nameEn}
-            onChangeText={setNameEn}
+            onChange={setNameEn}
             placeholder={lang === 'ar' ? 'الاسم بالإنجليزية (مثل Skincare)' : 'English name (e.g. Skincare)'}
-            placeholderTextColor={tok.muted}
-            style={inputStyle(tok)}
+            ltr
           />
-          <TextInput
+          <RField
             value={nameAr}
-            onChangeText={setNameAr}
+            onChange={setNameAr}
             placeholder={lang === 'ar' ? 'الاسم بالعربية' : 'Arabic name'}
-            placeholderTextColor={tok.muted}
-            style={[inputStyle(tok), { textAlign: 'right', writingDirection: 'rtl' }]}
+            ltr={false}
           />
         </View>
 
-        {/* Type pill row */}
-        <View style={{
-          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          gap: 8,
-        }}>
-          {(['expense', 'income', 'both'] as const).map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => setType(t)}
-              style={{
-                flex: 1, paddingVertical: 10, borderRadius: 10,
-                backgroundColor: type === t ? tok.gold : tok.elevated,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{
-                fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.4,
-                color: type === t ? '#0D0D0D' : tok.muted,
-              }}>{t.toUpperCase()}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {/* Type selector */}
+        <RSegmented
+          value={type}
+          onChange={setType}
+          options={[
+            { value: 'expense', label: lang === 'ar' ? 'مصروف' : 'Expense' },
+            { value: 'income', label: lang === 'ar' ? 'دخل' : 'Income' },
+            { value: 'both', label: lang === 'ar' ? 'كلاهما' : 'Both' },
+          ]}
+        />
 
         {/* Icon picker grid */}
         <View>
@@ -311,7 +305,7 @@ function AddCategorySheet({
                       borderColor: active ? tok.gold : tok.border,
                     }}
                   >
-                    <CategoryIconByKey iconKey={k} size={20} color={active ? '#0D0D0D' : tok.bone} />
+                    <CategoryIconByKey iconKey={k} size={20} color={active ? tok.void : tok.bone} />
                   </Pressable>
                 );
               })}
@@ -321,7 +315,7 @@ function AddCategorySheet({
 
         {err ? (
           <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, color: '#FF7B7B',
+            fontFamily: fontBody(lang), fontSize: 13, color: tok.alertText,
             textAlign: 'center', marginTop: -4,
           }}>{err}</Text>
         ) : null}
@@ -333,9 +327,3 @@ function AddCategorySheet({
     </Modal>
   );
 }
-
-const inputStyle = (tok: ReturnType<typeof useI18n>['tok']) => ({
-  height: 44, borderRadius: 10, paddingHorizontal: 12,
-  backgroundColor: tok.elevated, color: tok.bone,
-  fontFamily: Platform.select({ ios: 'System', default: 'sans-serif' }), fontSize: 15,
-});

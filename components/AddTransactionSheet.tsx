@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, ScrollView, TextInput, StyleSheet, Animated,
-  Platform, Modal, Alert,
+  View, Text, Pressable, ScrollView, StyleSheet, Animated,
+  Modal, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers } from 'lucide-react-native';
@@ -9,7 +9,8 @@ import { AddBySeshatPanel } from './AddBySeshatPanel';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n, currencyLabel, localDateStr } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RSegmented, RButton, REyebrow } from './ui';
+import { RSegmented, RButton, REyebrow, RField, RPill, RCard } from './ui';
+import { radius } from '../lib/theme';
 import { CategoryIcon, CatIconAlias } from './icons';
 import { catIdFromName, catLabel, type CatId } from '../lib/categoryMap';
 import { useKeyboardHeight } from './useKeyboardHeight';
@@ -417,8 +418,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
 
   const saveLabel = canSave
     ? lang === 'ar'
-      ? `${t('save')} — ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(defaultCurrency, lang)} · ${catLabel(selectedCat, lang)}`
-      : `${t('save')} — ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(defaultCurrency, lang)} · ${catLabel(selectedCat, lang)}`
+      ? `${t('save')} · ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(defaultCurrency, lang)} · ${catLabel(selectedCat, lang)}`
+      : `${t('save')} · ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(defaultCurrency, lang)} · ${catLabel(selectedCat, lang)}`
     : t('save');
 
   const chips = lang === 'ar'
@@ -448,9 +449,9 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
         <Animated.View
           style={{
             backgroundColor: tok.void,
-            borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
             borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            paddingBottom: 26,
+            paddingBottom: 26 + insets.bottom,
             // Cap height to whatever's between the status bar and the keyboard.
             // Without this, when the keyboard pushes the sheet up the top edge
             // (with the × + back chevron) slides into the unsafe area and
@@ -468,21 +469,20 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
 
           {/* Detection banner - shown when sheet opened from notification capture / OCR. */}
           {prefill?.detectionBanner ? (
-            <View style={{
-              marginHorizontal: 18, marginTop: 6,
-              paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
-              backgroundColor: tok.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
-              flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-              alignItems: 'center', gap: 8,
-            }}>
-              <Zap size={14} color={tok.gold} />
-              <Text style={{
-                flex: 1, fontFamily: fontBody(lang), fontSize: 12, color: tok.bone,
-                textAlign: lang === 'ar' ? 'right' : 'left',
-              }} numberOfLines={2}>
-                {prefill.detectionBanner}
-              </Text>
-            </View>
+            <RCard accent padding={10} style={{ marginHorizontal: 18, marginTop: 6 }}>
+              <View style={{
+                flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                alignItems: 'center', gap: 8,
+              }}>
+                <Zap size={14} color={tok.gold} />
+                <Text style={{
+                  flex: 1, fontFamily: fontBody(lang), fontSize: 12, color: tok.bone,
+                  textAlign: lang === 'ar' ? 'right' : 'left',
+                }} numberOfLines={2}>
+                  {prefill.detectionBanner}
+                </Text>
+              </View>
+            </RCard>
           ) : null}
 
           {/* Top bar */}
@@ -546,7 +546,11 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 22, marginRight: 8 }}>
                 {type === 'expense' ? '−' : '+'}
               </Text>
-              <Text style={{ color: amountColor, fontFamily: fontMono('medium'), fontSize: 58, letterSpacing: -1.5, writingDirection: 'ltr' }}>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={{ color: amountColor, fontFamily: fontMono('medium'), fontSize: 58, letterSpacing: -1.5, writingDirection: 'ltr' }}
+              >
                 {amount}
               </Text>
               <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 18, marginLeft: 8 }}>
@@ -568,7 +572,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ flexGrow: 0, flexShrink: 0, height: 74 }}
-            contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingVertical: 6, alignItems: 'center' }}
+            contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 6, alignItems: 'center' }}
           >
             {filteredCats.map((c) => {
               const a = c._id === catId;
@@ -586,7 +590,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                     borderWidth: 1, borderColor: a ? tok.gold : tok.border,
                     alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <CategoryIcon cat={id} size={22} color={a ? '#0D0D0D' : tok.bone} />
+                    <CategoryIcon cat={id} size={22} color={a ? tok.void : tok.bone} />
                   </View>
                   <Text
                     numberOfLines={1}
@@ -611,55 +615,31 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               horizontal
               showsHorizontalScrollIndicator={false}
               style={{ flexGrow: 0, flexShrink: 0, height: 38, marginBottom: 4 }}
-              contentContainerStyle={{ gap: 8, paddingHorizontal: 20, alignItems: 'center' }}
+              contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 20, alignItems: 'center' }}
             >
               {/* "No project" sentinel — selected by default */}
-              <Pressable
+              <RPill
+                active={projectId === null}
                 onPress={() => setProjectId(null)}
-                style={{
-                  height: 28, paddingHorizontal: 12, borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: projectId === null ? tok.muted : tok.border,
-                  backgroundColor: projectId === null ? tok.surface : 'transparent',
-                  alignItems: 'center', justifyContent: 'center',
-                }}
               >
-                <Text style={{
-                  color: projectId === null ? tok.bone : tok.muted,
-                  fontFamily: fontMono('regular'), fontSize: 10,
-                  letterSpacing: lang === 'ar' ? 0 : 1.2,
-                  textTransform: lang === 'ar' ? 'none' : 'uppercase',
-                }}>
-                  {lang === 'ar' ? 'بدون مشروع' : 'no project'}
-                </Text>
-              </Pressable>
+                {lang === 'ar' ? 'بدون مشروع' : 'No project'}
+              </RPill>
               {projects.map((p) => {
                 const a = projectId === p._id;
                 return (
-                  <Pressable
+                  <RPill
                     key={p._id}
+                    active={a}
                     onPress={() => setProjectId(p._id)}
-                    style={{
-                      height: 28, paddingHorizontal: 12, borderRadius: 14,
-                      borderWidth: 1,
-                      borderColor: a ? (p.color ?? tok.gold) : tok.border,
-                      backgroundColor: a ? tok.surface : 'transparent',
-                      flexDirection: 'row', alignItems: 'center', gap: 6,
-                    }}
-                  >
-                    {p.color ? (
+                    icon={p.color ? (
                       <View style={{
                         width: 7, height: 7, borderRadius: 3.5,
                         backgroundColor: p.color,
                       }} />
-                    ) : null}
-                    <Text style={{
-                      color: a ? tok.bone : tok.muted,
-                      fontFamily: fontMono('regular'), fontSize: 10,
-                      letterSpacing: lang === 'ar' ? 0 : 1.2,
-                      textTransform: lang === 'ar' ? 'none' : 'uppercase',
-                    }}>{p.name}</Text>
-                  </Pressable>
+                    ) : undefined}
+                  >
+                    {p.name}
+                  </RPill>
                 );
               })}
             </ScrollView>
@@ -731,24 +711,15 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
 
               <View style={{
                 marginTop: 12,
-                backgroundColor: tok.surface,
-                borderRadius: 14, padding: 8, paddingLeft: 14,
-                borderWidth: 1, borderColor: detected ? tok.gold : tok.border,
                 flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                 alignItems: 'center', gap: 10,
               }}>
-                <TextInput
+                <RField
                   value={seshatText}
-                  onChangeText={setSeshatText}
+                  onChange={setSeshatText}
                   placeholder={t('seshatPlaceholder')}
-                  placeholderTextColor={tok.muted}
                   autoFocus
-                  style={{
-                    flex: 1, color: tok.bone, fontFamily: fontBody(lang), fontSize: 14,
-                    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
-                    writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}
+                  style={{ flex: 1 }}
                 />
                 <Pressable
                   onPress={scanReceipt}
@@ -768,14 +739,14 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   onPressOut={() => { if (recorder.isRecording) sendSheetVoice(); }}
                   disabled={transcribing}
                   style={{
-                    backgroundColor: recorder.isRecording ? '#3A1A1A' : tok.elevated,
+                    backgroundColor: recorder.isRecording ? tok.alertBg : tok.elevated,
                     borderRadius: 10,
                     width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
                     opacity: transcribing ? 0.5 : 1,
                   }}
                   accessibilityLabel="Hold to record"
                 >
-                  <Mic size={16} color={recorder.isRecording ? '#E05555' : tok.muted} strokeWidth={recorder.isRecording ? 2 : 1.5} />
+                  <Mic size={16} color={recorder.isRecording ? tok.alertText : tok.muted} strokeWidth={recorder.isRecording ? 2 : 1.5} />
                 </Pressable>
               </View>
 
@@ -833,76 +804,39 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
             alignItems: 'center', gap: 8,
           }}>
-            <Pressable
+            <RPill
+              active={!!notes.trim() || showNotes}
               onPress={() => setShowNotes((v) => !v)}
-              style={({ pressed }) => ({
-                flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                alignItems: 'center', gap: 6,
-                paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
-                backgroundColor: pressed ? tok.elevated : tok.surface,
-                borderWidth: StyleSheet.hairlineWidth,
-                borderColor: notes.trim() || showNotes ? tok.gold : tok.border,
-              })}
+              icon={<NotebookPen size={14} color={(notes.trim() || showNotes) ? tok.void : tok.muted} />}
             >
-              <NotebookPen size={14} color={notes.trim() ? tok.gold : tok.muted} />
-              <Text style={{
-                fontFamily: fontBody(lang), fontSize: 12,
-                color: notes.trim() ? tok.bone : tok.muted,
-              }}>
-                {notes.trim()
-                  ? (lang === 'ar' ? 'ملاحظة مضافة' : 'Note added')
-                  : (lang === 'ar' ? 'إضافة ملاحظة' : 'Add note')}
-              </Text>
-            </Pressable>
+              {notes.trim()
+                ? (lang === 'ar' ? 'ملاحظة مضافة' : 'Note added')
+                : (lang === 'ar' ? 'إضافة ملاحظة' : 'Add note')}
+            </RPill>
 
             {type === 'income' && (
-              <Pressable
+              <RPill
+                active={isMonthlyBaseline}
                 onPress={() => setIsMonthlyBaseline((v) => !v)}
-                style={({ pressed }) => ({
-                  flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                  alignItems: 'center', gap: 6,
-                  paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
-                  backgroundColor: isMonthlyBaseline ? tok.gold : (pressed ? tok.elevated : tok.surface),
-                  borderWidth: StyleSheet.hairlineWidth,
-                  borderColor: isMonthlyBaseline ? tok.gold : tok.border,
-                })}
+                icon={<Repeat size={14} color={isMonthlyBaseline ? tok.void : tok.muted} />}
               >
-                <Repeat size={14} color={isMonthlyBaseline ? tok.void : tok.muted} />
-                <Text style={{
-                  fontFamily: fontBody(lang), fontSize: 12,
-                  color: isMonthlyBaseline ? tok.void : tok.muted,
-                }}>
-                  {lang === 'ar' ? 'دخل شهري ثابت' : 'Monthly baseline'}
-                </Text>
-              </Pressable>
+                {lang === 'ar' ? 'دخل شهري ثابت' : 'Monthly baseline'}
+              </RPill>
             )}
           </View>
 
           {/* Notes input field, slides out when toggled. */}
           {showNotes && (
             <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: 6 }}>
-              <View style={{
-                backgroundColor: tok.surface,
-                borderRadius: 12, padding: 10,
-                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-              }}>
-                <TextInput
-                  value={notes}
-                  onChangeText={setNotes}
-                  placeholder={lang === 'ar'
-                    ? 'تفاصيل أو سياق لهذه المعاملة...'
-                    : 'Details or context for this entry...'}
-                  placeholderTextColor={tok.muted}
-                  multiline
-                  numberOfLines={3}
-                  style={{
-                    color: tok.bone, fontFamily: fontBody(lang), fontSize: 13,
-                    minHeight: 56, textAlignVertical: 'top',
-                    writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}
-                />
-              </View>
+              <RField
+                value={notes}
+                onChange={setNotes}
+                placeholder={lang === 'ar'
+                  ? 'تفاصيل أو سياق لهذه المعاملة...'
+                  : 'Details or context for this entry...'}
+                multiline
+                minHeight={64}
+              />
             </View>
           )}
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, Alert, StyleSheet, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -7,7 +7,9 @@ import { apiFetch } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RButton, REyebrow } from '../components/ui';
+import { radius } from '../lib/theme';
+import { RButton, REyebrow, RField } from '../components/ui';
+import { ScreenScaffold } from '../components/Screen';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 
 // Lightweight "contact us" form. Sends a support request to the team inbox
@@ -60,7 +62,7 @@ export default function SupportScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+    <ScreenScaffold>
       {/* Header */}
       <View style={{
         paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8,
@@ -71,8 +73,9 @@ export default function SupportScreen() {
           onPress={() => router.back()}
           hitSlop={10}
           style={({ pressed }) => ({
-            width: 36, height: 36, borderRadius: 12,
-            backgroundColor: pressed ? tok.elevated : tok.surface,
+            width: 36, height: 36, borderRadius: radius.btn,
+            backgroundColor: pressed ? tok.elevated : tok.shellBg,
+            borderWidth: 1, borderColor: tok.shellBorder,
             alignItems: 'center', justifyContent: 'center',
           })}
         >
@@ -96,7 +99,7 @@ export default function SupportScreen() {
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 12,
-          paddingBottom: 40 + kbHeight,
+          paddingBottom: insets.bottom + 40 + kbHeight,
         }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -114,61 +117,35 @@ export default function SupportScreen() {
         </Text>
 
         {/* Subject */}
-        <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-          {lang === 'ar' ? 'الموضوع' : 'SUBJECT'}
-        </REyebrow>
-        <TextInput
+        <RField
+          label={lang === 'ar' ? 'الموضوع' : 'SUBJECT'}
           value={subject}
-          onChangeText={(v) => setSubject(v.slice(0, SUBJECT_MAX))}
+          onChange={(v) => setSubject(v.slice(0, SUBJECT_MAX))}
           placeholder={lang === 'ar' ? 'مشكلة في تسجيل الدخول' : 'Cannot sign in'}
-          placeholderTextColor={tok.muted}
           maxLength={SUBJECT_MAX}
-          style={{
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            backgroundColor: tok.surface,
-            borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12,
-            color: tok.bone, fontFamily: fontBody(lang), fontSize: 15,
-            marginBottom: 16,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-          }}
+          autoCapitalize="sentences"
+          style={{ marginBottom: 16 }}
         />
 
         {/* Message */}
-        <View style={{
-          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          justifyContent: 'space-between', alignItems: 'baseline',
-          marginBottom: 6,
-        }}>
-          <REyebrow style={{ textAlign: lang === 'ar' ? 'right' : 'left' }}>
-            {lang === 'ar' ? 'التفاصيل' : 'DETAILS'}
-          </REyebrow>
-          <Text style={{
-            fontFamily: fontMono('regular'), fontSize: 9, color: tok.muted,
-          }}>
-            {message.length} / {MESSAGE_MAX}
-          </Text>
-        </View>
-        <TextInput
+        <RField
+          label={lang === 'ar' ? 'التفاصيل' : 'DETAILS'}
+          secondary={
+            <Text style={{
+              fontFamily: fontMono('regular'), fontSize: 9, color: tok.muted,
+            }}>
+              {message.length} / {MESSAGE_MAX}
+            </Text>
+          }
           value={message}
-          onChangeText={(v) => setMessage(v.slice(0, MESSAGE_MAX))}
+          onChange={(v) => setMessage(v.slice(0, MESSAGE_MAX))}
           placeholder={lang === 'ar'
             ? 'صفي ما حدث، الخطوات للتكرار، وأي رسالة خطأ ظهرت.'
             : 'Describe what happened, the steps to reproduce, and any error message you saw.'}
-          placeholderTextColor={tok.muted}
           multiline
           maxLength={MESSAGE_MAX}
-          textAlignVertical="top"
-          style={{
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            backgroundColor: tok.surface,
-            borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12,
-            color: tok.bone, fontFamily: fontBody(lang), fontSize: 15,
-            minHeight: 180,
-            lineHeight: Platform.OS === 'ios' ? 22 : undefined,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-          }}
+          minHeight={180}
+          autoCapitalize="sentences"
         />
 
         <View style={{ marginTop: 22 }}>
@@ -189,6 +166,6 @@ export default function SupportScreen() {
             : 'Your account ID is attached automatically to help us reply faster.'}
         </Text>
       </ScrollView>
-    </View>
+    </ScreenScaffold>
   );
 }

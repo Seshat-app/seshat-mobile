@@ -12,7 +12,7 @@ import { signOut } from '../../lib/auth';
 import { useI18n, type Lang, formatAmount, currencyLabel } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
-import { RCard, REyebrow, RButton } from '../../components/ui';
+import { RCard, REyebrow, RButton, RField, RPill } from '../../components/ui';
 import { ScreenScaffold } from '../../components/Screen';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
@@ -279,8 +279,8 @@ export default function ProfileScreen() {
                     alignItems: 'center', justifyContent: 'center',
                   }}>
                     {uploadingAvatar
-                      ? <ActivityIndicator size="small" color="#0D0D0D" />
-                      : <Camera size={11} color="#0D0D0D" strokeWidth={2.2} />}
+                      ? <ActivityIndicator size="small" color={tok.void} />
+                      : <Camera size={11} color={tok.void} strokeWidth={2.2} />}
                   </View>
                 </Pressable>
                 <View style={{ flex: 1 }}>
@@ -328,7 +328,7 @@ export default function ProfileScreen() {
               title={lang === 'ar' ? 'الراتب الشهري' : 'Monthly salary'}
               hint={salary
                 ? `${formatAmount(salary, { decimals: 0 })} ${currencyLabel(currency, lang)}`
-                : (lang === 'ar' ? 'لم يُحدَّد بعد — اضغط لإضافته' : 'Not set — tap to add')}
+                : (lang === 'ar' ? 'لم يُحدَّد بعد، اضغط لإضافته' : 'Not set. Tap to add')}
               onPress={() => setSalaryOpen(true)}
             />
             <PlanRow
@@ -470,26 +470,11 @@ export default function ProfileScreen() {
               flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
               flexWrap: 'wrap', gap: 8,
             }}>
-              {CURRENCIES.map((c) => {
-                const a = currency === c;
-                return (
-                  <Pressable
-                    key={c}
-                    onPress={() => setCurrency(c)}
-                    style={({ pressed }) => ({
-                      borderWidth: 1, borderColor: a ? tok.gold : tok.border,
-                      backgroundColor: a ? tok.gold : 'transparent',
-                      borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7,
-                      opacity: pressed ? 0.85 : 1,
-                    })}
-                  >
-                    <Text style={{
-                      color: a ? '#0D0D0D' : tok.bone,
-                      fontFamily: fontMono('medium'), fontSize: 12, letterSpacing: 1,
-                    }}>{c}</Text>
-                  </Pressable>
-                );
-              })}
+              {CURRENCIES.map((c) => (
+                <RPill key={c} active={currency === c} onPress={() => setCurrency(c)}>
+                  {c}
+                </RPill>
+              ))}
             </View>
           </RCard>
         </View>
@@ -608,67 +593,42 @@ export default function ProfileScreen() {
         </Pressable>
 
         {dangerOpen && (
-          <View style={{
-            marginTop: 4, marginBottom: 24,
-            padding: 16, borderRadius: 12,
-            backgroundColor: tok.surface,
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.alertText,
-            gap: 12,
-          }}>
-            <Text style={{
-              color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-              textAlign: lang === 'ar' ? 'right' : 'left',
-            }}>
-              {lang === 'ar' ? 'حذف الحساب نهائياً' : 'Delete account permanently'}
-            </Text>
-            <Text style={{
-              color: tok.muted, fontFamily: fontBody(lang), fontSize: 12, lineHeight: 18,
-              textAlign: lang === 'ar' ? 'right' : 'left',
-              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-            }}>
-              {lang === 'ar'
-                ? `لتأكيد الحذف، اكتب بريدك الإلكتروني (${profile?.email ?? ''}) في الحقل أدناه. سيتم حذف الحساب وجميع البيانات (المعاملات، الميزانيات، الأهداف، الفئات) نهائياً ولا يمكن استرجاعها.`
-                : `To confirm, type your email (${profile?.email ?? ''}) below. Your account and all data (transactions, budgets, goals, categories) will be permanently deleted.`}
-            </Text>
-            <TextInput
-              value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
-              placeholder={profile?.email ?? ''}
-              placeholderTextColor={tok.muted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              style={{
-                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
-                color: tok.bone, fontFamily: fontMono('regular'), fontSize: 13,
-                backgroundColor: tok.elevated,
-                writingDirection: 'ltr',
-              }}
-            />
-            <Pressable
-              onPress={handleDeleteAccount}
-              disabled={deleteConfirmText.trim().toLowerCase() !== (profile?.email?.toLowerCase() ?? '__NEVER_MATCH__')}
-              style={({ pressed }) => {
-                const enabled = deleteConfirmText.trim().toLowerCase() === (profile?.email?.toLowerCase() ?? '');
-                return {
-                  borderRadius: 10, paddingVertical: 12,
-                  alignItems: 'center',
-                  backgroundColor: enabled ? tok.alertText : tok.elevated,
-                  opacity: pressed && enabled ? 0.85 : 1,
-                };
-              }}
-            >
+          <RCard accent style={{ marginTop: 4, marginBottom: 24 }}>
+            <View style={{ gap: 12 }}>
               <Text style={{
-                color: deleteConfirmText.trim().toLowerCase() === (profile?.email?.toLowerCase() ?? '')
-                  ? '#FFFFFF' : tok.muted,
-                fontFamily: fontMono('regular'),
-                fontSize: 11, letterSpacing: 1.4,
+                color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
+                textAlign: lang === 'ar' ? 'right' : 'left',
               }}>
-                {lang === 'ar' ? 'حذف الحساب' : 'DELETE ACCOUNT'}
+                {lang === 'ar' ? 'حذف الحساب نهائياً' : 'Delete account permanently'}
               </Text>
-            </Pressable>
-          </View>
+              <Text style={{
+                color: tok.muted, fontFamily: fontBody(lang), fontSize: 12, lineHeight: 18,
+                textAlign: lang === 'ar' ? 'right' : 'left',
+                writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+              }}>
+                {lang === 'ar'
+                  ? `لتأكيد الحذف، اكتب بريدك الإلكتروني (${profile?.email ?? ''}) في الحقل أدناه. سيتم حذف الحساب وجميع البيانات (المعاملات، الميزانيات، الأهداف، الفئات) نهائياً ولا يمكن استرجاعها.`
+                  : `To confirm, type your email (${profile?.email ?? ''}) below. Your account and all data (transactions, budgets, goals, categories) will be permanently deleted.`}
+              </Text>
+              <RField
+                value={deleteConfirmText}
+                onChange={setDeleteConfirmText}
+                placeholder={profile?.email ?? ''}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                ltr
+                mono
+              />
+              <RButton
+                full
+                variant="danger"
+                onPress={handleDeleteAccount}
+                disabled={deleteConfirmText.trim().toLowerCase() !== (profile?.email?.toLowerCase() ?? '__NEVER_MATCH__')}
+              >
+                {lang === 'ar' ? 'حذف الحساب' : 'DELETE ACCOUNT'}
+              </RButton>
+            </View>
+          </RCard>
         )}
 
         {/* Build identity footer. Shows app version + the EAS update ID
@@ -814,9 +774,9 @@ function ToggleHalf({
         paddingVertical: 10, opacity: pressed ? 0.85 : 1,
       })}
     >
-      <Icon size={14} color={active ? '#0D0D0D' : tok.bone} strokeWidth={1.6} />
+      <Icon size={14} color={active ? tok.void : tok.bone} strokeWidth={1.6} />
       <Text style={{
-        color: active ? '#0D0D0D' : tok.bone,
+        color: active ? tok.void : tok.bone,
         fontFamily: fontBody(lang, 'semibold'), fontSize: 12,
       }}>{label}</Text>
     </Pressable>

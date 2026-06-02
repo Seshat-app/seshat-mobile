@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Modal, Animated, Easing } from 'react-native';
+import { View, Text, Modal, Animated, Easing } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { SeshatMark } from './SeshatMark';
+import { RButton } from './ui';
 
 // First-launch welcome. One calm, premium screen (gold-on-void) that sets the
 // tone and introduces Seshat (the record) and Maat (the voice you talk to),
@@ -50,8 +51,8 @@ export function Tour({ visible, onClose }: { visible: boolean; onClose: () => vo
       ar: 'سجّل بالكتابة أو الصوت أو صورة إيصال أو تنبيه بنكك.',
     },
     {
-      en: 'Talk to Maat — ask for a summary, set a budget, or just say hi.',
-      ar: 'تحدّث مع ماعت — اطلب ملخصاً، حدّد ميزانية، أو قل مرحباً.',
+      en: 'Talk to Maat. Ask for a summary, set a budget, or just say hi.',
+      ar: 'تحدّث مع ماعت. اطلب ملخصاً، حدّد ميزانية، أو قل مرحباً.',
     },
     {
       en: 'English or Egyptian Arabic, from the first word.',
@@ -120,19 +121,9 @@ export function Tour({ visible, onClose }: { visible: boolean; onClose: () => vo
 
           <View style={{ flex: 1 }} />
 
-          <Pressable
-            onPress={close}
-            style={({ pressed }) => ({
-              backgroundColor: tok.gold, borderRadius: 999, paddingVertical: 15,
-              alignItems: 'center', width: '100%', maxWidth: 380,
-              opacity: pressed ? 0.9 : 1,
-            })}
-          >
-            <Text style={{
-              fontFamily: fontMono('regular'), fontSize: 13, letterSpacing: 1.6,
-              color: '#0D0D0D', textTransform: 'uppercase',
-            }}>{ar ? 'لنبدأ' : 'Begin'}</Text>
-          </Pressable>
+          <RButton full onPress={close} style={{ width: '100%', maxWidth: 380 }}>
+            {ar ? 'لنبدأ' : 'Begin'}
+          </RButton>
         </Animated.View>
       </View>
     </Modal>

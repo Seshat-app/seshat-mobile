@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Alert, StyleSheet, Platform } from 'react-native';
+import { Text, ScrollView, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PlanScreen } from '../../components/PlanShell';
-import { REyebrow, RButton } from '../../components/ui';
+import { RButton, RField } from '../../components/ui';
 import { useI18n } from '../../lib/i18n';
 import { sendInvite } from '../../lib/orgs';
 import { fontBody, fontMono } from '../../lib/fonts';
@@ -26,6 +27,7 @@ export default function InviteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const kbHeight = useKeyboardHeight();
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -65,7 +67,7 @@ export default function InviteScreen() {
       subtitle={lang === 'ar' ? 'بالبريد الإلكتروني' : 'By email'}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 + kbHeight }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 40 + kbHeight }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -80,29 +82,17 @@ export default function InviteScreen() {
             : 'Your teammate will get a link in their inbox. Tapping it joins them automatically after sign-in.'}
         </Text>
 
-        <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-          {lang === 'ar' ? 'البريد الإلكتروني' : 'EMAIL'}
-        </REyebrow>
-        <TextInput
+        <RField
+          label={lang === 'ar' ? 'البريد الإلكتروني' : 'EMAIL'}
           value={email}
-          onChangeText={setEmail}
+          onChange={setEmail}
           placeholder="teammate@yourteam.com"
-          placeholderTextColor={tok.muted}
           autoFocus
           autoCapitalize="none"
-          autoCorrect={false}
           keyboardType="email-address"
           textContentType="emailAddress"
-          style={{
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            backgroundColor: tok.surface,
-            borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12,
-            color: tok.bone, fontFamily: fontBody(lang), fontSize: 16,
-            marginBottom: 24,
-            // The email is left-to-right even in Arabic UI.
-            textAlign: 'left',
-            writingDirection: 'ltr',
-          }}
+          ltr
+          style={{ marginBottom: 24 }}
         />
 
         <RButton full onPress={submit} disabled={submitting || !email.trim()} loading={submitting}>
@@ -115,6 +105,7 @@ export default function InviteScreen() {
           marginTop: 18,
           fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.2,
           textAlign: 'center', lineHeight: 16,
+          writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
         }}>
           {lang === 'ar'
             ? 'الدعوة صالحة لمدة 7 أيام · يمكنكِ سحبها قبل القبول'

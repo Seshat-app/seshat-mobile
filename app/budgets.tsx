@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, Animated, TextInput, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
 import { Trash2, X } from 'lucide-react-native';
 import { apiFetch, hasToken, newIdempotencyKey } from '../lib/api';
 import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RCard, REyebrow, RButton, RProgress, RPill, RStatus, RHScroll } from '../components/ui';
+import { RCard, REyebrow, RButton, RProgress, RPill, RStatus, RHScroll, RField } from '../components/ui';
+import { radius } from '../lib/theme';
 import { PlanScreen } from '../components/PlanShell';
 import { SkeletonRow, Skeleton } from '../components/Skeleton';
 import { CategoryIcon } from '../components/icons';
@@ -25,7 +26,8 @@ type Budget = {
 };
 
 export default function BudgetsScreen() {
-  const { tok, lang, t } = useI18n();
+  const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const { categories, profile } = useAppData();
   const [items, setItems] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function BudgetsScreen() {
       refreshing={refreshing}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 32, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -184,7 +186,7 @@ function BudgetRow({
               <Text style={{
                 marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12,
                 textAlign: lang === 'ar' ? 'right' : 'left',
-              }}>{lang === 'ar' ? 'لم تُحدّد' : 'Not set — tap to add'}</Text>
+              }}>{lang === 'ar' ? 'لم تُحدّد' : 'Not set. Tap to add'}</Text>
             )}
           </View>
           {set && (
@@ -262,9 +264,9 @@ function EditSheet({
         </Animated.View>
         <Animated.View style={{
           backgroundColor: tok.void,
-          borderTopLeftRadius: 24, borderTopRightRadius: 24,
+          borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
           borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-          paddingBottom: 26,
+          paddingBottom: 26 + insets.bottom,
           // Manual keyboard avoidance — KAV is unreliable inside <Modal> on iOS.
           marginBottom: kbHeight,
           paddingTop: kbHeight > 0 ? insets.top : 0,
@@ -286,23 +288,20 @@ function EditSheet({
               fontFamily: fontHead(lang), fontSize: 20, color: tok.bone, letterSpacing: -0.4,
               textAlign: lang === 'ar' ? 'right' : 'left',
             }}>{lang === 'ar' ? 'الحد الشهري' : 'Monthly cap'}</Text>
-            <View style={{ marginTop: 18, marginBottom: 10, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 10 }}>
-              <TextInput
-                value={amount}
-                onChangeText={(v) => setAmount(v.replace(/[^0-9.]/g, ''))}
-                placeholder="0"
-                placeholderTextColor={tok.muted}
-                keyboardType="decimal-pad"
-                autoFocus
-                style={{
-                  color: tok.bone, fontFamily: fontMono('medium'), fontSize: 44,
-                  letterSpacing: -1, padding: 0, minWidth: 80, textAlign: 'center', writingDirection: 'ltr',
-                }}
-              />
-              <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 16 }}>
-                {currencyLabel(currency, lang)}
-              </Text>
-            </View>
+            <RField
+              mono
+              keyboardType="numeric"
+              autoFocus
+              value={amount}
+              onChange={(v) => setAmount(v.replace(/[^0-9.]/g, ''))}
+              placeholder="0"
+              secondary={
+                <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 13 }}>
+                  {currencyLabel(currency, lang)}
+                </Text>
+              }
+              style={{ marginTop: 18, marginBottom: 10 }}
+            />
           </View>
           <View style={{ paddingHorizontal: 18, paddingTop: 16, gap: 10 }}>
             <RButton full onPress={submit} disabled={!canSave} loading={busy}>

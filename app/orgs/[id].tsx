@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, Image, Linking, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Building2, ChevronRight, Layers, Mail, Plus, Send, Target, UserPlus, Users, X } from 'lucide-react-native';
 import { PlanScreen } from '../../components/PlanShell';
-import { RCard, REyebrow, RButton } from '../../components/ui';
+import { RCard, REyebrow, RButton, RPill } from '../../components/ui';
 import { SkeletonRow } from '../../components/Skeleton';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
@@ -31,6 +32,7 @@ import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 export default function OrgDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { tok, lang } = useI18n();
   const { profile, switchLedger, projects, activeLedgerId } = useAppData();
   const [org, setOrg] = useState<OrgDetail | null>(null);
@@ -162,7 +164,7 @@ export default function OrgDetailScreen() {
       refreshing={refreshing}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 140 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 32 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -229,7 +231,7 @@ export default function OrgDetailScreen() {
                         textAlign: lang === 'ar' ? 'right' : 'left',
                       }}
                     >
-                      {m.displayName ?? m.email ?? '—'}
+                      {m.displayName ?? m.email ?? '-'}
                     </Text>
                     <Text
                       numberOfLines={1}
@@ -331,88 +333,68 @@ export default function OrgDetailScreen() {
             {/* Actions */}
             <View style={{ gap: 10, marginTop: 4 }}>
               {isOwner && (
-                <RButton full onPress={() => router.push({ pathname: '/orgs/invite', params: { id } })}>
-                  <View style={{
-                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                    alignItems: 'center', gap: 8,
-                  }}>
-                    <UserPlus size={16} color="#0D0D0D" />
-                    <Text style={{
-                      color: '#0D0D0D', fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-                    }}>
-                      {lang === 'ar' ? 'دعوة عضو' : 'Invite member'}
-                    </Text>
-                  </View>
+                <RButton
+                  full
+                  icon={<UserPlus size={16} color={tok.void} />}
+                  onPress={() => router.push({ pathname: '/orgs/invite', params: { id } })}
+                >
+                  {lang === 'ar' ? 'دعوة عضو' : 'Invite member'}
                 </RButton>
               )}
               {isOwner && (
-                <Pressable
+                <RButton
+                  variant="secondary"
+                  full
+                  loading={linking}
+                  icon={<Send size={16} color={tok.gold} strokeWidth={1.6} />}
                   onPress={handleConnectTelegram}
-                  disabled={linking}
-                  style={({ pressed }) => ({
-                    borderRadius: 12, paddingVertical: 12,
-                    borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                    backgroundColor: tok.surface,
-                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                    alignItems: 'center', justifyContent: 'center', gap: 8,
-                    opacity: pressed ? 0.8 : 1,
-                  })}
                 >
-                  <Send size={16} color={tok.gold} strokeWidth={1.6} />
-                  <Text style={{
-                    color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-                  }}>
-                    {org.telegramLinked
-                      ? (lang === 'ar' ? 'تيليجرام مربوط' : 'Telegram connected')
-                      : (lang === 'ar' ? 'ربط مجموعة تيليجرام' : 'Connect Telegram group')}
-                  </Text>
-                </Pressable>
+                  {org.telegramLinked
+                    ? (lang === 'ar' ? 'تيليجرام مربوط' : 'Telegram connected')
+                    : (lang === 'ar' ? 'ربط مجموعة تيليجرام' : 'Connect Telegram group')}
+                </RButton>
               )}
 
               {/* Manage projects - all members can open; only owners can
                   create/archive (server-enforced is permissive in v1 but
                   we keep the entry point shared so members can browse). */}
-              <Pressable
-                onPress={async () => {
-                  // Make sure the active ledger points at this org before
-                  // navigating - the projects screen reads from the active
-                  // ledger header.
-                  if (activeLedgerId !== `o_${id}`) await switchLedger(`o_${id}`);
-                  router.push({ pathname: '/orgs/[id]/projects', params: { id: id! } });
-                }}
-                style={({ pressed }) => ({
-                  borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14,
-                  borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                  backgroundColor: tok.surface,
-                  flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                  alignItems: 'center', gap: 10,
-                  opacity: pressed ? 0.8 : 1,
-                })}
-              >
-                <Layers size={16} color={tok.gold} strokeWidth={1.6} />
-                <Text style={{
-                  flex: 1,
-                  color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-                  textAlign: lang === 'ar' ? 'right' : 'left',
-                }}>
-                  {lang === 'ar' ? 'المشاريع' : 'Projects'}
-                </Text>
-                <ChevronRight
-                  size={16}
-                  color={tok.muted}
-                  style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }}
-                />
-              </Pressable>
+              <RCard padding={0}>
+                <Pressable
+                  onPress={async () => {
+                    // Make sure the active ledger points at this org before
+                    // navigating - the projects screen reads from the active
+                    // ledger header.
+                    if (activeLedgerId !== `o_${id}`) await switchLedger(`o_${id}`);
+                    router.push({ pathname: '/orgs/[id]/projects', params: { id: id! } });
+                  }}
+                  style={({ pressed }) => ({
+                    paddingVertical: 14, paddingHorizontal: 16,
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                    alignItems: 'center', gap: 10,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Layers size={16} color={tok.gold} strokeWidth={1.6} />
+                  <Text style={{
+                    flex: 1,
+                    color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
+                    textAlign: lang === 'ar' ? 'right' : 'left',
+                  }}>
+                    {lang === 'ar' ? 'المشاريع' : 'Projects'}
+                  </Text>
+                  <ChevronRight
+                    size={16}
+                    color={tok.muted}
+                    style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }}
+                  />
+                </Pressable>
+              </RCard>
 
               {/* Default project for the linked Telegram group. Only shown
                   when the group is linked AND the org has at least one
                   active project (loaded into context). */}
               {isOwner && org.telegramLinked && projects.length > 0 && activeLedgerId === `o_${id}` ? (
-                <View style={{
-                  borderRadius: 12, padding: 14,
-                  borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                  backgroundColor: tok.surface, gap: 8,
-                }}>
+                <RCard style={{ gap: 8 }}>
                   <View style={{
                     flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                     alignItems: 'center', gap: 8,
@@ -427,7 +409,8 @@ export default function OrgDetailScreen() {
                   </View>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
                     {/* None chip */}
-                    <Pressable
+                    <RPill
+                      active={!org.telegramDefaultProjectId}
                       onPress={async () => {
                         try {
                           const next = await setTelegramDefaultProject(id!, null);
@@ -436,27 +419,18 @@ export default function OrgDetailScreen() {
                           Alert.alert(lang === 'ar' ? 'فشل' : 'Failed', err instanceof Error ? err.message : String(err));
                         }
                       }}
-                      style={{
-                        height: 28, paddingHorizontal: 12, borderRadius: 14,
-                        borderWidth: 1,
-                        borderColor: !org.telegramDefaultProjectId ? tok.muted : tok.border,
-                        backgroundColor: !org.telegramDefaultProjectId ? tok.elevated : 'transparent',
-                        alignItems: 'center', justifyContent: 'center',
-                      }}
                     >
-                      <Text style={{
-                        color: !org.telegramDefaultProjectId ? tok.bone : tok.muted,
-                        fontFamily: fontMono('regular'), fontSize: 10,
-                        letterSpacing: 1.2, textTransform: 'uppercase',
-                      }}>
-                        {lang === 'ar' ? 'بدون' : 'none'}
-                      </Text>
-                    </Pressable>
+                      {lang === 'ar' ? 'بدون' : 'None'}
+                    </RPill>
                     {projects.map((p) => {
                       const a = org.telegramDefaultProjectId === p._id;
                       return (
-                        <Pressable
+                        <RPill
                           key={p._id}
+                          active={a}
+                          icon={p.color ? (
+                            <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: p.color }} />
+                          ) : undefined}
                           onPress={async () => {
                             try {
                               const next = await setTelegramDefaultProject(id!, p._id);
@@ -465,56 +439,26 @@ export default function OrgDetailScreen() {
                               Alert.alert(lang === 'ar' ? 'فشل' : 'Failed', err instanceof Error ? err.message : String(err));
                             }
                           }}
-                          style={{
-                            height: 28, paddingHorizontal: 12, borderRadius: 14,
-                            borderWidth: 1,
-                            borderColor: a ? (p.color ?? tok.gold) : tok.border,
-                            backgroundColor: a ? tok.elevated : 'transparent',
-                            flexDirection: 'row', alignItems: 'center', gap: 6,
-                          }}
                         >
-                          {p.color ? (
-                            <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: p.color }} />
-                          ) : null}
-                          <Text style={{
-                            color: a ? tok.bone : tok.muted,
-                            fontFamily: fontMono('regular'), fontSize: 10,
-                            letterSpacing: 1.2, textTransform: 'uppercase',
-                          }}>{p.name}</Text>
-                        </Pressable>
+                          {p.name}
+                        </RPill>
                       );
                     })}
                   </ScrollView>
-                </View>
+                </RCard>
               ) : null}
             </View>
 
             {/* Danger zone */}
             <View style={{ marginTop: 32, gap: 6 }}>
               {!isOwner ? (
-                <Pressable onPress={handleLeave} hitSlop={8} style={({ pressed }) => ({
-                  paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1,
-                })}>
-                  <Text style={{
-                    color: tok.alertText,
-                    fontFamily: fontMono('regular'),
-                    fontSize: 11, letterSpacing: 1.4,
-                  }}>
-                    {lang === 'ar' ? 'مغادرة المنظمة' : 'LEAVE ORGANIZATION'}
-                  </Text>
-                </Pressable>
+                <RButton variant="danger" full onPress={handleLeave}>
+                  {lang === 'ar' ? 'مغادرة المنظمة' : 'Leave organization'}
+                </RButton>
               ) : (
-                <Pressable onPress={handleDelete} hitSlop={8} style={({ pressed }) => ({
-                  paddingVertical: 12, alignItems: 'center', opacity: pressed ? 0.6 : 1,
-                })}>
-                  <Text style={{
-                    color: tok.alertText,
-                    fontFamily: fontMono('regular'),
-                    fontSize: 11, letterSpacing: 1.4,
-                  }}>
-                    {lang === 'ar' ? 'حذف المنظمة' : 'DELETE ORGANIZATION'}
-                  </Text>
-                </Pressable>
+                <RButton variant="danger" full onPress={handleDelete}>
+                  {lang === 'ar' ? 'حذف المنظمة' : 'Delete organization'}
+                </RButton>
               )}
             </View>
           </>

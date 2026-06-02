@@ -1,11 +1,13 @@
 import { View, Text, ScrollView, Pressable, Linking, Alert } from 'react-native';
 import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Copy, ExternalLink, Check } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { PlanScreen } from '../components/PlanShell';
 import { RCard, REyebrow, RButton } from '../components/ui';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
+import { S } from '../lib/theme';
 
 /**
  * /capture-setup-ios - one-time onboarding for the iOS notification capture
@@ -40,6 +42,7 @@ const BANK_KEYWORDS: { label: string; keywords: string[] }[] = [
 
 export default function CaptureSetupIosScreen() {
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const [copied, setCopied] = useState<string | null>(null);
 
   const copyKeyword = async (label: string, keyword: string) => {
@@ -64,9 +67,9 @@ export default function CaptureSetupIosScreen() {
   return (
     <PlanScreen
       title={lang === 'ar' ? 'إعداد رصد الإشعارات' : 'Notification capture setup'}
-      subtitle={lang === 'ar' ? 'لـ iOS — مرة واحدة' : 'iOS — one-time setup'}
+      subtitle={lang === 'ar' ? 'لـ iOS - مرة واحدة' : 'iOS - one-time setup'}
     >
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + S[6], paddingTop: 8 }}>
         <RCard padding={16} style={{ marginBottom: 14 }}>
           <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
             {lang === 'ar' ? 'لماذا الإعداد؟' : 'Why this setup?'}
@@ -90,13 +93,13 @@ export default function CaptureSetupIosScreen() {
               ? 'اضغط الزر لإضافة اختصار "Seshat Capture" من iCloud. الاختصار يأخذ نص الرسالة ويفتحه داخل التطبيق.'
               : 'Tap the button to add the "Seshat Capture" shortcut from iCloud. It takes the SMS body and opens it inside this app.'}
           </Text>
-          <RButton full onPress={openShortcut} style={{ marginTop: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <ExternalLink size={14} color={tok.void} />
-              <Text style={{ color: tok.void, fontFamily: fontBody(lang), fontSize: 14 }}>
-                {lang === 'ar' ? 'إضافة الاختصار' : 'Get the Shortcut'}
-              </Text>
-            </View>
+          <RButton
+            full
+            onPress={openShortcut}
+            style={{ marginTop: 12 }}
+            icon={<ExternalLink size={14} color={tok.void} />}
+          >
+            {lang === 'ar' ? 'إضافة الاختصار' : 'Get the Shortcut'}
           </RButton>
         </StepCard>
 
@@ -140,8 +143,10 @@ export default function CaptureSetupIosScreen() {
                   flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                   alignItems: 'center', justifyContent: 'space-between',
                   paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10,
-                  backgroundColor: pressed ? tok.elevated : tok.surface,
-                  borderWidth: 1, borderColor: copied === b.label ? tok.gold : tok.border,
+                  backgroundColor: copied === b.label ? tok.glowShellBg : tok.coreBg,
+                  borderWidth: 1,
+                  borderColor: copied === b.label ? tok.glowShellBorder : tok.border,
+                  opacity: pressed ? 0.85 : 1,
                 })}
               >
                 <View style={{ flex: 1 }}>
@@ -183,7 +188,7 @@ export default function CaptureSetupIosScreen() {
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>
             {lang === 'ar'
-              ? 'هذا هو السر — بدون تعطيله سيظهر سؤال في كل رسالة. الآن كل رسالة بنكية ستفتح سيشات مع المعاملة مرصودة جاهزة للتأكيد.'
+              ? 'هذا هو السر، بدون تعطيله سيظهر سؤال في كل رسالة. الآن كل رسالة بنكية ستفتح سيشات مع المعاملة مرصودة جاهزة للتأكيد.'
               : 'This is the trick - without disabling it you\'ll get a confirm prompt on every SMS. After this, every bank SMS auto-opens Seshat with the entry ready to confirm.'}
           </Text>
         </StepCard>

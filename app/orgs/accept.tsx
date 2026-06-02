@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { hasToken } from '../../lib/api';
 import { acceptInvite } from '../../lib/orgs';
 import { SeshatMark } from '../../components/SeshatMark';
-import { fontBody, fontHead, fontMono } from '../../lib/fonts';
+import { ScreenScaffold } from '../../components/Screen';
+import { RButton } from '../../components/ui';
+import { fontHead, fontMono, fontBody } from '../../lib/fonts';
 
 type Status = 'pending' | 'success' | 'error' | 'needs-auth';
 
@@ -69,9 +71,9 @@ export default function AcceptInviteScreen() {
     })();
   }, [token, lang, refresh, router, switchLedger]);
 
+  const arText = lang === 'ar';
   return (
-    <View style={{
-      flex: 1, backgroundColor: tok.void,
+    <ScreenScaffold style={{
       alignItems: 'center', justifyContent: 'center',
       paddingHorizontal: 32,
     }}>
@@ -82,8 +84,9 @@ export default function AcceptInviteScreen() {
           <Text style={{
             marginTop: 24,
             fontFamily: fontHead(lang), fontSize: 22, color: tok.bone, textAlign: 'center',
+            writingDirection: arText ? 'rtl' : 'ltr',
           }}>
-            {lang === 'ar' ? 'جارٍ قبول الدعوة...' : 'Accepting invitation...'}
+            {arText ? 'جارٍ قبول الدعوة...' : 'Accepting invitation...'}
           </Text>
           <ActivityIndicator size="small" color={tok.gold} style={{ marginTop: 18 }} />
         </>
@@ -94,13 +97,15 @@ export default function AcceptInviteScreen() {
           <Text style={{
             marginTop: 24,
             fontFamily: fontHead(lang), fontSize: 22, color: tok.bone, textAlign: 'center',
+            writingDirection: arText ? 'rtl' : 'ltr',
           }}>
-            {lang === 'ar' ? 'مرحبًا بكِ في' : 'Welcome to'}
+            {arText ? 'مرحبًا بكِ في' : 'Welcome to'}
           </Text>
           <Text style={{
             marginTop: 6,
             fontFamily: fontHead(lang), fontSize: 24, color: tok.gold,
             textAlign: 'center',
+            writingDirection: arText ? 'rtl' : 'ltr',
           }}>
             {orgName ?? ''}
           </Text>
@@ -112,32 +117,27 @@ export default function AcceptInviteScreen() {
           <Text style={{
             marginTop: 24,
             fontFamily: fontHead(lang), fontSize: 22, color: tok.bone, textAlign: 'center',
+            writingDirection: arText ? 'rtl' : 'ltr',
           }}>
-            {lang === 'ar' ? 'سجّلي الدخول لإكمال القبول' : 'Sign in to accept the invite'}
+            {arText ? 'سجّلي الدخول لإكمال القبول' : 'Sign in to accept the invite'}
           </Text>
           <Text style={{
             marginTop: 12,
             fontFamily: fontBody(lang), fontSize: 14, color: tok.muted,
             textAlign: 'center', lineHeight: 21,
+            writingDirection: arText ? 'rtl' : 'ltr',
           }}>
-            {lang === 'ar'
+            {arText
               ? 'افتحي الرابط مرة أخرى من بريدكِ بعد تسجيل الدخول.'
               : 'After signing in, open the link from your email again.'}
           </Text>
-          <Pressable
+          <RButton
+            full
             onPress={() => router.replace('/')}
-            style={({ pressed }) => ({
-              marginTop: 28,
-              backgroundColor: pressed ? tok.goldLight : tok.gold,
-              paddingHorizontal: 22, paddingVertical: 12, borderRadius: 12,
-            })}
+            style={{ marginTop: 28 }}
           >
-            <Text style={{
-              color: '#0D0D0D', fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-            }}>
-              {lang === 'ar' ? 'الذهاب لتسجيل الدخول' : 'Go to sign in'}
-            </Text>
-          </Pressable>
+            {arText ? 'الذهاب لتسجيل الدخول' : 'Go to sign in'}
+          </RButton>
         </>
       )}
 
@@ -146,8 +146,9 @@ export default function AcceptInviteScreen() {
           <Text style={{
             marginTop: 24,
             fontFamily: fontHead(lang), fontSize: 22, color: tok.bone, textAlign: 'center',
+            writingDirection: arText ? 'rtl' : 'ltr',
           }}>
-            {lang === 'ar' ? 'فشل قبول الدعوة' : 'Could not accept invite'}
+            {arText ? 'فشل قبول الدعوة' : 'Could not accept invite'}
           </Text>
           <Text style={{
             marginTop: 12,
@@ -156,23 +157,16 @@ export default function AcceptInviteScreen() {
           }}>
             {error}
           </Text>
-          <Pressable
+          <RButton
+            variant="secondary"
+            full
             onPress={() => router.replace('/(tabs)')}
-            style={({ pressed }) => ({
-              marginTop: 28,
-              backgroundColor: pressed ? tok.elevated : tok.surface,
-              paddingHorizontal: 22, paddingVertical: 12, borderRadius: 12,
-              borderWidth: 1, borderColor: tok.border,
-            })}
+            style={{ marginTop: 28 }}
           >
-            <Text style={{
-              color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-            }}>
-              {lang === 'ar' ? 'الرجوع للتطبيق' : 'Back to app'}
-            </Text>
-          </Pressable>
+            {arText ? 'الرجوع للتطبيق' : 'Back to app'}
+          </RButton>
         </>
       )}
-    </View>
+    </ScreenScaffold>
   );
 }

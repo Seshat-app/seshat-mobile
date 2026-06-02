@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, SlidersHorizontal, X as XIcon } from 'lucide-react-native';
+import { SlidersHorizontal } from 'lucide-react-native';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n, monthYear } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
-import { fontBody, fontHead, fontMono } from '../../lib/fonts';
-import { RCard, REyebrow, RPill, RHScroll, RAmount } from '../../components/ui';
+import { fontBody, fontHead } from '../../lib/fonts';
+import { RCard, REyebrow, RPill, RHScroll, RAmount, RField, RChip } from '../../components/ui';
+import { ScreenScaffold } from '../../components/Screen';
 import { RTxRow, RefreshSpinner, type TxRowData } from '../../components/shell';
 import { SkeletonRow } from '../../components/Skeleton';
 import { EditTransactionSheet, type EditingTx } from '../../components/EditTransactionSheet';
@@ -132,7 +133,7 @@ export default function TransactionsScreen() {
   }, [txs, lang, t]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+    <ScreenScaffold>
       <View style={{
         paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -155,40 +156,22 @@ export default function TransactionsScreen() {
         {/* Search + filter */}
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          gap: 8, marginBottom: 14,
+          gap: 8, marginBottom: 14, alignItems: 'center',
         }}>
-          <View style={{
-            flex: 1, backgroundColor: tok.surface,
-            borderWidth: 1, borderColor: tok.border, borderRadius: 10,
-            paddingHorizontal: 12, paddingVertical: 10,
-            flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-            alignItems: 'center', gap: 8,
-          }}>
-            <Search size={16} color={tok.muted} />
-            <TextInput
-              placeholder={t('search')}
-              placeholderTextColor={tok.muted}
-              value={query}
-              onChangeText={setQuery}
-              style={{
-                flex: 1, color: tok.bone, fontFamily: fontBody(lang), fontSize: 13,
-                writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-                textAlign: lang === 'ar' ? 'right' : 'left',
-                padding: 0,
-              }}
-            />
-          </View>
-          <Pressable
+          <RField
+            value={query}
+            onChange={setQuery}
+            placeholder={t('search')}
+            style={{ flex: 1 }}
+          />
+          <RPill
+            active={hasActiveFilters(filters)}
             onPress={() => setFilterSheetOpen(true)}
-            style={{
-              backgroundColor: hasActiveFilters(filters) ? tok.gold : tok.surface,
-              borderWidth: 1,
-              borderColor: hasActiveFilters(filters) ? tok.gold : tok.border, borderRadius: 10,
-              paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center',
-            }}
+            icon={<SlidersHorizontal size={16} color={hasActiveFilters(filters) ? tok.void : tok.muted} />}
+            style={{ paddingVertical: 12, paddingHorizontal: 12, gap: 0 }}
           >
-            <SlidersHorizontal size={16} color={hasActiveFilters(filters) ? '#0D0D0D' : tok.muted} />
-          </Pressable>
+            {''}
+          </RPill>
         </View>
 
         {/* Project filter row - only rendered when the active workspace has
@@ -222,27 +205,11 @@ export default function TransactionsScreen() {
           <RPill active={filters.type === 'expense'} onPress={() => setFilters((f) => ({ ...f, type: 'expense' }))}>{t('expense')}</RPill>
           <RPill active={filters.type === 'income'} onPress={() => setFilters((f) => ({ ...f, type: 'income' }))}>{t('earned')}</RPill>
           {summarizeFilters(filters, categories, lang).map((chip) => (
-            <Pressable
+            <RChip
               key={chip.key}
-              onPress={() => setFilters(chip.remove)}
-              style={({ pressed }) => ({
-                flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                alignItems: 'center', gap: 4,
-                paddingLeft: lang === 'ar' ? 8 : 10,
-                paddingRight: lang === 'ar' ? 10 : 8,
-                paddingVertical: 6,
-                borderRadius: 999,
-                backgroundColor: pressed ? tok.elevated : tok.surface,
-                borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
-              })}
-            >
-              <Text style={{
-                fontFamily: fontBody(lang, 'medium'), fontSize: 11, color: tok.gold,
-              }}>
-                {chip.label}
-              </Text>
-              <XIcon size={11} color={tok.gold} />
-            </Pressable>
+              label={chip.label}
+              onRemove={() => setFilters(chip.remove)}
+            />
           ))}
         </RHScroll>
 
@@ -266,8 +233,9 @@ export default function TransactionsScreen() {
             showsVerticalScrollIndicator={false}
             // Bottom padding sits inside contentContainerStyle so it pads the
             // END of scrollable content (clearing the FAB + tab bar) without
-            // shrinking the visible scroll area from the top.
-            contentContainerStyle={{ paddingBottom: 140 }}
+            // shrinking the visible scroll area from the top. Derived from the
+            // safe-area inset plus tab-bar + FAB clearance.
+            contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -303,7 +271,6 @@ export default function TransactionsScreen() {
                 </View>
               );
             })}
-            <View style={{ height: 40 }} />
           </ScrollView>
         )}
       </View>
@@ -323,7 +290,7 @@ export default function TransactionsScreen() {
         categories={categories}
         onApply={(next) => setFilters(next)}
       />
-    </View>
+    </ScreenScaffold>
   );
 }
 
@@ -349,7 +316,9 @@ function summarizeFilters(
   const chips: Array<{ key: string; label: string; remove: (cur: TxFilters) => TxFilters }> = [];
 
   if (f.from || f.to) {
-    const label = `${f.from ?? '…'} → ${f.to ?? '…'}`;
+    // Mirror the range arrow for Arabic (RTL) so it points start->end visually.
+    const arrow = lang === 'ar' ? '←' : '→';
+    const label = `${f.from ?? '…'} ${arrow} ${f.to ?? '…'}`;
     chips.push({
       key: 'date',
       label,

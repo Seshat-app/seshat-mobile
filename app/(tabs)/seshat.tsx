@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import { ScreenScaffold } from '../../components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Plus, Sparkles, ChevronRight, Trash2 } from 'lucide-react-native';
@@ -7,7 +8,7 @@ import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
-import { REyebrow, RCard } from '../../components/ui';
+import { REyebrow, RCard, RButton } from '../../components/ui';
 
 /**
  * Seshat tab landing screen - shows the list of chat sessions in the
@@ -95,7 +96,7 @@ export default function SeshatSessionsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+    <ScreenScaffold>
       {/* Header */}
       <View style={{
         paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10,
@@ -112,23 +113,12 @@ export default function SeshatSessionsScreen() {
             {lang === 'ar' ? 'محادثاتك' : 'Your conversations'}
           </REyebrow>
         </View>
-        <Pressable
+        <RButton
           onPress={startNew}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-            alignItems: 'center', gap: 6,
-            paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999,
-            backgroundColor: pressed ? tok.goldLight : tok.gold,
-          })}
+          icon={<Plus size={16} color={tok.void} strokeWidth={2.2} />}
         >
-          <Plus size={16} color={tok.void} strokeWidth={2.2} />
-          <Text style={{
-            fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.void,
-          }}>
-            {lang === 'ar' ? 'محادثة جديدة' : 'New chat'}
-          </Text>
-        </Pressable>
+          {lang === 'ar' ? 'محادثة جديدة' : 'New chat'}
+        </RButton>
       </View>
 
       {loading ? (
@@ -137,7 +127,7 @@ export default function SeshatSessionsScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140, paddingTop: 8 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 90, paddingTop: 8 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -171,24 +161,15 @@ export default function SeshatSessionsScreen() {
                 }}>
                   {lang === 'ar'
                     ? 'ابدأ محادثة جديدة - اكتب، تحدث، أو ارفع إيصالاً.'
-                    : 'Start a new chat — type, talk, or attach a receipt and I\'ll handle the rest.'}
+                    : 'Start a new chat. Type, talk, or attach a receipt and I\'ll handle the rest.'}
                 </Text>
-                <Pressable
+                <RButton
                   onPress={startNew}
-                  style={({ pressed }) => ({
-                    marginTop: 4,
-                    flexDirection: 'row', alignItems: 'center', gap: 6,
-                    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999,
-                    backgroundColor: pressed ? tok.goldLight : tok.gold,
-                  })}
+                  style={{ marginTop: 4 }}
+                  icon={<Plus size={14} color={tok.void} strokeWidth={2.2} />}
                 >
-                  <Plus size={14} color={tok.void} strokeWidth={2.2} />
-                  <Text style={{
-                    fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.void,
-                  }}>
-                    {lang === 'ar' ? 'ابدأ' : 'Start a chat'}
-                  </Text>
-                </Pressable>
+                  {lang === 'ar' ? 'ابدأ' : 'Start a chat'}
+                </RButton>
               </View>
             </RCard>
           ) : (
@@ -253,7 +234,7 @@ export default function SeshatSessionsScreen() {
           )}
         </ScrollView>
       )}
-    </View>
+    </ScreenScaffold>
   );
 }
 

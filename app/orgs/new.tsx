@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, Alert, StyleSheet, Platform } from 'react-native';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlanScreen } from '../../components/PlanShell';
-import { REyebrow, RButton } from '../../components/ui';
+import { REyebrow, RButton, RField, RPill } from '../../components/ui';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { createOrg } from '../../lib/orgs';
@@ -30,6 +31,7 @@ export default function NewOrgScreen() {
   const router = useRouter();
   const { tok, lang } = useI18n();
   const { profile, switchLedger, refresh } = useAppData();
+  const insets = useSafeAreaInsets();
   const kbHeight = useKeyboardHeight();
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState<string>(profile?.currency ?? 'EGP');
@@ -65,7 +67,7 @@ export default function NewOrgScreen() {
       subtitle={lang === 'ar' ? 'مساحة مشتركة لفريقكِ' : 'A shared space for your team'}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 + kbHeight }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 + kbHeight + insets.bottom }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -80,25 +82,15 @@ export default function NewOrgScreen() {
             : 'After creating, invite your team by email and link a Telegram group so anyone can log expenses by chatting.'}
         </Text>
 
-        <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-          {lang === 'ar' ? 'اسم المنظمة' : 'ORGANIZATION NAME'}
-        </REyebrow>
-        <TextInput
+        <RField
+          label={lang === 'ar' ? 'اسم المنظمة' : 'ORGANIZATION NAME'}
           value={name}
-          onChangeText={setName}
+          onChange={setName}
           placeholder={lang === 'ar' ? 'مثل: شركة أكمي' : 'e.g. Acme Corp'}
-          placeholderTextColor={tok.muted}
           autoFocus
+          autoCapitalize="words"
           maxLength={80}
-          style={{
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            backgroundColor: tok.surface,
-            borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12,
-            color: tok.bone, fontFamily: fontBody(lang), fontSize: 16,
-            marginBottom: 22,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
-          }}
+          style={{ marginBottom: 22 }}
         />
 
         <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
@@ -108,26 +100,11 @@ export default function NewOrgScreen() {
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           flexWrap: 'wrap', gap: 8, marginBottom: 24,
         }}>
-          {CURRENCIES.map((c) => {
-            const active = c === currency;
-            return (
-              <Pressable
-                key={c}
-                onPress={() => setCurrency(c)}
-                style={({ pressed }) => ({
-                  borderWidth: 1, borderColor: active ? tok.gold : tok.border,
-                  backgroundColor: active ? tok.gold : 'transparent',
-                  borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7,
-                  opacity: pressed ? 0.85 : 1,
-                })}
-              >
-                <Text style={{
-                  color: active ? '#0D0D0D' : tok.bone,
-                  fontFamily: fontMono('medium'), fontSize: 12, letterSpacing: 1,
-                }}>{c}</Text>
-              </Pressable>
-            );
-          })}
+          {CURRENCIES.map((c) => (
+            <RPill key={c} active={c === currency} onPress={() => setCurrency(c)}>
+              {c}
+            </RPill>
+          ))}
         </View>
 
         <RButton full onPress={submit} disabled={submitting || !name.trim()} loading={submitting}>

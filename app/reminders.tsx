@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing, Clock } from 'lucide-react-native';
 import { PlanScreen } from '../components/PlanShell';
-import { RCard, REyebrow } from '../components/ui';
+import { RCard, REyebrow, RStatus } from '../components/ui';
 import { useI18n } from '../lib/i18n';
 import { hasToken } from '../lib/api';
 import { listHabits, muteHabit, unmuteHabit, type Habit } from '../lib/habits';
 import { fontBody, fontMono } from '../lib/fonts';
+import { radius } from '../lib/theme';
 
 /**
  * /reminders - the user-facing view of what Seshat has learned about their
@@ -20,6 +22,7 @@ import { fontBody, fontMono } from '../lib/fonts';
  */
 export default function RemindersScreen() {
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +73,7 @@ export default function RemindersScreen() {
       refreshing={refreshing}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -107,7 +110,8 @@ export default function RemindersScreen() {
           <RCard padding={0} style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
             {items.map((h, i) => {
               const muted = !!h.mutedUntil && new Date(h.mutedUntil) > new Date();
-              const name = (lang === 'ar' ? h.categoryNameAr : h.categoryNameEn) ?? '—';
+              const name = (lang === 'ar' ? h.categoryNameAr : h.categoryNameEn)
+                ?? (lang === 'ar' ? 'بدون فئة' : 'Uncategorized');
               return (
                 <View
                   key={h.id}
@@ -121,21 +125,29 @@ export default function RemindersScreen() {
                   }}
                 >
                   <View style={{
-                    width: 36, height: 36, borderRadius: 12,
-                    backgroundColor: tok.surface,
+                    width: 36, height: 36, borderRadius: radius.input,
+                    backgroundColor: tok.elevated,
                     alignItems: 'center', justifyContent: 'center',
                   }}>
                     <Text style={{ fontSize: 18 }}>{h.emoji ?? '🔔'}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{
-                      fontFamily: fontBody(lang),
-                      fontSize: 15, color: muted ? tok.muted : tok.bone,
-                      textAlign: lang === 'ar' ? 'right' : 'left',
-                      textDecorationLine: muted ? 'line-through' : 'none',
+                    <View style={{
+                      flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                      alignItems: 'center', gap: 8,
                     }}>
-                      {name}
-                    </Text>
+                      <Text style={{
+                        fontFamily: fontBody(lang),
+                        fontSize: 15, color: muted ? tok.muted : tok.bone,
+                        textAlign: lang === 'ar' ? 'right' : 'left',
+                        writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+                        textDecorationLine: muted ? 'line-through' : 'none',
+                        flexShrink: 1,
+                      }}>
+                        {name}
+                      </Text>
+                      {muted && <RStatus kind="draft">{lang === 'ar' ? 'مكتوم' : 'Muted'}</RStatus>}
+                    </View>
                     <View style={{
                       flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                       alignItems: 'center', gap: 6, marginTop: 2,
@@ -145,7 +157,17 @@ export default function RemindersScreen() {
                         fontFamily: fontMono(),
                         fontSize: 11, color: tok.muted,
                       }}>
-                        {formatHour(h.hour)}  ·  {h.occurrences}× {lang === 'ar' ? 'في آخر 14 يوم' : 'in last 14 days'}
+                        {formatHour(h.hour)}
+                      </Text>
+                      <Text style={{
+                        fontFamily: fontBody(lang),
+                        fontSize: 11, color: tok.muted,
+                        textAlign: lang === 'ar' ? 'right' : 'left',
+                        writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+                      }}>
+                        {lang === 'ar'
+                          ? `· ${h.occurrences}× في آخر 14 يوم`
+                          : `· ${h.occurrences}× in last 14 days`}
                       </Text>
                     </View>
                   </View>
@@ -154,8 +176,8 @@ export default function RemindersScreen() {
                     disabled={busyId === h.id}
                     hitSlop={10}
                     style={({ pressed }) => ({
-                      width: 38, height: 38, borderRadius: 12,
-                      backgroundColor: pressed ? tok.elevated : tok.surface,
+                      width: 38, height: 38, borderRadius: radius.input,
+                      backgroundColor: pressed ? tok.surface : tok.elevated,
                       alignItems: 'center', justifyContent: 'center',
                       opacity: busyId === h.id ? 0.4 : 1,
                     })}

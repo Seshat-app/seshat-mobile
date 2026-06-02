@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { View, Text, Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Modal, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Briefcase, ChevronDown, ChevronRight, Plus, User as UserIcon, X, Check, Building2 } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { useAppData, type WorkspaceSummary } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
+import { RCard, RButton } from './ui';
 
 /**
  * Tiny persistent pill showing the user's current workspace. Tap to summon
@@ -32,9 +34,10 @@ export function WorkspaceChip() {
         alignItems: 'center', gap: 7,
         paddingHorizontal: 12, paddingVertical: 7,
         borderRadius: 999,
-        backgroundColor: pressed ? tok.glowShellBg : 'rgba(201,168,76,0.08)',
+        backgroundColor: tok.glowShellBg,
         borderWidth: 1,
-        borderColor: pressed ? tok.glowShellBorder : 'rgba(201,168,76,0.18)',
+        borderColor: tok.glowShellBorder,
+        opacity: pressed ? 0.85 : 1,
         alignSelf: 'flex-start',
       })}
     >
@@ -77,61 +80,61 @@ export function WorkspaceCard({ onPress }: { onPress: () => void }) {
     : (lang === 'ar' ? 'حسابك الشخصي' : 'Your personal ledger');
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        marginTop: 18,
-        borderRadius: 14,
-        backgroundColor: tok.surface,
-        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-        paddingVertical: 14, paddingHorizontal: 14,
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 12,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      <View style={{
-        width: 38, height: 38, borderRadius: 10,
-        backgroundColor: tok.elevated,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        {isOrg
-          ? <Building2 size={18} color={tok.gold} strokeWidth={1.6} />
-          : <UserIcon size={18} color={tok.gold} strokeWidth={1.6} />}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{
-          fontFamily: fontMono('regular'), fontSize: 9, color: tok.muted, letterSpacing: 1.4,
-          textAlign: lang === 'ar' ? 'right' : 'left',
+    <RCard padding={0} style={{ marginTop: 18 }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          paddingVertical: 14, paddingHorizontal: 14,
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 12,
+          opacity: pressed ? 0.85 : 1,
+        })}
+      >
+        <View style={{
+          width: 38, height: 38, borderRadius: 10,
+          backgroundColor: tok.elevated,
+          alignItems: 'center', justifyContent: 'center',
         }}>
-          {lang === 'ar' ? 'مساحة العمل' : 'WORKSPACE'}
-        </Text>
-        <Text
-          numberOfLines={1}
-          style={{
-            marginTop: 2,
-            fontFamily: fontBody(lang, 'semibold'), fontSize: 15, color: tok.bone,
+          {isOrg
+            ? <Building2 size={18} color={tok.gold} strokeWidth={1.6} />
+            : <UserIcon size={18} color={tok.gold} strokeWidth={1.6} />}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontFamily: fontMono('regular'), fontSize: 9, color: tok.muted, letterSpacing: 1.4,
             textAlign: lang === 'ar' ? 'right' : 'left',
-          }}
-        >
-          {active.name}
-        </Text>
-        <Text
-          numberOfLines={1}
-          style={{
-            marginTop: 2,
-            fontFamily: fontBody(lang), fontSize: 12, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}
-        >
-          {label}
-        </Text>
-      </View>
-      <ChevronRight
-        size={18} color={tok.muted}
-        style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }}
-      />
-    </Pressable>
+          }}>
+            {lang === 'ar' ? 'مساحة العمل' : 'WORKSPACE'}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              marginTop: 2,
+              fontFamily: fontBody(lang, 'semibold'), fontSize: 15, color: tok.bone,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+            }}
+          >
+            {active.name}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              marginTop: 2,
+              fontFamily: fontBody(lang), fontSize: 12, color: tok.muted,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+              writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+            }}
+          >
+            {label}
+          </Text>
+        </View>
+        <ChevronRight
+          size={18} color={tok.muted}
+          style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }}
+        />
+      </Pressable>
+    </RCard>
   );
 }
 
@@ -143,6 +146,7 @@ export function WorkspaceCard({ onPress }: { onPress: () => void }) {
  */
 export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { workspaces, activeLedgerId, switchLedger } = useAppData();
   const [switching, setSwitching] = useState<string | null>(null);
@@ -170,15 +174,19 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: '#000A' }} onPress={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.66)' }} onPress={onClose}>
         <View style={{ flex: 1 }} />
       </Pressable>
       <View style={{
         backgroundColor: tok.surface,
-        borderTopLeftRadius: 22, borderTopRightRadius: 22,
-        paddingHorizontal: 18, paddingTop: 18, paddingBottom: 32,
+        borderTopLeftRadius: 20, borderTopRightRadius: 20,
+        paddingHorizontal: 18, paddingTop: 12, paddingBottom: 24 + insets.bottom,
         gap: 6,
       }}>
+        <View style={{
+          alignSelf: 'center', width: 36, height: 4, borderRadius: 999,
+          backgroundColor: tok.border, marginBottom: 12,
+        }} />
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           alignItems: 'center', justifyContent: 'space-between',
@@ -186,6 +194,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
         }}>
           <Text style={{
             fontFamily: fontHead(lang), fontSize: 18, color: tok.bone, letterSpacing: -0.3,
+            writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
           }}>
             {lang === 'ar' ? 'تبديل مساحة العمل' : 'Switch workspace'}
           </Text>
@@ -202,6 +211,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
             const isActive =
               (activeLedgerId && w.ledgerId === activeLedgerId) ||
               (!activeLedgerId && w.kind === 'personal');
+            const isSwitching = switching !== null && switching === w.ledgerId;
             return (
               <Pressable
                 key={`${w.kind}-${w.ledgerId || w.name}`}
@@ -212,9 +222,9 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
                   paddingVertical: 12, paddingHorizontal: 14,
                   flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
                   alignItems: 'center', gap: 12,
-                  backgroundColor: isActive ? tok.elevated : 'transparent',
+                  backgroundColor: isActive ? tok.glowShellBg : 'transparent',
                   borderWidth: StyleSheet.hairlineWidth,
-                  borderColor: isActive ? tok.border : 'transparent',
+                  borderColor: isActive ? tok.glowShellBorder : 'transparent',
                   opacity: pressed && !isActive ? 0.7 : 1,
                 })}
               >
@@ -234,6 +244,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
                       fontFamily: fontBody(lang, isActive ? 'semibold' : 'medium'),
                       fontSize: 14, color: tok.bone,
                       textAlign: lang === 'ar' ? 'right' : 'left',
+                      writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
                     }}
                   >
                     {w.name}
@@ -244,6 +255,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
                       marginTop: 2,
                       fontFamily: fontBody(lang), fontSize: 11, color: tok.muted,
                       textAlign: lang === 'ar' ? 'right' : 'left',
+                      writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
                     }}
                   >
                     {w.kind === 'org'
@@ -253,7 +265,9 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
                       : (lang === 'ar' ? 'حسابك الشخصي' : 'Your personal ledger')}
                   </Text>
                 </View>
-                {isActive && <Check size={16} color={tok.gold} />}
+                {isSwitching
+                  ? <ActivityIndicator size="small" color={tok.gold} />
+                  : isActive && <Check size={16} color={tok.gold} />}
               </Pressable>
             );
           })}
@@ -263,59 +277,26 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
         <View style={{
           marginTop: 12, paddingTop: 12,
           borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: tok.border,
-          gap: 8,
+          gap: 10,
         }}>
-          <SheetAction
-            icon={<Briefcase size={16} color={tok.bone} />}
-            label={lang === 'ar' ? 'إدارة المنظمات' : 'Manage organizations'}
-            onPress={() => { onClose(); router.push('/orgs'); }}
-            tok={tok}
-            lang={lang}
-          />
-          <SheetAction
-            icon={<Plus size={16} color={tok.gold} />}
-            label={lang === 'ar' ? 'إنشاء منظمة جديدة' : 'Create new organization'}
+          <RButton
+            variant="primary"
+            full
+            icon={<Plus size={16} color={tok.void} />}
             onPress={() => { onClose(); router.push('/orgs/new'); }}
-            tok={tok}
-            lang={lang}
-            highlight
-          />
+          >
+            {lang === 'ar' ? 'إنشاء منظمة جديدة' : 'Create new organization'}
+          </RButton>
+          <RButton
+            variant="secondary"
+            full
+            icon={<Briefcase size={16} color={tok.bone} />}
+            onPress={() => { onClose(); router.push('/orgs'); }}
+          >
+            {lang === 'ar' ? 'إدارة المنظمات' : 'Manage organizations'}
+          </RButton>
         </View>
       </View>
     </Modal>
-  );
-}
-
-function SheetAction({
-  icon, label, onPress, tok, lang, highlight,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-  tok: ReturnType<typeof useI18n>['tok'];
-  lang: 'en' | 'ar';
-  highlight?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        borderRadius: 10,
-        paddingVertical: 12, paddingHorizontal: 12,
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 10,
-        backgroundColor: pressed ? tok.elevated : 'transparent',
-      })}
-    >
-      {icon}
-      <Text style={{
-        flex: 1,
-        fontFamily: fontBody(lang, highlight ? 'semibold' : 'medium'),
-        fontSize: 14, color: highlight ? tok.gold : tok.bone,
-        textAlign: lang === 'ar' ? 'right' : 'left',
-      }}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }

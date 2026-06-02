@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TrendingUp, TrendingDown, Sparkles, Download, Hourglass } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { PlanScreen } from '../../components/PlanShell';
-import { RCard, REyebrow, RButton } from '../../components/ui';
+import { RCard, REyebrow, RButton, RStatus } from '../../components/ui';
 import { useI18n, currencyLabel } from '../../lib/i18n';
 import { hasToken, apiFetchText } from '../../lib/api';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../../lib/reports';
 import { useAppData } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
+import { radius } from '../../lib/theme';
 
 /**
  * /reports/monthly - the in-app native render of last/current month's
@@ -23,6 +25,7 @@ import { fontBody, fontHead, fontMono } from '../../lib/fonts';
  */
 export default function MonthlyReportScreen() {
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const { profile } = useAppData();
   const [report, setReport] = useState<MonthlyReport | null>(null);
   const [availability, setAvailability] = useState<ReportAvailability | null>(null);
@@ -96,7 +99,7 @@ export default function MonthlyReportScreen() {
       refreshing={refreshing}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 160, paddingTop: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -210,7 +213,7 @@ export default function MonthlyReportScreen() {
                   <REyebrow style={{
                     marginTop: 4, marginBottom: 10, textAlign: 'center',
                   }}>
-                    {lang === 'ar' ? '— الأرقام الداعمة —' : '— Supporting numbers —'}
+                    {lang === 'ar' ? 'الأرقام الداعمة' : 'Supporting numbers'}
                   </REyebrow>
                 </>
               );
@@ -258,7 +261,8 @@ export default function MonthlyReportScreen() {
                     </Text>
                     {c.deltaVsPrev !== 0 && (
                       <View style={{
-                        flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2,
+                        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                        alignItems: 'center', gap: 3, marginTop: 2,
                       }}>
                         {c.deltaVsPrev > 0
                           ? <TrendingUp size={11} color={tok.alertText} />
@@ -317,6 +321,18 @@ export default function MonthlyReportScreen() {
                               {p.countTx}× {lang === 'ar' ? 'معاملة' : 'tx'}
                               {p.budget != null && p.budgetPct != null ? `  ·  ${p.budgetPct}% ${lang === 'ar' ? 'من' : 'of'} ${p.budget.toLocaleString()}` : ''}
                             </Text>
+                            {(overBudget || nearBudget) && (
+                              <View style={{
+                                marginTop: 6,
+                                alignItems: lang === 'ar' ? 'flex-end' : 'flex-start',
+                              }}>
+                                <RStatus kind={overBudget ? 'alert' : 'warning'}>
+                                  {overBudget
+                                    ? (lang === 'ar' ? 'تجاوز الميزانية' : 'Over budget')
+                                    : (lang === 'ar' ? 'قارب الميزانية' : 'Near budget')}
+                                </RStatus>
+                              </View>
+                            )}
                           </View>
                           <View style={{ alignItems: lang === 'ar' ? 'flex-start' : 'flex-end' }}>
                             <Text style={{
@@ -484,7 +500,8 @@ function BrewingState({
 
         <View style={{
           marginTop: 8, width: '100%',
-          backgroundColor: tok.surface, borderRadius: 12, padding: 14,
+          backgroundColor: tok.elevated, borderWidth: 1, borderColor: tok.border,
+          borderRadius: radius.card, padding: 14,
           gap: 10,
         }}>
           <ProgressRow
@@ -585,9 +602,7 @@ function TotalsCard({
   const goodDirection = positiveIsGood ? isUp : !isUp;
   const deltaColor = goodDirection ? tok.posText : tok.alertText;
   return (
-    <View style={{
-      flex: 1, backgroundColor: tok.surface, borderRadius: 14, padding: 14,
-    }}>
+    <RCard padding={14} style={{ flex: 1 }}>
       <REyebrow style={{ textAlign: lang === 'ar' ? 'right' : 'left' }}>{label}</REyebrow>
       <Text style={{
         marginTop: 4, fontFamily: fontHead(lang), fontSize: 18, color: tok.bone,
@@ -604,6 +619,6 @@ function TotalsCard({
           {Math.abs(deltaPercent)}%
         </Text>
       </View>
-    </View>
+    </RCard>
   );
 }

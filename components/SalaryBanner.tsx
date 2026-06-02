@@ -3,7 +3,8 @@ import { View, Text, Pressable, Modal, Animated, TextInput, Platform, StyleSheet
 import { Sparkles, X } from 'lucide-react-native';
 import { useI18n, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { REyebrow, RButton } from './ui';
+import { T } from '../lib/theme';
+import { REyebrow, RButton, RCard } from './ui';
 import { useKeyboardHeight } from './useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // dashboard until the user enters a number. Tapping opens the bottom sheet.
 // ─────────────────────────────────────────────────────────────
 export function SalaryBanner({ onPress }: { onPress: () => void }) {
-  const { tok, lang, t } = useI18n();
+  const { tok, lang } = useI18n();
   const headline = lang === 'ar' ? 'حدّد راتبك الشهري' : 'Set your monthly salary';
   const sub = lang === 'ar'
     ? 'حتى تعرف سيشات ما الذي يجب أن تراقبه.'
@@ -20,39 +21,35 @@ export function SalaryBanner({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        marginHorizontal: 16, marginTop: 4,
-        backgroundColor: tok.surface,
-        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-        ...(lang === 'ar'
-          ? { borderRightWidth: 2, borderRightColor: tok.gold }
-          : { borderLeftWidth: 2, borderLeftColor: tok.gold }),
-        borderRadius: 12, padding: 14,
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 12,
-        opacity: pressed ? 0.9 : 1,
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
     >
-      <View style={{
-        width: 36, height: 36, borderRadius: 10,
-        backgroundColor: tok.elevated,
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Sparkles size={18} color={tok.gold} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{
-          color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-          textAlign: lang === 'ar' ? 'right' : 'left',
-        }}>{headline}</Text>
-        <Text style={{
-          marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12,
-          textAlign: lang === 'ar' ? 'right' : 'left',
-        }}>{sub}</Text>
-      </View>
-      <Text style={{ color: tok.gold, fontFamily: fontMono('regular'), fontSize: 14 }}>
-        {lang === 'ar' ? '←' : '→'}
-      </Text>
+      <RCard accent padding={14} style={{ marginHorizontal: 16, marginTop: 4 }}>
+        <View style={{
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 12,
+        }}>
+          <View style={{
+            width: 36, height: 36, borderRadius: 10,
+            backgroundColor: tok.elevated,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Sparkles size={18} color={tok.gold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              color: tok.bone, fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}>{headline}</Text>
+            <Text style={{
+              marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}>{sub}</Text>
+          </View>
+          <Text style={{ color: tok.gold, fontFamily: fontMono('regular'), fontSize: 14 }}>
+            {lang === 'ar' ? '←' : '→'}
+          </Text>
+        </View>
+      </RCard>
     </Pressable>
   );
 }
@@ -115,7 +112,7 @@ export function SetSalarySheet({
             backgroundColor: tok.void,
             borderTopLeftRadius: 24, borderTopRightRadius: 24,
             borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-            paddingBottom: 26,
+            paddingBottom: Math.max(26, insets.bottom + 12),
             marginBottom: kbHeight,
             paddingTop: kbHeight > 0 ? insets.top : 0,
             transform: [{ translateY: translate }],
@@ -136,7 +133,7 @@ export function SetSalarySheet({
           <View style={{ paddingHorizontal: 22, paddingTop: 10 }}>
             <Text style={{
               fontFamily: fontHead(lang),
-              fontSize: lang === 'ar' ? 22 : 22, color: tok.bone,
+              fontSize: T.h5, color: tok.bone,
               letterSpacing: lang === 'ar' ? 0 : -0.4, lineHeight: 28,
               textAlign: lang === 'ar' ? 'right' : 'left',
             }}>

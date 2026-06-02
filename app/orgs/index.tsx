@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Building2, ChevronRight, Plus, Send } from 'lucide-react-native';
 import { PlanScreen } from '../../components/PlanShell';
-import { RCard, REyebrow } from '../../components/ui';
+import { RCard, RButton } from '../../components/ui';
 import { SkeletonRow } from '../../components/Skeleton';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
@@ -25,6 +26,7 @@ import { fontBody, fontMono } from '../../lib/fonts';
  */
 export default function OrgsListScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { tok, lang } = useI18n();
   const { activeLedgerId, switchLedger, refresh: refreshAppData } = useAppData();
   const [items, setItems] = useState<OrgSummary[]>([]);
@@ -60,11 +62,10 @@ export default function OrgsListScreen() {
     <PlanScreen
       title={lang === 'ar' ? 'المنظمات' : 'Organizations'}
       subtitle={lang === 'ar' ? 'مساحات العمل المشتركة' : 'Shared workspaces'}
-      refreshing={refreshing}
       onAdd={() => router.push('/orgs/new')}
     >
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -178,21 +179,13 @@ function EmptyState({
           ? 'أنشئ منظمة لتشاركها مع فريقك. ميزانية واحدة، عدة أشخاص، وSeshat تتولى التسجيل.'
           : 'Create one to share with your team. One ledger, multiple people, Seshat keeps the records.'}
       </Text>
-      <Pressable
+      <RButton
+        variant="primary"
         onPress={onCreate}
-        style={({ pressed }) => ({
-          flexDirection: 'row', alignItems: 'center', gap: 8,
-          backgroundColor: pressed ? tok.goldLight : tok.gold,
-          paddingVertical: 10, paddingHorizontal: 18, borderRadius: 12,
-        })}
+        icon={<Plus size={16} color={tok.void} strokeWidth={2.4} />}
       >
-        <Plus size={16} color="#0D0D0D" strokeWidth={2.4} />
-        <Text style={{
-          color: '#0D0D0D', fontFamily: fontBody(lang, 'semibold'), fontSize: 14,
-        }}>
-          {lang === 'ar' ? 'إنشاء منظمة' : 'Create organization'}
-        </Text>
-      </Pressable>
+        {lang === 'ar' ? 'إنشاء منظمة' : 'Create organization'}
+      </RButton>
     </View>
   );
 }

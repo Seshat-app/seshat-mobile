@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShieldCheck, Eye, Lock, Cpu } from 'lucide-react-native';
 import { PlanScreen } from '../components/PlanShell';
-import { RCard, REyebrow, RButton } from '../components/ui';
+import { RCard, REyebrow, RButton, RStatus } from '../components/ui';
 import { useI18n } from '../lib/i18n';
-import { fontBody, fontMono } from '../lib/fonts';
+import { fontBody } from '../lib/fonts';
 import {
   getPermissionStatus,
   requestPermission,
@@ -24,6 +25,7 @@ import {
 export default function CaptureSetupAndroidScreen() {
   const router = useRouter();
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
   const [status, setStatus] = useState<PermissionStatus>('unknown');
   const [checking, setChecking] = useState(false);
 
@@ -64,9 +66,9 @@ export default function CaptureSetupAndroidScreen() {
   return (
     <PlanScreen
       title={lang === 'ar' ? 'رصد إشعارات البنوك' : 'Bank notification capture'}
-      subtitle={lang === 'ar' ? 'لـ Android — موافقة مرّة واحدة' : 'Android — one-time consent'}
+      subtitle={lang === 'ar' ? 'لـ Android · موافقة مرّة واحدة' : 'Android · one-time consent'}
     >
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, paddingTop: 8 }}>
         <RCard padding={18} style={{ marginBottom: 14 }}>
           <View style={{
             flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -139,33 +141,19 @@ export default function CaptureSetupAndroidScreen() {
           </Text>
         </RCard>
 
-        <View style={{
-          marginBottom: 14,
-          paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10,
-          backgroundColor: tok.surface, borderWidth: 1,
-          borderColor: authorized ? tok.gold : tok.border,
-          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          alignItems: 'center', gap: 10,
-        }}>
-          <View style={{
-            width: 8, height: 8, borderRadius: 4,
-            backgroundColor: authorized ? tok.gold : (status === 'unavailable' ? tok.alertText : tok.muted),
-          }} />
-          <Text style={{
-            flex: 1, fontFamily: fontMono(), fontSize: 12, color: tok.bone,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
+        <View style={{ marginBottom: 14, alignItems: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
+          <RStatus kind={authorized ? 'positive' : status === 'unavailable' ? 'alert' : 'draft'}>
             {authorized
-              ? (lang === 'ar' ? 'الصلاحية مفعّلة — رصد البنوك يعمل.' : 'Permission granted - bank capture active.')
+              ? (lang === 'ar' ? 'الصلاحية مفعّلة · رصد البنوك يعمل' : 'Permission granted · bank capture active')
               : status === 'unavailable'
-                ? (lang === 'ar' ? 'يتطلب نسخة APK كاملة (ليس Expo Go).' : 'Needs the full APK build (not Expo Go).')
-                : (lang === 'ar' ? 'الصلاحية غير مفعّلة.' : 'Permission not granted.')}
-          </Text>
+                ? (lang === 'ar' ? 'يتطلب نسخة APK كاملة (ليس Expo Go)' : 'Needs the full APK build (not Expo Go)')
+                : (lang === 'ar' ? 'الصلاحية غير مفعّلة' : 'Permission not granted')}
+          </RStatus>
         </View>
 
         <RButton full onPress={onRequest} disabled={checking || authorized} loading={checking}>
           {authorized
-            ? (lang === 'ar' ? 'تم — يعمل بالفعل' : 'Done — already active')
+            ? (lang === 'ar' ? 'تم · يعمل بالفعل' : 'Done · already active')
             : (lang === 'ar' ? 'أوافق وفتح إعدادات Android' : 'I agree, open Android settings')}
         </RButton>
 
