@@ -13,6 +13,7 @@ import { useI18n, type Lang, formatAmount, currencyLabel } from '../../lib/i18n'
 import { useAppData } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RButton } from '../../components/ui';
+import { ScreenScaffold } from '../../components/Screen';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
 import { resetTour } from '../../components/Tour';
@@ -208,7 +209,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+    <ScreenScaffold>
       <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 }}>
         <Text style={{
           fontFamily: fontHead(lang),
@@ -217,7 +218,7 @@ export default function ProfileScreen() {
         }}>{t('profile')}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
         {/* Identity card */}
         <RCard large>
           <View style={{
@@ -687,7 +688,7 @@ export default function ProfileScreen() {
 
       {/* WorkspaceSheet is mounted globally at the tabs layout level so
           it can be summoned from any screen via openWorkspaceSheet(). */}
-    </View>
+    </ScreenScaffold>
   );
 }
 

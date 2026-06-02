@@ -1,24 +1,24 @@
 import { ReactNode } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontHead } from '../lib/fonts';
 import { REyebrow } from './ui';
 import { RefreshSpinner } from './shell';
+import { ScreenScaffold } from './Screen';
 import { WorkspaceChip } from './WorkspaceSwitcher';
 
 // Shared top chrome for Budgets / Goals / Debts: back arrow, title, subtitle,
-// optional + action, and (when refreshing) a small spinning Seshat mark.
+// optional + action, and (when refreshing) a small refresh spinner. Sits on
+// the gold ScreenAtmosphere wash via ScreenScaffold.
 export function PlanScreen({
   title, subtitle, onAdd, refreshing, children,
 }: { title: string; subtitle?: string; onAdd?: () => void; refreshing?: boolean; children: ReactNode }) {
   const router = useRouter();
   const { tok, lang } = useI18n();
-  const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+    <ScreenScaffold>
       <View style={{
         paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -64,6 +64,6 @@ export function PlanScreen({
         )}
       </View>
       <View style={{ flex: 1 }}>{children}</View>
-    </View>
+    </ScreenScaffold>
   );
 }
