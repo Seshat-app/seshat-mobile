@@ -80,11 +80,9 @@ export function RCard({
       : { paddingVertical: 20, paddingHorizontal: 22 };
 
   const { shell, core } = splitCardStyle(style);
-  // Non-glow cards are a single clean plate — no outer tray frame — so panels
-  // don't show a faint outline/seam against the void (this was visible on most
-  // cards app-wide). Glow cards keep the gold double-bezel + soft glow as the
-  // focal treatment.
-  const bezel = glow ? 4 : 0;
+  // The "golden shield" double-bezel: an outer shell tray wraps the inner core
+  // plate on every card. Glow cards get the gold-tinted, lit version.
+  const bezel = 4;
   const outerRadius = large ? 26 : 22;
   const innerRadius = Math.max(0, outerRadius - bezel);
   const accentRail: ViewStyle | null = accent
@@ -99,9 +97,9 @@ export function RCard({
         {
           padding: bezel,
           borderRadius: outerRadius,
-          backgroundColor: glow ? tok.glowShellBg : 'transparent',
-          borderWidth: glow ? 1 : 0,
-          borderColor: glow ? tok.glowShellBorder : 'transparent',
+          backgroundColor: glow ? tok.glowShellBg : tok.shellBg,
+          borderWidth: 1,
+          borderColor: glow ? tok.glowShellBorder : tok.shellBorder,
         },
         // Gold glow lifts focal cards off the void — kept soft and faint.
         glow && {
