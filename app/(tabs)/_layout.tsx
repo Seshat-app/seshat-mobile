@@ -174,7 +174,7 @@ export default function TabsLayout() {
 
       {!hideFab && (
         <RFAB
-          onPress={() => setOptionsOpen(true)}
+          onPress={() => { setSheetPrefill(undefined); setSheetOpen(true); }}
           onVoiceStart={async () => {
             // Long-press detected → kick off the mic immediately. We do NOT
             // navigate yet so the user keeps holding on the FAB (sliding the

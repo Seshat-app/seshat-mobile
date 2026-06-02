@@ -282,19 +282,26 @@ export function RStatus({
   kind = 'positive', children,
 }: { kind?: 'positive' | 'alert' | 'warning' | 'info' | 'draft'; children: ReactNode }) {
   const { tok } = useI18n();
-  const map = {
-    positive: [tok.posBg, tok.posText],
-    alert: [tok.alertBg, tok.alertText],
-    warning: [tok.warnBg, tok.warnText],
-    info: [tok.infoBg, tok.infoText],
-    draft: [tok.elevated, tok.muted],
-  } as const;
-  const [bg, fg] = map[kind];
+  const map: Record<string, [string, string, string]> = {
+    positive: [tok.posBg, tok.posText, 'rgba(74,186,122,0.3)'],
+    alert:    [tok.alertBg, tok.alertText, 'rgba(224,85,85,0.3)'],
+    warning:  [tok.warnBg, tok.warnText, 'rgba(224,160,48,0.3)'],
+    info:     [tok.infoBg, tok.infoText, 'rgba(74,138,202,0.3)'],
+    draft:    [tok.elevated, tok.muted, tok.border],
+  };
+  const [bg, fg, border] = map[kind];
   return (
-    <View style={{ backgroundColor: bg, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: 5,
+      backgroundColor: bg, borderRadius: 999,
+      paddingHorizontal: 10, paddingVertical: 4,
+      borderWidth: 1, borderColor: border,
+      alignSelf: 'flex-start',
+    }}>
+      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: fg }} />
       <Text style={{
-        color: fg, fontFamily: fontMono('regular'), fontSize: 9.5,
-        letterSpacing: 1.2, textTransform: 'uppercase',
+        color: fg, fontFamily: fontMono('regular'), fontSize: 9,
+        letterSpacing: 1.4, textTransform: 'uppercase',
       }}>{children}</Text>
     </View>
   );

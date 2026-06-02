@@ -55,71 +55,34 @@ export function RViewSwitcher({ value, onChange }: { value: DashView; onChange: 
 }
 
 // ─────────────────────────────────────────────────────────────
-// Seal medallion — the Seshat mark seated in a gold-glass disc with a
-// soft halo. The brand anchor in the header; also the refresh indicator
-// (the mark spins while data is loading).
-// ─────────────────────────────────────────────────────────────
-export function RSeal({ size = 44, refreshing }: { size?: number; refreshing?: boolean }) {
-  const { tok } = useI18n();
-  return (
-    <View style={{
-      width: size, height: size, borderRadius: size / 2,
-      alignItems: 'center', justifyContent: 'center',
-      backgroundColor: tok.glowShellBg,
-      borderWidth: 1, borderColor: tok.glowShellBorder,
-      shadowColor: tok.glowShadow, shadowOpacity: 0.22,
-      shadowRadius: 14, shadowOffset: { width: 0, height: 4 },
-      elevation: 4,
-    }}>
-      <SeshatMark
-        size={size * 0.55}
-        gold={tok.gold}
-        lightRing
-        // One-shot scan on mount; continuous spin while refreshing so the
-        // mark itself is the loading indicator.
-        animate={!refreshing}
-        spinning={refreshing}
-      />
-    </View>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Home header — two bands: (1) workspace chip + seal medallion, then
-// (2) the greeting + date eyebrow with the view switcher pill alongside.
+// Home header — single compact band: greeting left, view switcher right.
+// Workspace context is in the eyebrow. No spinning logo, no extra row.
 // ─────────────────────────────────────────────────────────────
 export function RHomeHeader({
-  userName, view, onViewChange, refreshing,
+  userName, view, onViewChange,
 }: { userName: string; view: DashView; onViewChange: (v: DashView) => void; refreshing?: boolean }) {
   const { tok, lang, t } = useI18n();
   return (
-    <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 }}>
-      {/* Band 1 — ledger context + brand anchor. The chip tells the user
-          which ledger feeds the numbers and switches it in one tap; the seal
-          anchors the brand and doubles as the refresh spinner. */}
+    <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 }}>
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', justifyContent: 'space-between', marginBottom: 16,
-      }}>
-        <WorkspaceChip />
-        <RSeal refreshing={refreshing} />
-      </View>
-      {/* Band 2 — greeting + the view switcher. */}
-      <View style={{
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'flex-end', justifyContent: 'space-between', gap: 12,
+        alignItems: 'center', justifyContent: 'space-between', gap: 12,
       }}>
         <View style={{ flexShrink: 1, flex: 1 }}>
+          {/* Workspace + date eyebrow — tapping workspace opens the switcher */}
+          <WorkspaceChip />
           <Text style={{
+            marginTop: 10,
             fontFamily: fontHead(lang),
-            fontSize: lang === 'ar' ? 24 : 25, color: tok.bone, letterSpacing: lang === 'ar' ? 0 : -0.6,
-            lineHeight: lang === 'ar' ? 34 : 29,
+            fontSize: lang === 'ar' ? 22 : 23, color: tok.bone,
+            letterSpacing: lang === 'ar' ? 0 : -0.5,
+            lineHeight: lang === 'ar' ? 32 : 27,
             writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
           }}>
             {greeting(lang, userName)}
           </Text>
-          <REyebrow style={{ marginTop: 8, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
-            {monthYear(lang)} · {t('detected')}
+          <REyebrow style={{ marginTop: 6, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
+            {monthYear(lang)}
           </REyebrow>
         </View>
         <RViewSwitcher value={view} onChange={onViewChange} />

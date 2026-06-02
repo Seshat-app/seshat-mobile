@@ -132,8 +132,8 @@ export default function HomeScreen() {
         </ScrollView>
       )}
 
-      {/* Overlay glass header — content scrolls and blurs beneath it (iOS 26
-          Liquid Glass where available, frosted blur otherwise). */}
+      {/* Overlay glass header — no border, just a gradient fade at the bottom
+          so content dissolves naturally as it scrolls under. */}
       <View
         onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}
@@ -141,11 +141,9 @@ export default function HomeScreen() {
         <Glass
           variant="liquid"
           dark={mode !== 'light'}
-          fallbackColor={mode === 'light' ? 'rgba(245,244,239,0.72)' : 'rgba(13,13,13,0.6)'}
+          fallbackColor={mode === 'light' ? 'rgba(245,244,239,0.85)' : 'rgba(13,13,13,0.75)'}
           style={{
             paddingTop: insets.top,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: tok.shellBorder,
           }}
         >
           <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />

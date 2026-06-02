@@ -26,30 +26,30 @@ export function WorkspaceChip() {
   return (
     <Pressable
       onPress={openWorkspaceSheet}
-      hitSlop={6}
+      hitSlop={8}
       style={({ pressed }) => ({
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 6,
-        paddingHorizontal: 10, paddingVertical: 6,
+        alignItems: 'center', gap: 7,
+        paddingHorizontal: 12, paddingVertical: 7,
         borderRadius: 999,
-        backgroundColor: pressed ? tok.elevated : tok.surface,
-        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-        maxWidth: 180,
+        backgroundColor: pressed ? tok.glowShellBg : 'rgba(201,168,76,0.08)',
+        borderWidth: 1,
+        borderColor: pressed ? tok.glowShellBorder : 'rgba(201,168,76,0.18)',
+        alignSelf: 'flex-start',
       })}
     >
-      {isOrg
-        ? <Building2 size={12} color={tok.gold} strokeWidth={2} />
-        : <UserIcon size={12} color={tok.gold} strokeWidth={2} />}
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tok.gold }} />
       <Text
         numberOfLines={1}
         style={{
-          fontFamily: fontBody(lang, 'medium'), fontSize: 12, color: tok.bone,
-          maxWidth: 120,
+          fontFamily: fontMono('regular'), fontSize: 11,
+          letterSpacing: 1.2, textTransform: 'uppercase',
+          color: tok.gold, maxWidth: 130,
         }}
       >
         {active.name}
       </Text>
-      <ChevronDown size={12} color={tok.muted} />
+      <ChevronDown size={10} color={tok.gold} strokeWidth={2} />
     </Pressable>
   );
 }

@@ -2,69 +2,94 @@ import { ReactNode } from 'react';
 import { View, ViewStyle, StyleSheet, Platform } from 'react-native';
 
 // ─────────────────────────────────────────────────────────────
-// Glass — one wrapper, three tiers of material, chosen at runtime:
+// Glass — one wrapper, three tiers, chosen at runtime:
 //
-//   1. iOS 26 Liquid Glass  (expo-glass-effect GlassView)   — variant="liquid"
-//   2. Frosted blur         (expo-blur BlurView)            — the default
-//   3. Translucent fallback (plain tinted View)             — old binary / no native module
+//   1. iOS 26 Liquid Glass  (expo-glass-effect GlassView)   variant="liquid"
+//   2. Frosted blur         (expo-blur BlurView)            variant="frost" (default)
+//   3. Translucent fallback (plain tinted View)             always safe
 //
-// The native modules are required defensively: on a binary built BEFORE
-// `expo prebuild` linked them, the blur/glass simply render nothing and the
-// `fallbackColor` tint shows through — no crash. After the rebuild the real
-// material appears with no JS change.
+// Native modules are probed by calling requireNativeViewManager at init —
+// this is what actually throws when a module isn't linked in the current
+// binary. If it throws, we mark the module as unavailable and the component
+// renders the fallback color with no crash, even on an un-rebuilt binary.
+// After the dev-client rebuild the probe passes and the real material shows.
 // ─────────────────────────────────────────────────────────────
 
+let BlurView: any = null;
 let GlassView: any = null;
 let liquidAvailable = false;
-let BlurView: any = null;
 
 try {
+  const { requireNativeViewManager } = require('expo-modules-core');
+  // This call throws if ExpoBlurView is not registered in this binary.
+  requireNativeViewManager('ExpoBlurView');
+  BlurView = require('expo-blur').BlurView;
+} catch {
+  BlurView = null;
+}
+
+try {
+  const { requireNativeViewManager } = require('expo-modules-core');
+  requireNativeViewManager('ExpoGlassEffect', 'GlassView');
   const g = require('expo-glass-effect');
   GlassView = g.GlassView;
   try { liquidAvailable = !!g.isLiquidGlassAvailable(); } catch { liquidAvailable = false; }
-} catch { /* module not in this binary */ }
-
-try {
-  BlurView = require('expo-blur').BlurView;
-} catch { /* module not in this binary */ }
+} catch {
+  GlassView = null;
+  liquidAvailable = false;
+}
 
 export function isGlassActive() {
   return liquidAvailable || !!BlurView;
 }
 
 export function Glass({
-  children, style, radius = 0, intensity = 40, dark = true, fallbackColor,
-  variant = 'frost', tintColor,
+  children,
+  style,
+  radius = 0,
+  intensity = 40,
+  dark = true,
+  fallbackColor,
+  variant = 'frost',
+  tintColor,
 }: {
   children?: ReactNode;
   style?: ViewStyle | ViewStyle[];
   radius?: number;
   intensity?: number;
-  /** Dark glass (over the void) vs light glass (parchment mode). */
   dark?: boolean;
-  /** Tint shown when no native blur/glass is available (and seen faintly under it). */
+  /** Color shown when no native blur/glass is available — also shows faintly
+   *  through the blur on devices that support it. Make it semi-transparent so
+   *  the atmosphere bleeds through even before the rebuild. */
   fallbackColor: string;
-  /** 'liquid' prefers iOS 26 Liquid Glass (best for bars/controls); 'frost' is
-   *  frosted blur (best for content cards, matches the web). Both fall back. */
   variant?: 'liquid' | 'frost';
-  /** Optional tint for Liquid Glass. */
   tintColor?: string;
 }) {
   const useLiquid = variant === 'liquid' && liquidAvailable && GlassView;
+  const useFrost = !useLiquid && !!BlurView;
+
   return (
-    <View style={[{ borderRadius: radius, overflow: 'hidden', backgroundColor: fallbackColor }, style]}>
+    <View
+      style={[
+        { borderRadius: radius, overflow: 'hidden', backgroundColor: fallbackColor },
+        style,
+      ]}
+    >
       {useLiquid ? (
         <GlassView
           style={StyleSheet.absoluteFill}
           glassEffectStyle="regular"
+          colorScheme={dark ? 'dark' : 'light'}
           tintColor={tintColor}
         />
-      ) : BlurView ? (
+      ) : useFrost ? (
         <BlurView
           style={StyleSheet.absoluteFill}
           intensity={intensity}
           tint={dark ? 'systemThinMaterialDark' : 'systemThinMaterialLight'}
-          experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
+          experimentalBlurMethod={
+            Platform.OS === 'android' ? 'dimezisBlurView' : undefined
+          }
         />
       ) : null}
       {children}
