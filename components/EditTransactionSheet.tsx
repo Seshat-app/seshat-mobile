@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Modal, Pressable, TextInput, Platform, ScrollView } from 'react-native';
+import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RButton } from './ui';
+import { RButton, RField, RSegmented } from './ui';
+import { radius } from '../lib/theme';
 import { useKeyboardHeight } from './useKeyboardHeight';
 import type { ApiCategory } from './AddTransactionSheet';
 
@@ -31,6 +33,7 @@ type Props = {
 export function EditTransactionSheet({ visible, editing, categories, onClose, onSaved }: Props) {
   const { tok, lang } = useI18n();
   const kbHeight = useKeyboardHeight();
+  const insets = useSafeAreaInsets();
 
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'expense' | 'income'>('expense');
@@ -80,10 +83,15 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
       </Pressable>
       <View style={{
         backgroundColor: tok.surface,
-        borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        paddingHorizontal: 20, paddingTop: 18, paddingBottom: 24 + kbHeight,
+        borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
+        paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24 + insets.bottom + kbHeight,
         gap: 14, maxHeight: '85%',
       }}>
+        {/* Handle */}
+        <View style={{ alignItems: 'center', paddingBottom: 8 }}>
+          <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: tok.borderHi, opacity: 0.6 }} />
+        </View>
+
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           justifyContent: 'space-between', alignItems: 'center',
@@ -95,47 +103,23 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
         </View>
 
         {/* Type toggle */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {(['expense', 'income'] as const).map((tt) => (
-            <Pressable
-              key={tt}
-              onPress={() => setType(tt)}
-              style={{
-                flex: 1, paddingVertical: 10, borderRadius: 10,
-                backgroundColor: type === tt ? tok.gold : tok.elevated,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{
-                fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.4,
-                color: type === tt ? '#0D0D0D' : tok.muted,
-              }}>
-                {tt === 'expense'
-                  ? (lang === 'ar' ? 'مصروف' : 'EXPENSE')
-                  : (lang === 'ar' ? 'دخل' : 'INCOME')}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <RSegmented
+          value={type}
+          onChange={setType}
+          options={[
+            { value: 'expense', label: lang === 'ar' ? 'مصروف' : 'Expense' },
+            { value: 'income', label: lang === 'ar' ? 'دخل' : 'Income' },
+          ]}
+        />
 
         {/* Amount */}
-        <View>
-          <Text style={{
-            fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.4, marginBottom: 6,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>{lang === 'ar' ? 'المبلغ' : 'AMOUNT'}</Text>
-          <TextInput
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="decimal-pad"
-            style={{
-              height: 48, borderRadius: 10, paddingHorizontal: 12,
-              backgroundColor: tok.elevated, color: tok.bone,
-              fontFamily: Platform.select({ ios: 'System', default: 'sans-serif' }), fontSize: 18,
-              textAlign: lang === 'ar' ? 'right' : 'left',
-            }}
-          />
-        </View>
+        <RField
+          label={lang === 'ar' ? 'المبلغ' : 'AMOUNT'}
+          value={amount}
+          onChange={setAmount}
+          keyboardType="decimal-pad"
+          mono
+        />
 
         {/* Category */}
         <View>
@@ -143,7 +127,14 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
             fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.4, marginBottom: 6,
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>{lang === 'ar' ? 'التصنيف' : 'CATEGORY'}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              gap: 8,
+              flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+            }}
+          >
             {filteredCats.map((c) => {
               const active = c._id === categoryId;
               return (
@@ -153,13 +144,13 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
                   style={{
                     paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999,
                     backgroundColor: active ? tok.gold : tok.elevated,
-                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 6,
                   }}
                 >
                   <Text style={{ fontSize: 14 }}>{c.emoji ?? '📦'}</Text>
                   <Text style={{
                     fontFamily: fontBody(lang, active ? 'semibold' : 'medium'), fontSize: 13,
-                    color: active ? '#0D0D0D' : tok.bone,
+                    color: active ? tok.void : tok.bone,
                   }}>
                     {lang === 'ar' ? (c.nameAr ?? c.nameEn) : c.nameEn}
                   </Text>
@@ -170,28 +161,16 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
         </View>
 
         {/* Description */}
-        <View>
-          <Text style={{
-            fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.4, marginBottom: 6,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>{lang === 'ar' ? 'الوصف (اختياري)' : 'NOTE (OPTIONAL)'}</Text>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder={lang === 'ar' ? 'مثال: قهوة على الإفطار' : 'e.g. coffee with breakfast'}
-            placeholderTextColor={tok.muted}
-            style={{
-              height: 44, borderRadius: 10, paddingHorizontal: 12,
-              backgroundColor: tok.elevated, color: tok.bone,
-              fontFamily: Platform.select({ ios: 'System', default: 'sans-serif' }), fontSize: 14,
-              textAlign: lang === 'ar' ? 'right' : 'left',
-            }}
-          />
-        </View>
+        <RField
+          label={lang === 'ar' ? 'الوصف (اختياري)' : 'NOTE (OPTIONAL)'}
+          value={description}
+          onChange={setDescription}
+          placeholder={lang === 'ar' ? 'مثال: قهوة على الإفطار' : 'e.g. coffee with breakfast'}
+        />
 
         {err ? (
           <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, color: '#FF7B7B', textAlign: 'center', marginTop: -4,
+            fontFamily: fontBody(lang), fontSize: 13, color: tok.alertText, textAlign: 'center', marginTop: -4,
           }}>{err}</Text>
         ) : null}
 

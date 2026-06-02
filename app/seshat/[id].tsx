@@ -10,6 +10,7 @@ import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { REyebrow } from '../../components/ui';
+import { ScreenScaffold } from '../../components/Screen';
 import { useRecorder } from '../../components/useRecorder';
 import { uploadReceipt } from '../../lib/cloudinary';
 import { ChatBubble, TypingDots, RecordingMicIcon, type Message } from '../../components/ChatBubble';
@@ -197,11 +198,12 @@ export default function ChatViewScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior="padding"
-      style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}
-      keyboardVerticalOffset={0}
-    >
+    <ScreenScaffold>
+      <KeyboardAvoidingView
+        behavior="padding"
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
+      >
       {/* Top bar */}
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -262,7 +264,7 @@ export default function ChatViewScreen() {
 
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+        paddingHorizontal: 16, paddingTop: 10, paddingBottom: Math.max(insets.bottom, 12),
         borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: tok.border,
         backgroundColor: tok.navBg,
         alignItems: 'center', gap: 8,
@@ -323,9 +325,10 @@ export default function ChatViewScreen() {
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <ArrowUp size={18} color={input.trim() && !sending ? '#0D0D0D' : tok.muted} />
+          <ArrowUp size={18} color={input.trim() && !sending ? tok.void : tok.muted} />
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ScreenScaffold>
   );
 }

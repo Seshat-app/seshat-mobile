@@ -78,8 +78,8 @@ function buildInsight(data: DashboardData, lang: 'en' | 'ar'): SeshatInsightData
     return {
       hero: { value: top.total.toLocaleString(), label: catLabel(top, lang) },
       text: lang === 'ar'
-        ? 'أكبر فئة هذا الشهر — تابعيها.'
-        : 'Your biggest category this month — watch it.',
+        ? 'أكبر فئة هذا الشهر. تابعيها.'
+        : 'Your biggest category this month. Watch it.',
     };
   }
   return {

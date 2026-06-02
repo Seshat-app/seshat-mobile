@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, Modal, Pressable, ScrollView, TextInput, StyleSheet, Platform,
+  View, Text, Modal, Pressable, ScrollView, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Check, RotateCcw } from 'lucide-react-native';
 import { useI18n, localDateStr } from '../lib/i18n';
-import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { REyebrow, RButton } from './ui';
+import { fontHead } from '../lib/fonts';
+import { radius } from '../lib/theme';
+import { REyebrow, RButton, RPill, RField } from './ui';
 import type { ApiCategory } from './AddTransactionSheet';
 
 /**
@@ -141,12 +142,17 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
       <View style={{
         position: 'absolute', left: 0, right: 0, bottom: 0,
         backgroundColor: tok.void,
-        borderTopLeftRadius: 22, borderTopRightRadius: 22,
+        borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
         borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-        paddingTop: 18,
+        paddingTop: 10,
         paddingBottom: insets.bottom + 12,
         maxHeight: '88%',
       }}>
+        {/* Handle */}
+        <View style={{ alignItems: 'center', paddingBottom: 8 }}>
+          <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: tok.borderHi, opacity: 0.6 }} />
+        </View>
+
         {/* Header */}
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -175,61 +181,62 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
           {/* Type */}
           <Section title={lang === 'ar' ? 'النوع' : 'Type'} tok={tok} lang={lang}>
             <Row>
-              <Chip
+              <RPill
                 active={draft.type === 'all'}
                 onPress={() => setDraft((d) => ({ ...d, type: 'all' }))}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'الكل' : 'All'}
-              </Chip>
-              <Chip
+              </RPill>
+              <RPill
                 active={draft.type === 'expense'}
                 onPress={() => setDraft((d) => ({ ...d, type: 'expense' }))}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'مصروف' : 'Expense'}
-              </Chip>
-              <Chip
+              </RPill>
+              <RPill
                 active={draft.type === 'income'}
                 onPress={() => setDraft((d) => ({ ...d, type: 'income' }))}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'دخل' : 'Income'}
-              </Chip>
+              </RPill>
             </Row>
           </Section>
 
           {/* Date range */}
           <Section title={lang === 'ar' ? 'الفترة' : 'Date range'} tok={tok} lang={lang}>
             <Row>
-              <Chip onPress={() => applyPreset('this-month')} tok={tok} lang={lang}>
+              <RPill onPress={() => applyPreset('this-month')}>
                 {lang === 'ar' ? 'هذا الشهر' : 'This month'}
-              </Chip>
-              <Chip onPress={() => applyPreset('last-month')} tok={tok} lang={lang}>
+              </RPill>
+              <RPill onPress={() => applyPreset('last-month')}>
                 {lang === 'ar' ? 'الشهر الماضي' : 'Last month'}
-              </Chip>
-              <Chip onPress={() => applyPreset('last-7')} tok={tok} lang={lang}>
+              </RPill>
+              <RPill onPress={() => applyPreset('last-7')}>
                 {lang === 'ar' ? 'آخر 7 أيام' : 'Last 7 days'}
-              </Chip>
-              <Chip onPress={() => applyPreset('last-30')} tok={tok} lang={lang}>
+              </RPill>
+              <RPill onPress={() => applyPreset('last-30')}>
                 {lang === 'ar' ? 'آخر 30 يوم' : 'Last 30 days'}
-              </Chip>
+              </RPill>
             </Row>
             <View style={{
               flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
               gap: 8, marginTop: 8,
             }}>
-              <DateInput
+              <RField
                 label={lang === 'ar' ? 'من' : 'From'}
                 value={draft.from ?? ''}
                 onChange={(v) => setDraft((d) => ({ ...d, from: v || undefined }))}
-                tok={tok} lang={lang}
+                placeholder="YYYY-MM-DD"
+                mono ltr
+                style={{ flex: 1 }}
               />
-              <DateInput
+              <RField
                 label={lang === 'ar' ? 'إلى' : 'To'}
                 value={draft.to ?? ''}
                 onChange={(v) => setDraft((d) => ({ ...d, to: v || undefined }))}
-                tok={tok} lang={lang}
+                placeholder="YYYY-MM-DD"
+                mono ltr
+                style={{ flex: 1 }}
               />
             </View>
           </Section>
@@ -239,14 +246,13 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
             <Section title={lang === 'ar' ? 'الفئات' : 'Categories'} tok={tok} lang={lang}>
               <Row wrap>
                 {categories.map((c) => (
-                  <Chip
+                  <RPill
                     key={c._id}
                     active={draft.categoryIds.includes(c._id)}
                     onPress={() => toggleCategory(c._id)}
-                    tok={tok} lang={lang}
                   >
                     {c.emoji ? `${c.emoji} ` : ''}{lang === 'ar' && c.nameAr ? c.nameAr : c.nameEn}
-                  </Chip>
+                  </RPill>
                 ))}
               </Row>
             </Section>
@@ -255,48 +261,42 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
           {/* Source */}
           <Section title={lang === 'ar' ? 'المصدر' : 'Source'} tok={tok} lang={lang}>
             <Row wrap>
-              <Chip
+              <RPill
                 active={draft.sources.includes('manual')}
                 onPress={() => toggleSource('manual')}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'يدوي' : 'Manual'}
-              </Chip>
-              <Chip
+              </RPill>
+              <RPill
                 active={draft.sources.includes('seshat')}
                 onPress={() => toggleSource('seshat')}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'سيشات' : 'Seshat'}
-              </Chip>
-              <Chip
+              </RPill>
+              <RPill
                 active={draft.sources.includes('voice')}
                 onPress={() => toggleSource('voice')}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'صوت' : 'Voice'}
-              </Chip>
-              <Chip
+              </RPill>
+              <RPill
                 active={draft.sources.includes('receipt-ocr')}
                 onPress={() => toggleSource('receipt-ocr')}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'إيصال' : 'Receipt'}
-              </Chip>
-              <Chip
+              </RPill>
+              <RPill
                 active={draft.sources.includes('bot')}
                 onPress={() => toggleSource('bot')}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'تيليجرام' : 'Telegram'}
-              </Chip>
-              <Chip
+              </RPill>
+              <RPill
                 active={draft.sources.includes('notification')}
                 onPress={() => toggleSource('notification')}
-                tok={tok} lang={lang}
               >
                 {lang === 'ar' ? 'إشعار' : 'Notification'}
-              </Chip>
+              </RPill>
             </Row>
           </Section>
 
@@ -306,15 +306,23 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
               flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
               gap: 8,
             }}>
-              <AmountInput
+              <RField
                 label={lang === 'ar' ? 'الحد الأدنى' : 'Min'}
-                value={minStr} onChange={setMinStr}
-                tok={tok} lang={lang}
+                value={minStr}
+                onChange={(v) => setMinStr(v.replace(/[^\d.]/g, ''))}
+                placeholder="0"
+                keyboardType="numeric"
+                mono ltr
+                style={{ flex: 1 }}
               />
-              <AmountInput
+              <RField
                 label={lang === 'ar' ? 'الحد الأقصى' : 'Max'}
-                value={maxStr} onChange={setMaxStr}
-                tok={tok} lang={lang}
+                value={maxStr}
+                onChange={(v) => setMaxStr(v.replace(/[^\d.]/g, ''))}
+                placeholder="0"
+                keyboardType="numeric"
+                mono ltr
+                style={{ flex: 1 }}
               />
             </View>
           </Section>
@@ -322,16 +330,8 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
 
         {/* Apply */}
         <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
-          <RButton full onPress={apply}>
-            <View style={{
-              flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-              alignItems: 'center', gap: 6,
-            }}>
-              <Check size={16} color={tok.void} />
-              <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.void }}>
-                {lang === 'ar' ? 'تطبيق' : 'Apply'}
-              </Text>
-            </View>
+          <RButton full onPress={apply} icon={<Check size={16} color={tok.void} />}>
+            {lang === 'ar' ? 'تطبيق' : 'Apply'}
           </RButton>
         </View>
       </View>
@@ -360,95 +360,6 @@ function Row({ children, wrap }: { children: React.ReactNode; wrap?: boolean }) 
       gap: 6,
     }}>
       {children}
-    </View>
-  );
-}
-
-function Chip({
-  active, onPress, tok, lang, children,
-}: {
-  active?: boolean; onPress: () => void;
-  tok: any; lang: 'en' | 'ar';
-  children: React.ReactNode;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
-        backgroundColor: active ? tok.gold : (pressed ? tok.elevated : tok.surface),
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: active ? tok.gold : tok.border,
-      })}
-    >
-      <Text style={{
-        fontFamily: fontBody(lang, active ? 'semibold' : 'medium'),
-        fontSize: 12, color: active ? tok.void : tok.bone,
-      }}>
-        {children}
-      </Text>
-    </Pressable>
-  );
-}
-
-function DateInput({
-  label, value, onChange, tok, lang,
-}: { label: string; value: string; onChange: (v: string) => void; tok: any; lang: 'en' | 'ar' }) {
-  return (
-    <View style={{ flex: 1 }}>
-      <Text style={{
-        fontFamily: fontMono(), fontSize: 9, letterSpacing: 1.5, color: tok.muted,
-        textTransform: 'uppercase', marginBottom: 4,
-        textAlign: lang === 'ar' ? 'right' : 'left',
-      }}>
-        {label}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor={tok.muted}
-        autoCapitalize="none"
-        style={{
-          backgroundColor: tok.surface,
-          borderRadius: 10, paddingHorizontal: 12,
-          paddingVertical: Platform.OS === 'ios' ? 10 : 6,
-          fontFamily: fontMono(), fontSize: 12, color: tok.bone,
-          borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-          textAlign: lang === 'ar' ? 'right' : 'left',
-        }}
-      />
-    </View>
-  );
-}
-
-function AmountInput({
-  label, value, onChange, tok, lang,
-}: { label: string; value: string; onChange: (v: string) => void; tok: any; lang: 'en' | 'ar' }) {
-  return (
-    <View style={{ flex: 1 }}>
-      <Text style={{
-        fontFamily: fontMono(), fontSize: 9, letterSpacing: 1.5, color: tok.muted,
-        textTransform: 'uppercase', marginBottom: 4,
-        textAlign: lang === 'ar' ? 'right' : 'left',
-      }}>
-        {label}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={(v) => onChange(v.replace(/[^\d.]/g, ''))}
-        placeholder="0"
-        placeholderTextColor={tok.muted}
-        keyboardType="numeric"
-        style={{
-          backgroundColor: tok.surface,
-          borderRadius: 10, paddingHorizontal: 12,
-          paddingVertical: Platform.OS === 'ios' ? 10 : 6,
-          fontFamily: fontHead(lang), fontSize: 16, color: tok.bone,
-          borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-          textAlign: lang === 'ar' ? 'right' : 'left',
-        }}
-      />
     </View>
   );
 }

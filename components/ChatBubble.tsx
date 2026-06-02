@@ -3,7 +3,8 @@ import { View, Text, Pressable, Animated, StyleSheet } from 'react-native';
 import { Mic } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontBody } from '../lib/fonts';
-import { REyebrow } from './ui';
+import { radius } from '../lib/theme';
+import { REyebrow, RChip } from './ui';
 
 /**
  * Shared chat primitives used by the Seshat tab session list (TypingDots
@@ -56,8 +57,8 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
         style={{
           maxWidth: '82%',
           alignSelf: isAssistant ? 'flex-start' : 'flex-end',
-          backgroundColor: isAssistant ? tok.surface : tok.elevated,
-          borderRadius: 14, padding: 12,
+          backgroundColor: isAssistant ? tok.coreBg : tok.gold,
+          borderRadius: radius.card, padding: 12,
           marginBottom: 10,
           ...(isAssistant
             ? {
@@ -73,7 +74,7 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
           <REyebrow color={tok.gold} style={{ marginBottom: 4 }}>{t('seshat')}</REyebrow>
         )}
         <Text style={{
-          color: tok.bone, fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14, lineHeight: 22,
+          color: isAssistant ? tok.bone : tok.void, fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14, lineHeight: 22,
           textAlign: lang === 'ar' ? 'right' : 'left',
           writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
         }}>
@@ -85,19 +86,13 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
         {isAssistant && !stillTyping && message.createdTransactionIds && message.createdTransactionIds.length > 0 && (
           <View style={{
             marginTop: 8,
-            paddingHorizontal: 10, paddingVertical: 6,
-            borderRadius: 8,
-            backgroundColor: tok.elevated,
-            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.gold,
             alignSelf: lang === 'ar' ? 'flex-end' : 'flex-start',
           }}>
-            <Text style={{
-              fontFamily: fontBody(lang), fontSize: 11, color: tok.gold,
-            }}>
-              {lang === 'ar'
+            <RChip
+              label={lang === 'ar'
                 ? `سجّلت ${message.createdTransactionIds.length} معاملة`
                 : `Logged ${message.createdTransactionIds.length} ${message.createdTransactionIds.length === 1 ? 'entry' : 'entries'}`}
-            </Text>
+            />
           </View>
         )}
       </View>
@@ -110,8 +105,8 @@ export function TypingDots() {
   return (
     <View style={{
       alignSelf: 'flex-start',
-      backgroundColor: tok.surface,
-      borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
+      backgroundColor: tok.coreBg,
+      borderRadius: radius.card, paddingHorizontal: 14, paddingVertical: 14,
       borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
       ...(lang === 'ar'
         ? { borderRightWidth: 2, borderRightColor: tok.gold }
@@ -129,6 +124,7 @@ export function TypingDots() {
 export function RecordingMicIcon({
   recording, muted, gold,
 }: { recording: boolean; muted: string; gold: string }) {
+  const { tok } = useI18n();
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     if (!recording) {
@@ -146,7 +142,7 @@ export function RecordingMicIcon({
   }, [recording]);
   return (
     <Animated.View style={{ opacity: pulse }}>
-      <Mic size={18} color={recording ? '#E05555' : muted} strokeWidth={recording ? 2 : 1.5} />
+      <Mic size={18} color={recording ? tok.alertText : muted} strokeWidth={recording ? 2 : 1.5} />
     </Animated.View>
   );
   void gold;

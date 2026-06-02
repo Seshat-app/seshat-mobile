@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Archive, Layers, Plus, X } from 'lucide-react-native';
+import { Archive, Layers, Plus } from 'lucide-react-native';
 import { PlanScreen } from '../../../components/PlanShell';
-import { RCard, REyebrow, RButton } from '../../../components/ui';
+import { RCard, REyebrow, RButton, RField } from '../../../components/ui';
 import { SkeletonRow } from '../../../components/Skeleton';
 import { useI18n } from '../../../lib/i18n';
 import { useAppData, type ApiProject } from '../../../lib/appData';
@@ -22,6 +23,7 @@ export default function OrgProjectsScreen() {
   const { tok, lang } = useI18n();
   const { activeLedgerId, refreshProjects } = useAppData();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,7 +146,7 @@ export default function OrgProjectsScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 140 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -172,42 +174,30 @@ export default function OrgProjectsScreen() {
               {/* Create form */}
               <REyebrow>{lang === 'ar' ? 'مشروع جديد' : 'NEW PROJECT'}</REyebrow>
               <RCard padding={14} style={{ marginBottom: 18 }}>
-                <TextInput
+                <RField
                   value={name}
-                  onChangeText={setName}
+                  onChange={setName}
                   placeholder={lang === 'ar' ? 'اسم المشروع' : 'Project name'}
-                  placeholderTextColor={tok.muted}
-                  style={{
-                    color: tok.bone, fontFamily: fontBody(lang),
-                    fontSize: 15, paddingVertical: 10,
-                    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tok.border,
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}
+                  style={{ marginBottom: 10 }}
                 />
-                <TextInput
+                <RField
                   value={budgetStr}
-                  onChangeText={setBudgetStr}
+                  onChange={setBudgetStr}
                   placeholder={lang === 'ar' ? 'ميزانية (اختياري)' : 'Budget (optional)'}
-                  placeholderTextColor={tok.muted}
                   keyboardType="numeric"
-                  style={{
-                    color: tok.bone, fontFamily: fontMono('regular'),
-                    fontSize: 14, paddingVertical: 10,
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}
+                  mono
+                  style={{ marginBottom: 12 }}
                 />
-                <RButton full disabled={!name.trim() || creating} loading={creating} onPress={submitCreate}>
-                  <View style={{
-                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                    alignItems: 'center', gap: 8,
-                  }}>
-                    <Plus size={16} color="#0D0D0D" />
-                    <Text style={{ color: '#0D0D0D', fontFamily: fontBody(lang, 'semibold'), fontSize: 14 }}>
-                      {creating
-                        ? (lang === 'ar' ? 'يضيف…' : 'Adding…')
-                        : (lang === 'ar' ? 'إضافة' : 'Add project')}
-                    </Text>
-                  </View>
+                <RButton
+                  full
+                  disabled={!name.trim() || creating}
+                  loading={creating}
+                  onPress={submitCreate}
+                  icon={<Plus size={16} color={tok.void} />}
+                >
+                  {creating
+                    ? (lang === 'ar' ? 'يضيف…' : 'Adding…')
+                    : (lang === 'ar' ? 'إضافة' : 'Add project')}
                 </RButton>
               </RCard>
 

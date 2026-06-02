@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { ChevronLeft, Trash2, Plus, Sparkles, Check } from 'lucide-react-native';
 import { useI18n, localDateStr } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -7,6 +7,8 @@ import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { radius as r } from '../lib/theme';
 import { parseNLMany, type ApiCategory } from './AddTransactionSheet';
 import { catIdFromName } from '../lib/categoryMap';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RCard, RField, RPill } from './ui';
 
 /**
  * "Add by Seshat" - the BATCH ENTRY surface.
@@ -66,6 +68,7 @@ export function AddBySeshatPanel({
   onLoggedSomething,
 }: Props) {
   const { tok, lang } = useI18n();
+  const insets = useSafeAreaInsets();
 
   const [entries, setEntries] = useState<DraftEntry[]>([]);
   const [saving, setSaving] = useState(false);
@@ -213,12 +216,7 @@ export function AddBySeshatPanel({
         keyboardShouldPersistTaps="handled"
       >
         {/* User's input as a quote at the top */}
-        <View style={{
-          backgroundColor: tok.surface,
-          borderLeftWidth: 2, borderLeftColor: tok.gold,
-          paddingVertical: 12, paddingHorizontal: 16,
-          borderRadius: r.input,
-        }}>
+        <RCard accent padding={16}>
           <Text style={{
             color: tok.muted, fontFamily: fontMono('regular'),
             fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase',
@@ -230,7 +228,7 @@ export function AddBySeshatPanel({
             color: tok.bone, fontFamily: fontBody(lang), fontSize: 14, lineHeight: 20,
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>{initialText}</Text>
-        </View>
+        </RCard>
 
         {/* Section title for the parsed list */}
         <View style={{
@@ -314,7 +312,7 @@ export function AddBySeshatPanel({
 
       {/* Save All footer */}
       <View style={{
-        position: 'absolute', bottom: 26, left: 18, right: 18,
+        position: 'absolute', bottom: insets.bottom + 12, left: 18, right: 18,
         gap: 6,
       }}>
         <Pressable
@@ -331,9 +329,9 @@ export function AddBySeshatPanel({
         >
           {saving ? (
             <>
-              <ActivityIndicator size="small" color="#0D0D0D" />
+              <ActivityIndicator size="small" color={tok.void} />
               <Text style={{
-                color: '#0D0D0D', fontFamily: fontHead(lang),
+                color: tok.void, fontFamily: fontHead(lang),
                 fontSize: 14, letterSpacing: 0.4,
               }}>
                 {lang === 'ar'
@@ -343,9 +341,9 @@ export function AddBySeshatPanel({
             </>
           ) : (
             <>
-              {canSave && <Check size={16} color="#0D0D0D" strokeWidth={2.4} />}
+              {canSave && <Check size={16} color={tok.void} strokeWidth={2.4} />}
               <Text style={{
-                color: canSave ? '#0D0D0D' : tok.muted,
+                color: canSave ? tok.void : tok.muted,
                 fontFamily: fontHead(lang),
                 fontSize: 14, letterSpacing: 0.4,
               }}>
@@ -382,12 +380,8 @@ function EntryRow({
   const currentCat = categories.find((c) => c._id === entry.categoryId);
 
   return (
-    <View style={{
-      backgroundColor: tok.surface,
-      borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-      borderRadius: r.card, padding: 12, gap: 10,
-      opacity: disabled ? 0.7 : 1,
-    }}>
+    <RCard padding={12} style={{ opacity: disabled ? 0.7 : 1 }}>
+      <View style={{ gap: 10 }}>
       {/* Top row: type toggle + amount + currency + delete */}
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -414,23 +408,16 @@ function EntryRow({
           </Text>
         </Pressable>
 
-        <TextInput
+        <RField
           value={entry.amount > 0 ? String(entry.amount) : ''}
-          onChangeText={(t) => {
+          onChange={(t) => {
             const n = parseFloat(t.replace(/[^0-9.]/g, ''));
             onChange({ amount: isNaN(n) ? 0 : n });
           }}
           keyboardType="decimal-pad"
-          editable={!disabled}
           placeholder="0"
-          placeholderTextColor={tok.muted}
-          style={{
-            flex: 1,
-            color: tok.bone, fontFamily: fontMono('medium'),
-            fontSize: 22, letterSpacing: -0.5,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-            paddingVertical: 4,
-          }}
+          mono
+          style={{ flex: 1 }}
         />
         <Text style={{
           color: tok.muted, fontFamily: fontMono('regular'), fontSize: 13,
@@ -449,25 +436,13 @@ function EntryRow({
         {eligibleCats.map((c) => {
           const active = c._id === entry.categoryId;
           return (
-            <Pressable
+            <RPill
               key={c._id}
+              active={active}
               onPress={() => onChange({ categoryId: c._id })}
-              disabled={disabled}
-              style={{
-                paddingHorizontal: 10, paddingVertical: 6,
-                borderRadius: r.pill,
-                backgroundColor: active ? tok.gold : 'transparent',
-                borderWidth: 1, borderColor: active ? tok.gold : tok.border,
-              }}
             >
-              <Text style={{
-                color: active ? '#0D0D0D' : tok.bone,
-                fontFamily: fontMono('regular'), fontSize: 10,
-                letterSpacing: 1.2, textTransform: lang === 'ar' ? 'none' : 'uppercase',
-              }}>
-                {lang === 'ar' && c.nameAr ? c.nameAr : c.nameEn}
-              </Text>
-            </Pressable>
+              {lang === 'ar' && c.nameAr ? c.nameAr : c.nameEn}
+            </RPill>
           );
         })}
       </ScrollView>
@@ -494,6 +469,7 @@ function EntryRow({
           {lang === 'ar' ? 'اختر تصنيفًا' : 'pick a category'}
         </Text>
       )}
-    </View>
+      </View>
+    </RCard>
   );
 }
