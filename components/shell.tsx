@@ -339,8 +339,8 @@ export function RFAB({
       accessibilityHint={onVoiceStart ? 'Tap to choose, long-press to speak to Maat' : undefined}
     >
       {recording
-        ? <Mic size={26} color="#0D0D0D" strokeWidth={2.2} />
-        : <Plus size={26} color="#0D0D0D" strokeWidth={2.2} />}
+        ? <Mic size={26} color={tok.void} strokeWidth={2.2} />
+        : <Plus size={26} color={tok.void} strokeWidth={2.2} />}
     </Pressable>
   );
 }

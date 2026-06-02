@@ -645,7 +645,7 @@ function SegmentCard({
     >
       <Text style={{
         fontFamily: fontHead(lang), fontSize: 18,
-        color: highlight ? '#0D0D0D' : tok.bone,
+        color: highlight ? tok.void : tok.bone,
         letterSpacing: -0.3,
         textAlign: lang === 'ar' ? 'right' : 'left',
       }}>
@@ -654,7 +654,8 @@ function SegmentCard({
       <Text style={{
         marginTop: 4,
         fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19,
-        color: highlight ? 'rgba(13,13,13,0.7)' : tok.muted,
+        color: highlight ? tok.void : tok.muted,
+        opacity: highlight ? 0.72 : 1,
         textAlign: lang === 'ar' ? 'right' : 'left',
         writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
       }}>
