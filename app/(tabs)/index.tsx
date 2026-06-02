@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, Text, RefreshControl, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Glass } from '../../components/Glass';
 import * as SecureStore from 'expo-secure-store';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
@@ -22,10 +21,9 @@ const VIEW_KEY = 'seshat.dashboardView';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { tok, lang, t, mode } = useI18n();
+  const { tok, lang, t } = useI18n();
   const { profile, dataVersion, refresh, bumpVersion } = useAppData();
   const insets = useSafeAreaInsets();
-  const [headerH, setHeaderH] = useState(0);
   const [view, setView] = useState<DashView>('bento');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,62 +95,50 @@ export default function HomeScreen() {
     <View style={{ flex: 1, backgroundColor: tok.void }}>
       <ScreenAtmosphere />
 
-      {(() => {
-        const banners = (
-          <>
-            {needsSalary && <SalaryBanner onPress={() => setSalaryOpen(true)} />}
-            {!needsSalary && checkIn.needed && (
-              <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
-            )}
-          </>
-        );
-        const refreshCtl = (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => fetchDashboard('refresh')}
-            tintColor={tok.gold}
-            colors={[tok.gold]}
-            progressBackgroundColor={tok.surface}
-            progressViewOffset={headerH}
-          />
-        );
-        if (loading) return <DashboardSkeleton topPad={headerH + 14} />;
-        const isEmpty = !data || (data.current.income.count === 0 && data.current.expense.count === 0);
-        return (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingTop: headerH + 14, paddingBottom: insets.bottom + 24, flexGrow: 1 }}
-            refreshControl={refreshCtl}
-          >
-            {banners}
-            {isEmpty ? (
-              <View style={{ flex: 1, minHeight: 400 }}><EmptyState /></View>
-            ) : (
-              <>
-                <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
-                <DashboardBody data={data!} currency={currency} />
-              </>
-            )}
-          </ScrollView>
-        );
-      })()}
+      {/* Transparent header in normal flow, matching the other screens: the
+          dashboard scrolls in its own area below it, so there's no glass band
+          and the gold atmosphere shows straight through the top. */}
+      <View style={{ flex: 1, paddingTop: insets.top }}>
+        <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
 
-      {/* Overlay glass header — no border, just a gradient fade at the bottom
-          so content dissolves naturally as it scrolls under. */}
-      <View
-        onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}
-      >
-        <Glass
-          variant="liquid"
-          dark={mode !== 'light'}
-          fallbackColor={mode === 'light' ? 'rgba(245,244,239,0.55)' : 'rgba(13,13,13,0.45)'}
-          style={{
-            paddingTop: insets.top,
-          }}
-        >
-          <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
-        </Glass>
+        {(() => {
+          const banners = (
+            <>
+              {needsSalary && <SalaryBanner onPress={() => setSalaryOpen(true)} />}
+              {!needsSalary && checkIn.needed && (
+                <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
+              )}
+            </>
+          );
+          const refreshCtl = (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => fetchDashboard('refresh')}
+              tintColor={tok.gold}
+              colors={[tok.gold]}
+              progressBackgroundColor={tok.surface}
+            />
+          );
+          if (loading) return <DashboardSkeleton topPad={6} />;
+          const isEmpty = !data || (data.current.income.count === 0 && data.current.expense.count === 0);
+          return (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingTop: 6, paddingBottom: insets.bottom + 24, flexGrow: 1 }}
+              refreshControl={refreshCtl}
+            >
+              {banners}
+              {isEmpty ? (
+                <View style={{ flex: 1, minHeight: 400 }}><EmptyState /></View>
+              ) : (
+                <>
+                  <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
+                  <DashboardBody data={data!} currency={currency} />
+                </>
+              )}
+            </ScrollView>
+          );
+        })()}
       </View>
 
       <SetSalarySheet
