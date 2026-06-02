@@ -5,7 +5,7 @@ import { Glass } from '../../components/Glass';
 import * as SecureStore from 'expo-secure-store';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
-import { useAppData } from '../../lib/appData';
+import { useAppData, type WorkspaceSummary } from '../../lib/appData';
 import { fontBody } from '../../lib/fonts';
 import { RHomeHeader, type DashView } from '../../components/shell';
 import { ScreenAtmosphere } from '../../components/ScreenAtmosphere';
@@ -23,7 +23,7 @@ const VIEW_KEY = 'seshat.dashboardView';
 export default function HomeScreen() {
   const router = useRouter();
   const { tok, lang, t, mode } = useI18n();
-  const { profile, dataVersion, refresh, bumpVersion } = useAppData();
+  const { profile, dataVersion, refresh, bumpVersion, workspaces, activeLedgerId, switchLedger } = useAppData();
   const insets = useSafeAreaInsets();
   const [headerH, setHeaderH] = useState(0);
   const [view, setView] = useState<DashView>('bento');
@@ -84,6 +84,16 @@ export default function HomeScreen() {
     || (lang === 'ar' ? 'ليلى' : 'there');
   const currency = profile?.currency ?? 'EGP';
 
+  // Swipe-to-switch workspace wiring for the hero carousel: switching the
+  // active ledger persists server-side and refetches the dashboard.
+  const wsActiveIndex = Math.max(0, workspaces.findIndex((w) =>
+    activeLedgerId ? w.ledgerId === activeLedgerId : w.kind === 'personal'));
+  const onSwitchWorkspace = useCallback(async (w: WorkspaceSummary) => {
+    try { if (w.ledgerId) await switchLedger(w.ledgerId); } catch { /* keep current on failure */ }
+    fetchDashboard('refresh');
+  }, [switchLedger, fetchDashboard]);
+  const wsProps = { workspaces, activeIndex: wsActiveIndex, onSwitch: onSwitchWorkspace };
+
   const needsSalary = profile !== null && (profile.monthlySalary == null || profile.monthlySalary === 0);
 
   const saveSalary = async (amount: number) => {
@@ -98,11 +108,11 @@ export default function HomeScreen() {
       <ScreenAtmosphere />
 
       {loading ? (
-        <DashboardSkeleton topPad={headerH} />
+        <DashboardSkeleton topPad={headerH + 14} />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: headerH }}
+          contentContainerStyle={{ paddingTop: headerH + 14 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -124,9 +134,9 @@ export default function HomeScreen() {
             </View>
           ) : (
             <>
-              {view === 'numbers' && <DashboardNumbers data={data} currency={currency} />}
-              {view === 'hud' && <DashboardHud data={data} currency={currency} />}
-              {view === 'bento' && <DashboardBento data={data} currency={currency} />}
+              {view === 'numbers' && <DashboardNumbers data={data} currency={currency} ws={wsProps} />}
+              {view === 'hud' && <DashboardHud data={data} currency={currency} ws={wsProps} />}
+              {view === 'bento' && <DashboardBento data={data} currency={currency} ws={wsProps} />}
             </>
           )}
         </ScrollView>

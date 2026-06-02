@@ -8,7 +8,17 @@ import { RCard, REyebrow, RAmount, RProgress, RStatus } from './ui';
 import { useRouter } from 'expo-router';
 import { SectionHeader, RTxRow, type TxRowData } from './shell';
 import { SeshatMark } from './SeshatMark';
+import { WorkspaceHeroPager } from './WorkspaceHeroPager';
 import { catIdFromName, catLabel } from '../lib/categoryMap';
+import type { WorkspaceSummary } from '../lib/appData';
+
+// Optional swipe-to-switch wiring passed from the home screen: the hero card
+// becomes a carousel of workspaces when more than one exists.
+export type WsPager = {
+  workspaces: WorkspaceSummary[];
+  activeIndex: number;
+  onSwitch: (w: WorkspaceSummary) => void;
+};
 
 export type DashboardData = {
   current: {
@@ -157,7 +167,7 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
 // ─────────────────────────────────────────────────────────────
 // Numbers-first (Dashboard A) — canonical numbers-as-hero layout
 // ─────────────────────────────────────────────────────────────
-export function DashboardNumbers({ data, currency }: { data: DashboardData; currency: string }) {
+export function DashboardNumbers({ data, currency, ws }: { data: DashboardData; currency: string; ws?: WsPager }) {
   const { tok, lang, t } = useI18n();
   const router = useRouter();
   const max = data.categoryBreakdown[0]?.total ?? 1;
@@ -165,7 +175,8 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
 
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}>
-      {/* Hero net balance */}
+      {/* Hero net balance — swipeable across workspaces */}
+      <WorkspaceHeroPager workspaces={ws?.workspaces ?? []} activeIndex={ws?.activeIndex ?? 0} onSwitch={ws?.onSwitch ?? (() => {})}>
       <RCard large glow>
         <REyebrow>{t('netBalance')}</REyebrow>
         <View style={{ marginTop: 10 }}>
@@ -187,6 +198,7 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
           </View>
         </View>
       </RCard>
+      </WorkspaceHeroPager>
 
       {/* Seshat insight */}
       <View style={{ marginTop: 12 }}>
@@ -291,7 +303,7 @@ export function DashboardNumbers({ data, currency }: { data: DashboardData; curr
 // ─────────────────────────────────────────────────────────────
 // HUD (Dashboard B) — the Seshat mark scaled to a full instrument
 // ─────────────────────────────────────────────────────────────
-export function DashboardHud({ data, currency }: { data: DashboardData; currency: string }) {
+export function DashboardHud({ data, currency, ws }: { data: DashboardData; currency: string; ws?: WsPager }) {
   const { tok, lang, t } = useI18n();
   const list = data.recentTransactions.slice(0, 4);
   const top = data.categoryBreakdown.slice(0, 6);
@@ -313,6 +325,7 @@ export function DashboardHud({ data, currency }: { data: DashboardData; currency
 
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}>
+      <WorkspaceHeroPager workspaces={ws?.workspaces ?? []} activeIndex={ws?.activeIndex ?? 0} onSwitch={ws?.onSwitch ?? (() => {})}>
       <View style={{
         backgroundColor: tok.surface,
         borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
@@ -416,6 +429,7 @@ export function DashboardHud({ data, currency }: { data: DashboardData; currency
           </View>
         </View>
       </View>
+      </WorkspaceHeroPager>
 
       {/* Seshat insight */}
       <View style={{ marginTop: 14 }}>
@@ -438,7 +452,7 @@ export function DashboardHud({ data, currency }: { data: DashboardData; currency
 // ─────────────────────────────────────────────────────────────
 // Bento (Dashboard C) — canonical default per the production brief
 // ─────────────────────────────────────────────────────────────
-export function DashboardBento({ data, currency }: { data: DashboardData; currency: string }) {
+export function DashboardBento({ data, currency, ws }: { data: DashboardData; currency: string; ws?: WsPager }) {
   const { tok, lang, t } = useI18n();
   const list = data.recentTransactions.slice(0, 3);
   const topCat = data.categoryBreakdown[0];
@@ -453,7 +467,8 @@ export function DashboardBento({ data, currency }: { data: DashboardData; curren
 
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 120 }}>
-      {/* Hero net */}
+      {/* Hero net — swipeable across workspaces */}
+      <WorkspaceHeroPager workspaces={ws?.workspaces ?? []} activeIndex={ws?.activeIndex ?? 0} onSwitch={ws?.onSwitch ?? (() => {})}>
       <RCard large glow>
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -491,6 +506,7 @@ export function DashboardBento({ data, currency }: { data: DashboardData; curren
         </View>
         <REyebrow style={{ marginTop: 8 }}>30 {lang === 'ar' ? 'يوماً' : 'days'} · {lang === 'ar' ? 'الصافي اليومي' : 'daily net'}</REyebrow>
       </RCard>
+      </WorkspaceHeroPager>
 
       {/* 2-col grid */}
       <View style={{

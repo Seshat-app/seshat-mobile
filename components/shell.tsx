@@ -69,19 +69,18 @@ export function RHomeHeader({
         alignItems: 'center', justifyContent: 'space-between', gap: 12,
       }}>
         <View style={{ flexShrink: 1, flex: 1 }}>
-          {/* Workspace + date eyebrow — tapping workspace opens the switcher */}
-          <WorkspaceChip />
+          {/* Workspace switching now lives on the swipeable hero card; the
+              header is just the greeting + date. */}
           <Text style={{
-            marginTop: 10,
             fontFamily: fontHead(lang),
-            fontSize: lang === 'ar' ? 22 : 23, color: tok.bone,
-            letterSpacing: lang === 'ar' ? 0 : -0.5,
-            lineHeight: lang === 'ar' ? 32 : 27,
+            fontSize: lang === 'ar' ? 24 : 25, color: tok.bone,
+            letterSpacing: lang === 'ar' ? 0 : -0.6,
+            lineHeight: lang === 'ar' ? 34 : 29,
             writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
           }}>
             {greeting(lang, userName)}
           </Text>
-          <REyebrow style={{ marginTop: 6, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
+          <REyebrow style={{ marginTop: 7, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
             {monthYear(lang)}
           </REyebrow>
         </View>
