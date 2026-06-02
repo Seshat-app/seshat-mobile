@@ -14,6 +14,7 @@ import { RCard } from '../../components/ui';
 import {
   SalaryCheckInBanner, SalaryCheckInSheet, fetchSalaryCheckIn, type CheckInStatus,
 } from '../../components/SalaryCheckInBanner';
+import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
 const VIEW_KEY = 'seshat.dashboardView';
@@ -91,13 +92,19 @@ export default function HomeScreen() {
         <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
 
         {(() => {
-          // Salary is collected during onboarding and edited in Profile, so
-          // the home screen no longer nags to set it. The only salary prompt
-          // here is the monthly check-in (server-gated; fires once the period
-          // rolls over and only when a salary baseline exists).
-          const banners = checkIn.needed ? (
-            <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
-          ) : null;
+          // SetupPrompt surfaces any still-missing required data (registry-
+          // driven, e.g. month-start). Salary is collected in onboarding and
+          // edited in Profile, so the only salary prompt here is the monthly
+          // check-in (server-gated; fires once the period rolls over and a
+          // salary baseline exists).
+          const banners = (
+            <>
+              <SetupPrompt profile={profile} onChanged={() => { refresh(); bumpVersion(); }} />
+              {checkIn.needed && (
+                <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
+              )}
+            </>
+          );
           const refreshCtl = (
             <RefreshControl
               refreshing={refreshing}

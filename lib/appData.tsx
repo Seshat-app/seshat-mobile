@@ -14,6 +14,9 @@ type Profile = {
   language: 'en' | 'ar';
   currency: string;
   monthlySalary?: number | null;
+  // The day the user's financial month begins (1-31). null = never set, which
+  // is what the "finish setup" prompt keys off; the period maths treat it as 1.
+  monthStartDay?: number | null;
   // The workspace the user last switched to. `u_<userId>` for personal,
   // `o_<orgId>` for an organization. Mobile uses this to restore state on
   // app launch so the user lands back in the workspace they left.
