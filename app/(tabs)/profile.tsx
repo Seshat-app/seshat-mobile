@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap,
+  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock,
 } from 'lucide-react-native';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -16,6 +16,7 @@ import { RCard, REyebrow, RButton, RField, RPill } from '../../components/ui';
 import { ScreenScaffold } from '../../components/Screen';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
+import { SetMonthStartSheet } from '../../components/MonthStartSheet';
 import { WorkspaceCard } from '../../components/WorkspaceSwitcher';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
@@ -31,6 +32,7 @@ type Profile = {
   language: 'en' | 'ar';
   currency: string;
   monthlySalary?: number | null;
+  monthStartDay?: number;
 };
 
 export default function ProfileScreen() {
@@ -56,6 +58,7 @@ export default function ProfileScreen() {
     (currency ?? 'EGP') !== (profile.currency ?? 'EGP')
   );
   const [salaryOpen, setSalaryOpen] = useState(false);
+  const [monthStartOpen, setMonthStartOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   // Workspace switcher modal state lives in AppData context (see opener
   // destructured above) so any screen can summon it.
@@ -207,6 +210,15 @@ export default function ProfileScreen() {
     setSalaryOpen(false);
   };
 
+  const saveMonthStart = async (day: number) => {
+    await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ monthStartDay: day }) });
+    const res = await apiFetch<{ data: Profile }>('/me');
+    setProfile(res.data);
+    await refresh();
+    bumpVersion();
+    setMonthStartOpen(false);
+  };
+
   return (
     <ScreenScaffold>
       <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 }}>
@@ -329,6 +341,14 @@ export default function ProfileScreen() {
                 ? `${formatAmount(salary, { decimals: 0 })} ${currencyLabel(currency, lang)}`
                 : (lang === 'ar' ? 'لم يُحدَّد بعد، اضغط لإضافته' : 'Not set. Tap to add')}
               onPress={() => setSalaryOpen(true)}
+            />
+            <PlanRow
+              icon={CalendarClock}
+              title={lang === 'ar' ? 'بداية الشهر' : 'Month start'}
+              hint={(profile?.monthStartDay ?? 1) > 1
+                ? (lang === 'ar' ? `يبدأ يوم ${profile?.monthStartDay}` : `Starts on day ${profile?.monthStartDay}`)
+                : (lang === 'ar' ? 'من أول الشهر' : 'From the 1st')}
+              onPress={() => setMonthStartOpen(true)}
             />
             <PlanRow
               icon={Wallet}
@@ -569,6 +589,13 @@ export default function ProfileScreen() {
         onSave={saveSalary}
         defaultCurrency={currency}
         initialAmount={salary}
+      />
+
+      <SetMonthStartSheet
+        visible={monthStartOpen}
+        onClose={() => setMonthStartOpen(false)}
+        onSave={saveMonthStart}
+        initialDay={profile?.monthStartDay ?? 1}
       />
 
       {/* WorkspaceSheet is mounted globally at the tabs layout level so

@@ -11,7 +11,6 @@ import { ScreenAtmosphere } from '../../components/ScreenAtmosphere';
 import { ChartCarousel, DashboardBody, type DashboardData } from '../../components/dashboards';
 import { SkeletonCard, Skeleton, SkeletonRow } from '../../components/Skeleton';
 import { RCard } from '../../components/ui';
-import { SalaryBanner, SetSalarySheet } from '../../components/SalaryBanner';
 import {
   SalaryCheckInBanner, SalaryCheckInSheet, fetchSalaryCheckIn, type CheckInStatus,
 } from '../../components/SalaryCheckInBanner';
@@ -28,7 +27,6 @@ export default function HomeScreen() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [salaryOpen, setSalaryOpen] = useState(false);
   // Monthly salary confirmation: server tells us once per month whether the
   // user owes a check-in for the current month. We keep the result here so
   // the banner only renders when it actually applies.
@@ -82,15 +80,6 @@ export default function HomeScreen() {
     || (lang === 'ar' ? 'ليلى' : 'there');
   const currency = profile?.currency ?? 'EGP';
 
-  const needsSalary = profile !== null && (profile.monthlySalary == null || profile.monthlySalary === 0);
-
-  const saveSalary = async (amount: number) => {
-    await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ monthlySalary: amount }) });
-    await refresh();
-    bumpVersion();
-    setSalaryOpen(false);
-  };
-
   return (
     <View style={{ flex: 1, backgroundColor: tok.void }}>
       <ScreenAtmosphere />
@@ -102,14 +91,13 @@ export default function HomeScreen() {
         <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
 
         {(() => {
-          const banners = (
-            <>
-              {needsSalary && <SalaryBanner onPress={() => setSalaryOpen(true)} />}
-              {!needsSalary && checkIn.needed && (
-                <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
-              )}
-            </>
-          );
+          // Salary is collected during onboarding and edited in Profile, so
+          // the home screen no longer nags to set it. The only salary prompt
+          // here is the monthly check-in (server-gated; fires once the period
+          // rolls over and only when a salary baseline exists).
+          const banners = checkIn.needed ? (
+            <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
+          ) : null;
           const refreshCtl = (
             <RefreshControl
               refreshing={refreshing}
@@ -140,14 +128,6 @@ export default function HomeScreen() {
           );
         })()}
       </View>
-
-      <SetSalarySheet
-        visible={salaryOpen}
-        onClose={() => setSalaryOpen(false)}
-        onSave={saveSalary}
-        defaultCurrency={currency}
-        initialAmount={profile?.monthlySalary}
-      />
 
       <SalaryCheckInSheet
         visible={checkInOpen}
