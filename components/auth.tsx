@@ -92,34 +92,60 @@ export function AuthChrome({
 // ─────────────────────────────────────────────────────────────
 export function AuthHero({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
   const { tok, lang } = useI18n();
+  const align = lang === 'ar' ? 'right' : 'left';
   return (
-    <View style={{ marginTop: 32, marginBottom: 8 }}>
-      {/* Seal mark — a small ambient visual anchor above the headline */}
-      <View style={{ alignItems: lang === 'ar' ? 'flex-end' : 'flex-start', marginBottom: 20 }}>
-        <View style={{
-          width: 52, height: 52, borderRadius: 26,
-          alignItems: 'center', justifyContent: 'center',
-          backgroundColor: tok.glowShellBg,
-          borderWidth: 1, borderColor: tok.glowShellBorder,
-          shadowColor: tok.glowShadow, shadowOpacity: 0.20,
-          shadowRadius: 16, shadowOffset: { width: 0, height: 4 },
-        }}>
-          <SeshatMark size={28} gold={tok.gold} lightRing />
+    <View style={{ marginTop: 40, marginBottom: 8 }}>
+      {/* The seal: a struck gold medallion (halo + double-bezel ring) holding
+          the mark, mirroring the landing's TourGate entrance. */}
+      <View style={{ alignItems: lang === 'ar' ? 'flex-end' : 'flex-start', marginBottom: 26 }}>
+        <View style={{ width: 64, height: 64, alignItems: 'center', justifyContent: 'center' }}>
+          {/* soft halo */}
+          <View style={{
+            position: 'absolute', width: 104, height: 104, borderRadius: 52,
+            backgroundColor: tok.glowShellBg, opacity: 0.9,
+          }} />
+          {/* struck medallion */}
+          <View style={{
+            width: 64, height: 64, borderRadius: 32,
+            alignItems: 'center', justifyContent: 'center',
+            backgroundColor: tok.glowShellBg,
+            borderWidth: 1, borderColor: tok.glowShellBorder,
+            shadowColor: tok.gold, shadowOpacity: 0.32,
+            shadowRadius: 18, shadowOffset: { width: 0, height: 6 },
+          }}>
+            {/* inner concentric ring — static, machined */}
+            <View style={{
+              position: 'absolute', top: 7, left: 7, right: 7, bottom: 7,
+              borderRadius: 25, borderWidth: 1, borderColor: tok.glowShellBorder,
+            }} />
+            <SeshatMark size={34} gold={tok.gold} />
+          </View>
         </View>
       </View>
+
+      {/* eyebrow */}
+      <Text style={{
+        fontFamily: fontMono('regular'), fontSize: 10,
+        letterSpacing: lang === 'ar' ? 0 : 2, textTransform: lang === 'ar' ? 'none' : 'uppercase',
+        color: tok.gold, marginBottom: 14, textAlign: align,
+        writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+      }}>{eyebrow}</Text>
+
+      {/* editorial headline — large Syne, tight tracking */}
       <Text style={{
         fontFamily: fontHead(lang),
-        fontSize: lang === 'ar' ? 32 : 34, color: tok.bone,
-        letterSpacing: lang === 'ar' ? 0 : -1.2,
-        lineHeight: lang === 'ar' ? 42 : 38,
-        textAlign: lang === 'ar' ? 'right' : 'left',
+        fontSize: lang === 'ar' ? 34 : 42, color: tok.bone,
+        letterSpacing: lang === 'ar' ? 0 : -1.8,
+        lineHeight: lang === 'ar' ? 46 : 44,
+        textAlign: align,
         writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
       }}>{title}</Text>
+
       <Text style={{
-        marginTop: 10,
-        fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14,
+        marginTop: 12,
+        fontFamily: fontBody(lang), fontSize: lang === 'ar' ? 15 : 14.5,
         color: tok.muted, lineHeight: 22,
-        textAlign: lang === 'ar' ? 'right' : 'left',
+        textAlign: align,
         writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
       }}>{sub}</Text>
     </View>
