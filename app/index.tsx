@@ -15,6 +15,7 @@ import {
   SSOButton, AuthOr,
 } from '../components/auth';
 import { SeshatMark } from '../components/SeshatMark';
+import { OnboardingTour } from '../components/OnboardingTour';
 
 // Required for expo-auth-session to dismiss the in-app browser cleanly after
 // the OAuth provider redirects back to the app. Safe to call at module scope.
@@ -38,6 +39,7 @@ type AuthView =
   | 'verify'
   | 'completeReg'
   | 'pickSegment'  // post-registration: Individual or Organization?
+  | 'onboard'      // guided onboarding tour: name, salary, month-start day
   | 'forgot'
   | 'forgotVerify'
   | 'forgotComplete';
@@ -57,6 +59,9 @@ export default function AuthRouter() {
   const [sessionId, setSessionId] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  // Captured at the pickSegment step; after the onboarding tour we use it to
+  // route org founders into the org-create form.
+  const [segment, setSegment] = useState<'individual' | 'org'>('individual');
 
   // Google sign-in via native OAuth clients - no proxy, no Web client.
   // expo-auth-session picks the platform-specific client at runtime and
@@ -153,17 +158,15 @@ export default function AuthRouter() {
     setBusy(false);
   };
 
-  // pickSegment handlers. Individual: just go home (personal ledger is the
-  // default for any new user). Organization: go home first so the tabs
-  // mount and AppData has a chance to refresh, then push the org-create
-  // screen so the founder lands on the form with the keyboard up.
-  const pickIndividual = () => {
-    goApp();
-  };
-  const pickOrganization = () => {
+  // pickSegment handlers. Both segments run the guided onboarding tour first
+  // (name + salary + month-start), then enter the app. Org founders are routed
+  // into the org-create form after the tour settles.
+  const pickIndividual = () => { setSegment('individual'); setView('onboard'); };
+  const pickOrganization = () => { setSegment('org'); setView('onboard'); };
+  const finishOnboarding = () => {
     goApp();
     // Defer so the tabs are mounted before we push into /orgs/new.
-    setTimeout(() => router.push('/orgs/new'), 50);
+    if (segment === 'org') setTimeout(() => router.push('/orgs/new'), 50);
   };
 
   const submitForgot = async () => {
@@ -449,6 +452,11 @@ export default function AuthRouter() {
         </View>
       </AuthChrome>
     );
+  }
+
+  // ───────── ONBOARDING TOUR (after segment pick) ─────────
+  if (view === 'onboard') {
+    return <OnboardingTour initialName={name} onDone={finishOnboarding} />;
   }
 
   // ───────── FORGOT PASSWORD ─────────
