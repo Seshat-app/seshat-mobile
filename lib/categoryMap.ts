@@ -37,7 +37,8 @@ export function iconKeyForCategory(
 
 // Display label — Arabic falls back to the API's nameAr when present
 export function catLabel(cat: { nameEn?: string; nameAr?: string } | undefined, lang: 'en' | 'ar'): string {
-  if (!cat) return '—';
+  const fallback = lang === 'ar' ? 'غير مصنّف' : 'Uncategorized';
+  if (!cat) return fallback;
   if (lang === 'ar' && cat.nameAr) return cat.nameAr;
-  return cat.nameEn ?? '—';
+  return cat.nameEn ?? fallback;
 }

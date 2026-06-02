@@ -8,7 +8,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { RButton, REyebrow } from './ui';
+import { RButton, REyebrow, RField } from './ui';
 import { SeshatMark } from './SeshatMark';
 import { ScreenAtmosphere } from './ScreenAtmosphere';
 import { brandName } from '../lib/brand';
@@ -127,12 +127,11 @@ export function AuthHero({ eyebrow, title, sub }: { eyebrow: string; title: stri
 }
 
 // ─────────────────────────────────────────────────────────────
-// Field — eyebrow label + optional secondary slot + bordered input
+// Field — thin wrapper over the shared RField glass input. Kept as a named
+// export so the auth screens read cleanly; RField is the single source of
+// truth for the double-bezel input treatment.
 // ─────────────────────────────────────────────────────────────
-export function AuthField({
-  label, value, onChange, placeholder, secureTextEntry, keyboardType, autoFocus, autoComplete,
-  textContentType, secondary,
-}: {
+export function AuthField(props: {
   label: string;
   value: string;
   onChange: (v: string) => void;
@@ -144,57 +143,7 @@ export function AuthField({
   textContentType?: any;
   secondary?: ReactNode;
 }) {
-  const { tok, lang } = useI18n();
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={{ marginTop: 16 }}>
-      {/* Label row */}
-      <View style={{
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        justifyContent: 'space-between', alignItems: 'baseline',
-        gap: 8, marginBottom: 8,
-      }}>
-        <REyebrow style={{ flexShrink: 1 }}>{label}</REyebrow>
-        {secondary}
-      </View>
-      {/* Double-bezel input shell */}
-      <View style={{
-        padding: 3, borderRadius: 16,
-        backgroundColor: focused ? tok.glowShellBg : tok.shellBg,
-        borderWidth: 1,
-        borderColor: focused ? tok.glowShellBorder : tok.shellBorder,
-        shadowColor: focused ? tok.glowShadow : 'transparent',
-        shadowOpacity: focused ? 0.20 : 0,
-        shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
-      }}>
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor={tok.muted}
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType ?? 'default'}
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoFocus={autoFocus}
-          autoComplete={autoComplete}
-          textContentType={textContentType}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={{
-            backgroundColor: tok.coreBg,
-            borderRadius: 13,
-            paddingHorizontal: 16, paddingVertical: 14,
-            color: tok.bone,
-            fontFamily: keyboardType === 'email-address' ? fontMono('regular') : fontBody(lang),
-            fontSize: 15,
-            writingDirection: keyboardType === 'email-address' ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
-            textAlign: keyboardType === 'email-address' ? 'left' : (lang === 'ar' ? 'right' : 'left'),
-          }}
-        />
-      </View>
-    </View>
-  );
+  return <RField {...props} style={{ marginTop: 16 }} />;
 }
 
 // ─────────────────────────────────────────────────────────────

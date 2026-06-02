@@ -1,8 +1,9 @@
-import { ReactNode, useEffect, useId, useRef } from 'react';
+import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, ScrollView, ActivityIndicator,
+  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, ScrollView, ActivityIndicator, TextInput,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import { X } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
@@ -205,14 +206,16 @@ export function RAmount({
 // Pill — rounded button, active = gold fill, inactive = bordered
 // ─────────────────────────────────────────────────────────────
 export function RPill({
-  active, onPress, children, style,
-}: { active?: boolean; onPress?: () => void; children: ReactNode; style?: ViewStyle }) {
+  active, onPress, children, style, icon,
+}: { active?: boolean; onPress?: () => void; children: ReactNode; style?: ViewStyle; icon?: ReactNode }) {
   const { tok, lang } = useI18n();
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         {
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 6,
           backgroundColor: active ? tok.gold : 'transparent',
           borderColor: active ? 'transparent' : tok.border,
           borderWidth: active ? 0 : 1,
@@ -224,9 +227,10 @@ export function RPill({
         style,
       ]}
     >
+      {icon}
       <Text
         style={{
-          color: active ? '#0D0D0D' : tok.bone,
+          color: active ? tok.void : tok.bone,
           fontFamily: fontBody(lang, 'semibold'),
           fontSize: 13,
         }}
@@ -235,6 +239,125 @@ export function RPill({
       </Text>
     </Pressable>
   );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Field — the canonical double-bezel glass text input. An outer shell
+// (gold-tinted + soft glow on focus) wraps a coreBg inner input, matching
+// the auth fields. Replaces flat tok.surface/elevated inputs across the app;
+// AuthField delegates to this.
+// ─────────────────────────────────────────────────────────────
+export function RField({
+  value, onChange, placeholder, label, secondary, secureTextEntry, keyboardType,
+  autoFocus, autoComplete, textContentType, autoCapitalize, multiline, maxLength,
+  minHeight, mono, ltr, onSubmitEditing, returnKeyType, style,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  label?: ReactNode;
+  secondary?: ReactNode;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'decimal-pad' | 'numeric';
+  autoFocus?: boolean;
+  autoComplete?: any;
+  textContentType?: any;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  multiline?: boolean;
+  maxLength?: number;
+  minHeight?: number;
+  /** Force DM Mono (amounts, codes). */
+  mono?: boolean;
+  /** Force LTR + left align (emails, numbers). Defaults true for numeric/email keyboards. */
+  ltr?: boolean;
+  onSubmitEditing?: () => void;
+  returnKeyType?: 'done' | 'next' | 'go' | 'send';
+  style?: ViewStyle;
+}) {
+  const { tok, lang } = useI18n();
+  const [focused, setFocused] = useState(false);
+  const forceLtr = ltr ?? (keyboardType === 'email-address' || keyboardType === 'number-pad' || keyboardType === 'decimal-pad' || keyboardType === 'numeric');
+  return (
+    <View style={style}>
+      {(label || secondary) ? (
+        <View style={{
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 8,
+        }}>
+          {typeof label === 'string' ? <REyebrow style={{ flexShrink: 1 }}>{label}</REyebrow> : label}
+          {secondary}
+        </View>
+      ) : null}
+      <View style={{
+        padding: 3, borderRadius: 16,
+        backgroundColor: focused ? tok.glowShellBg : tok.shellBg,
+        borderWidth: 1, borderColor: focused ? tok.glowShellBorder : tok.shellBorder,
+        shadowColor: focused ? tok.glowShadow : 'transparent',
+        shadowOpacity: focused ? 0.2 : 0, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+      }}>
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={tok.muted}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType ?? 'default'}
+          autoCapitalize={autoCapitalize ?? 'none'}
+          autoCorrect={false}
+          autoFocus={autoFocus}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
+          multiline={multiline}
+          maxLength={maxLength}
+          onSubmitEditing={onSubmitEditing}
+          returnKeyType={returnKeyType}
+          textAlignVertical={multiline ? 'top' : undefined}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            backgroundColor: tok.coreBg,
+            borderRadius: 13,
+            paddingHorizontal: 16, paddingVertical: 14,
+            minHeight: multiline ? (minHeight ?? 120) : undefined,
+            color: tok.bone,
+            fontFamily: mono ? fontMono('regular') : fontBody(lang),
+            fontSize: 15,
+            writingDirection: forceLtr ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
+            textAlign: forceLtr ? 'left' : (lang === 'ar' ? 'right' : 'left'),
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Chip — a small gold-tinted tag. With onRemove it gets a trailing ×
+// (the dismissible active-filter chip); otherwise a static/selectable tag.
+// ─────────────────────────────────────────────────────────────
+export function RChip({
+  label, onRemove, onPress, icon,
+}: { label: string; onRemove?: () => void; onPress?: () => void; icon?: ReactNode }) {
+  const { tok, lang } = useI18n();
+  const body = (
+    <View style={{
+      flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+      alignItems: 'center', gap: 6,
+      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999,
+      backgroundColor: tok.glowShellBg,
+      borderWidth: 1, borderColor: tok.glowShellBorder,
+    }}>
+      {icon}
+      <Text style={{
+        color: tok.gold, fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 0.6,
+      }}>{label}</Text>
+      {onRemove ? (
+        <Pressable onPress={onRemove} hitSlop={8}><X size={12} color={tok.gold} strokeWidth={2.4} /></Pressable>
+      ) : null}
+    </View>
+  );
+  if (onPress) return <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>{body}</Pressable>;
+  return body;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -264,7 +387,7 @@ export function RSegmented<T extends string>({
             })}
           >
             <Text style={{
-              color: a ? '#0D0D0D' : tok.bone,
+              color: a ? tok.void : tok.bone,
               fontFamily: fontBody(lang, 'semibold'),
               fontSize: 13,
             }}>{o.label}</Text>
@@ -332,7 +455,7 @@ export function RProgress({
 export function RButton({
   variant = 'primary', onPress, children, full, icon, disabled, loading, style,
 }: {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive' | 'danger';
   onPress?: () => void;
   children: ReactNode;
   full?: boolean;
@@ -355,10 +478,15 @@ export function RButton({
     gap: 8,
     alignSelf: full ? 'stretch' : 'flex-start',
   };
-  let bg = tok.gold, fg: string = '#0D0D0D', border: ViewStyle = {};
+  // fg defaults to the on-gold colour (tok.void): near-black on bright gold in
+  // dark mode, near-white on deep gold in light mode — correct in both.
+  let bg = tok.gold, fg: string = tok.void, border: ViewStyle = {};
   if (variant === 'secondary') { bg = 'transparent'; fg = tok.bone; border = { borderWidth: 1, borderColor: tok.borderHi }; }
   if (variant === 'ghost') { bg = 'transparent'; fg = tok.muted; }
+  // 'destructive' = quiet ghost (e.g. Sign out). 'danger' = filled red pill for
+  // genuinely destructive confirmations (delete account, leave org).
   if (variant === 'destructive') { bg = 'transparent'; fg = tok.alertText; }
+  if (variant === 'danger') { bg = tok.alertText; fg = '#FFFFFF'; }
   const blocked = disabled || loading;
   return (
     <Pressable

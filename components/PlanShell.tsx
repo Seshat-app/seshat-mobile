@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
+import { radius, T } from '../lib/theme';
 import { fontHead } from '../lib/fonts';
 import { REyebrow } from './ui';
 import { RefreshSpinner } from './shell';
@@ -28,7 +29,7 @@ export function PlanScreen({
           onPress={() => router.back()}
           hitSlop={10}
           style={({ pressed }) => ({
-            width: 36, height: 36, borderRadius: 12,
+            width: 36, height: 36, borderRadius: radius.btn,
             backgroundColor: pressed ? tok.elevated : tok.surface,
             alignItems: 'center', justifyContent: 'center',
           })}
@@ -38,7 +39,7 @@ export function PlanScreen({
         <View style={{ flex: 1 }}>
           <Text style={{
             fontFamily: fontHead(lang),
-            fontSize: 22, color: tok.bone, letterSpacing: -0.4,
+            fontSize: T.h5, color: tok.bone, letterSpacing: -0.4,
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>{title}</Text>
           {subtitle && (
@@ -54,12 +55,12 @@ export function PlanScreen({
             onPress={onAdd}
             hitSlop={10}
             style={({ pressed }) => ({
-              width: 36, height: 36, borderRadius: 12,
+              width: 36, height: 36, borderRadius: radius.btn,
               backgroundColor: pressed ? tok.goldLight : tok.gold,
               alignItems: 'center', justifyContent: 'center',
             })}
           >
-            <Plus size={20} color="#0D0D0D" strokeWidth={2.2} />
+            <Plus size={20} color={tok.void} strokeWidth={2.2} />
           </Pressable>
         )}
       </View>

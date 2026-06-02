@@ -195,5 +195,5 @@ export function subscribeToBankNotifications(
 
 /** Combine title + text + subText into one parseable blob for the LLM. */
 export function flattenEventText(event: NotificationEvent): string {
-  return [event.title, event.subText, event.text].filter(Boolean).join(' — ');
+  return [event.title, event.subText, event.text].filter(Boolean).join(' · ');
 }
