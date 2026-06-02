@@ -9,7 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RButton, REyebrow, RField } from './ui';
-import { SeshatMark } from './SeshatMark';
+import { SeshatSeal } from './SeshatSeal';
 import { ScreenAtmosphere } from './ScreenAtmosphere';
 import { brandName } from '../lib/brand';
 
@@ -95,32 +95,10 @@ export function AuthHero({ eyebrow, title, sub }: { eyebrow: string; title: stri
   const align = lang === 'ar' ? 'right' : 'left';
   return (
     <View style={{ marginTop: 40, marginBottom: 8 }}>
-      {/* The seal: a struck gold medallion (halo + double-bezel ring) holding
-          the mark, mirroring the landing's TourGate entrance. */}
+      {/* The seal: the struck-medallion logo badge, identical to the landing's
+          TourGate seal (soft halo + struck disc + inner ring + mark). */}
       <View style={{ alignItems: lang === 'ar' ? 'flex-end' : 'flex-start', marginBottom: 26 }}>
-        <View style={{ width: 64, height: 64, alignItems: 'center', justifyContent: 'center' }}>
-          {/* soft halo */}
-          <View style={{
-            position: 'absolute', width: 104, height: 104, borderRadius: 52,
-            backgroundColor: tok.glowShellBg, opacity: 0.9,
-          }} />
-          {/* struck medallion */}
-          <View style={{
-            width: 64, height: 64, borderRadius: 32,
-            alignItems: 'center', justifyContent: 'center',
-            backgroundColor: tok.glowShellBg,
-            borderWidth: 1, borderColor: tok.glowShellBorder,
-            shadowColor: tok.gold, shadowOpacity: 0.32,
-            shadowRadius: 18, shadowOffset: { width: 0, height: 6 },
-          }}>
-            {/* inner concentric ring — static, machined */}
-            <View style={{
-              position: 'absolute', top: 7, left: 7, right: 7, bottom: 7,
-              borderRadius: 25, borderWidth: 1, borderColor: tok.glowShellBorder,
-            }} />
-            <SeshatMark size={34} gold={tok.gold} />
-          </View>
-        </View>
+        <SeshatSeal size={64} gold={tok.gold} />
       </View>
 
       {/* eyebrow */}

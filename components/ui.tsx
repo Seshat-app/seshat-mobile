@@ -277,7 +277,7 @@ export function RField({
   returnKeyType?: 'done' | 'next' | 'go' | 'send';
   style?: ViewStyle;
 }) {
-  const { tok, lang } = useI18n();
+  const { tok, lang, mode } = useI18n();
   const [focused, setFocused] = useState(false);
   const forceLtr = ltr ?? (keyboardType === 'email-address' || keyboardType === 'number-pad' || keyboardType === 'decimal-pad' || keyboardType === 'numeric');
   return (
@@ -292,43 +292,53 @@ export function RField({
         </View>
       ) : null}
       <View style={{
-        padding: 3, borderRadius: 16,
+        padding: 4, borderRadius: 16,
         backgroundColor: focused ? tok.glowShellBg : tok.shellBg,
         borderWidth: 1, borderColor: focused ? tok.glowShellBorder : tok.shellBorder,
         shadowColor: focused ? tok.glowShadow : 'transparent',
         shadowOpacity: focused ? 0.2 : 0, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
       }}>
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor={tok.muted}
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType ?? 'default'}
-          autoCapitalize={autoCapitalize ?? 'none'}
-          autoCorrect={false}
-          autoFocus={autoFocus}
-          autoComplete={autoComplete}
-          textContentType={textContentType}
-          multiline={multiline}
-          maxLength={maxLength}
-          onSubmitEditing={onSubmitEditing}
-          returnKeyType={returnKeyType}
-          textAlignVertical={multiline ? 'top' : undefined}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={{
-            backgroundColor: tok.coreBg,
-            borderRadius: 13,
-            paddingHorizontal: 16, paddingVertical: 14,
-            minHeight: multiline ? (minHeight ?? 120) : undefined,
-            color: tok.bone,
-            fontFamily: mono ? fontMono('regular') : fontBody(lang),
-            fontSize: 15,
-            writingDirection: forceLtr ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
-            textAlign: forceLtr ? 'left' : (lang === 'ar' ? 'right' : 'left'),
-          }}
-        />
+        {/* Inner core = the same frosted glass + top sheen the cards use, so a
+            field reads as a miniature golden-shield plate rather than a flat box. */}
+        <Glass
+          variant="frost"
+          radius={12}
+          fallbackColor={tok.coreBg}
+          dark={mode !== 'light'}
+          intensity={focused ? 42 : 28}
+        >
+          <CardSheen />
+          <TextInput
+            value={value}
+            onChangeText={onChange}
+            placeholder={placeholder}
+            placeholderTextColor={tok.muted}
+            secureTextEntry={secureTextEntry}
+            keyboardType={keyboardType ?? 'default'}
+            autoCapitalize={autoCapitalize ?? 'none'}
+            autoCorrect={false}
+            autoFocus={autoFocus}
+            autoComplete={autoComplete}
+            textContentType={textContentType}
+            multiline={multiline}
+            maxLength={maxLength}
+            onSubmitEditing={onSubmitEditing}
+            returnKeyType={returnKeyType}
+            textAlignVertical={multiline ? 'top' : undefined}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            style={{
+              backgroundColor: 'transparent',
+              paddingHorizontal: 16, paddingVertical: 14,
+              minHeight: multiline ? (minHeight ?? 120) : undefined,
+              color: tok.bone,
+              fontFamily: mono ? fontMono('regular') : fontBody(lang),
+              fontSize: 15,
+              writingDirection: forceLtr ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
+              textAlign: forceLtr ? 'left' : (lang === 'ar' ? 'right' : 'left'),
+            }}
+          />
+        </Glass>
       </View>
     </View>
   );

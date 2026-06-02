@@ -9,7 +9,7 @@ import { useI18n, currencyLabel } from '../lib/i18n';
 import { apiFetch } from '../lib/api';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RField } from './ui';
-import { SeshatMark } from './SeshatMark';
+import { SeshatSeal } from './SeshatSeal';
 import { ScreenAtmosphere } from './ScreenAtmosphere';
 
 // ─────────────────────────────────────────────────────────────
@@ -314,25 +314,11 @@ function RailNode({ val, pulse, active, label, tok }: {
 }
 
 // ── shared scene atoms ───────────────────────────────────────
-function Medallion({ size = 92, animate, big }: { size?: number; animate?: boolean; big?: boolean }) {
+function Medallion({ size = 92, animate }: { size?: number; animate?: boolean; big?: boolean }) {
   const { tok } = useI18n();
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', marginBottom: 22 }}>
-      <View style={{
-        position: 'absolute', width: size * (big ? 1.7 : 1.5), height: size * (big ? 1.7 : 1.5),
-        borderRadius: size, backgroundColor: tok.glowShellBg, opacity: 0.9,
-      }} />
-      <View style={{
-        width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: tok.glowShellBg, borderWidth: 1, borderColor: tok.glowShellBorder,
-        shadowColor: tok.gold, shadowOpacity: 0.34, shadowRadius: 20, shadowOffset: { width: 0, height: 8 },
-      }}>
-        <View style={{
-          position: 'absolute', top: 9, left: 9, right: 9, bottom: 9,
-          borderRadius: size / 2, borderWidth: 1, borderColor: tok.glowShellBorder,
-        }} />
-        <SeshatMark size={Math.round(size * 0.5)} gold={tok.gold} animate={animate} />
-      </View>
+    <View style={{ marginBottom: 22 }}>
+      <SeshatSeal size={size} animate={animate} gold={tok.gold} />
     </View>
   );
 }
