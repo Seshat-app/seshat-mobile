@@ -10,6 +10,7 @@ import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RButton, REyebrow } from './ui';
 import { SeshatMark } from './SeshatMark';
+import { ScreenAtmosphere } from './ScreenAtmosphere';
 import { brandName } from '../lib/brand';
 
 // ─────────────────────────────────────────────────────────────
@@ -22,13 +23,11 @@ export function AuthChrome({
   const insets = useSafeAreaInsets();
   return (
     <KeyboardAvoidingView
-      // 'padding' on both platforms. On Android the previous `undefined`
-      // value relied on adjust-resize from the activity, but edge-to-edge
-      // disables that on many devices and the footer ends up hidden under
-      // the keyboard. 'padding' is consistent everywhere.
       behavior="padding"
       style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}
     >
+      <ScreenAtmosphere />
+      {/* Top nav — brand mark left, lang toggle + optional CTA right */}
       <View style={{
         paddingTop: 14, paddingHorizontal: 22,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -36,13 +35,16 @@ export function AuthChrome({
       }}>
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-          alignItems: 'center', gap: 10,
+          alignItems: 'center', gap: 8,
+          paddingHorizontal: 10, paddingVertical: 6,
+          borderRadius: 999,
+          backgroundColor: 'rgba(201,168,76,0.08)',
+          borderWidth: 1, borderColor: 'rgba(201,168,76,0.18)',
         }}>
-          <SeshatMark size={20} gold={tok.gold} lightRing />
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tok.gold }} />
           <Text style={{
-            // Syne ExtraBold for the wordmark - loaded in _layout.tsx
-            fontFamily: 'Syne_800ExtraBold',
-            fontSize: 14, color: tok.gold, letterSpacing: -0.6,
+            fontFamily: fontMono('regular'), fontSize: 11,
+            letterSpacing: 1.2, textTransform: 'uppercase', color: tok.gold,
           }}>{brandName(lang)}</Text>
         </View>
         <View style={{
@@ -53,8 +55,9 @@ export function AuthChrome({
           <Pressable
             onPress={() => setLang(lang === 'ar' ? 'en' : 'ar')}
             style={({ pressed }) => ({
-              borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-              borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+              borderWidth: 1, borderColor: tok.shellBorder,
+              borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6,
+              backgroundColor: pressed ? tok.elevated : tok.shellBg,
               opacity: pressed ? 0.7 : 1,
             })}
           >
@@ -75,7 +78,11 @@ export function AuthChrome({
         {children}
       </ScrollView>
 
-      {footer && <View style={{ paddingHorizontal: 22, paddingBottom: 34 }}>{footer}</View>}
+      {footer && (
+        <View style={{ paddingHorizontal: 22, paddingBottom: insets.bottom + 20 }}>
+          {footer}
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -86,14 +93,25 @@ export function AuthChrome({
 export function AuthHero({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
   const { tok, lang } = useI18n();
   return (
-    <View style={{ marginTop: 38, marginBottom: 8 }}>
-      <REyebrow color={tok.gold} style={{ textAlign: lang === 'ar' ? 'right' : 'left' }}>{eyebrow}</REyebrow>
+    <View style={{ marginTop: 32, marginBottom: 8 }}>
+      {/* Seal mark — a small ambient visual anchor above the headline */}
+      <View style={{ alignItems: lang === 'ar' ? 'flex-end' : 'flex-start', marginBottom: 20 }}>
+        <View style={{
+          width: 52, height: 52, borderRadius: 26,
+          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: tok.glowShellBg,
+          borderWidth: 1, borderColor: tok.glowShellBorder,
+          shadowColor: tok.glowShadow, shadowOpacity: 0.20,
+          shadowRadius: 16, shadowOffset: { width: 0, height: 4 },
+        }}>
+          <SeshatMark size={28} gold={tok.gold} lightRing />
+        </View>
+      </View>
       <Text style={{
-        marginTop: 14,
         fontFamily: fontHead(lang),
-        fontSize: lang === 'ar' ? 34 : 36, color: tok.bone,
-        letterSpacing: lang === 'ar' ? 0 : -1.4,
-        lineHeight: lang === 'ar' ? 42 : 40,
+        fontSize: lang === 'ar' ? 32 : 34, color: tok.bone,
+        letterSpacing: lang === 'ar' ? 0 : -1.2,
+        lineHeight: lang === 'ar' ? 42 : 38,
         textAlign: lang === 'ar' ? 'right' : 'left',
         writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
       }}>{title}</Text>
@@ -129,43 +147,52 @@ export function AuthField({
   const { tok, lang } = useI18n();
   const [focused, setFocused] = useState(false);
   return (
-    <View style={{ marginTop: 18 }}>
+    <View style={{ marginTop: 16 }}>
+      {/* Label row */}
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        justifyContent: 'space-between', alignItems: 'baseline', gap: 8,
+        justifyContent: 'space-between', alignItems: 'baseline',
+        gap: 8, marginBottom: 8,
       }}>
         <REyebrow style={{ flexShrink: 1 }}>{label}</REyebrow>
         {secondary}
       </View>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={tok.muted}
-        secureTextEntry={secureTextEntry}
-        // Always pass a concrete keyboardType. RN's TextInput on some Android
-        // builds keeps the previous keyboard (e.g. the numeric one from the
-        // verify-code screen) when keyboardType is left undefined.
-        keyboardType={keyboardType ?? 'default'}
-        autoCapitalize="none"
-        autoCorrect={false}
-        autoFocus={autoFocus}
-        autoComplete={autoComplete}
-        textContentType={textContentType}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={{
-          marginTop: 8,
-          backgroundColor: tok.surface,
-          borderWidth: 1, borderColor: focused ? tok.gold : tok.border,
-          borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13,
-          color: tok.bone,
-          fontFamily: keyboardType === 'email-address' ? fontMono('regular') : fontBody(lang),
-          fontSize: 14,
-          writingDirection: keyboardType === 'email-address' ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
-          textAlign: keyboardType === 'email-address' ? 'left' : (lang === 'ar' ? 'right' : 'left'),
-        }}
-      />
+      {/* Double-bezel input shell */}
+      <View style={{
+        padding: 3, borderRadius: 16,
+        backgroundColor: focused ? tok.glowShellBg : tok.shellBg,
+        borderWidth: 1,
+        borderColor: focused ? tok.glowShellBorder : tok.shellBorder,
+        shadowColor: focused ? tok.glowShadow : 'transparent',
+        shadowOpacity: focused ? 0.20 : 0,
+        shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+      }}>
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={tok.muted}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType ?? 'default'}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoFocus={autoFocus}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            backgroundColor: tok.coreBg,
+            borderRadius: 13,
+            paddingHorizontal: 16, paddingVertical: 14,
+            color: tok.bone,
+            fontFamily: keyboardType === 'email-address' ? fontMono('regular') : fontBody(lang),
+            fontSize: 15,
+            writingDirection: keyboardType === 'email-address' ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
+            textAlign: keyboardType === 'email-address' ? 'left' : (lang === 'ar' ? 'right' : 'left'),
+          }}
+        />
+      </View>
     </View>
   );
 }

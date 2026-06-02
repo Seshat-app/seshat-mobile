@@ -344,9 +344,11 @@ export function RButton({
 }) {
   const { tok, lang } = useI18n();
   const base: ViewStyle = {
-    borderRadius: radius.btn,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+    // Full-width buttons use a pill shape (999) — more premium, consistent with
+    // the website's CTA language. Inline buttons stay with a softer square radius.
+    borderRadius: full ? 999 : radius.btn,
+    paddingVertical: full ? 15 : 12,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

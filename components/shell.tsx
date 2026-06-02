@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarChart3, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../lib/i18n';
@@ -92,14 +92,15 @@ export function RHomeHeader({
 }
 
 // ─────────────────────────────────────────────────────────────
-// RefreshSpinner — small spinning SeshatMark used as a refresh
-// indicator on screens that don't already have a header mark.
-// Drop it next to the screen title; pass `refreshing` from state.
+// RefreshSpinner — small inline refresh indicator. Uses the system
+// ActivityIndicator (gold) rather than a spinning brand mark, so loading
+// reads as a native, familiar spinner. Drop it next to a screen title;
+// pass `refreshing` from state.
 // ─────────────────────────────────────────────────────────────
 export function RefreshSpinner({ refreshing, size = 22 }: { refreshing: boolean; size?: number }) {
   const { tok } = useI18n();
   if (!refreshing) return null;
-  return <SeshatMark size={size} gold={tok.gold} lightRing spinning />;
+  return <ActivityIndicator size="small" color={tok.gold} />;
 }
 
 // ─────────────────────────────────────────────────────────────
