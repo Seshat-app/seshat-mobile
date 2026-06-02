@@ -26,6 +26,17 @@ export type Tokens = {
   glowBorder: string;
   sheen: string;
   glowShadow: string;
+  // Card double-bezel ("golden shield"): an outer shell tray wraps an inner
+  // core plate, the way a glass plate sits in a machined frame. These give the
+  // web's nested-card depth without runtime backdrop-blur (a perf foot-gun on
+  // scrolling RN lists). `glow*` variants are the gold-tinted focal version.
+  shellBg: string;
+  shellBorder: string;
+  coreBg: string;
+  coreSheen: string;
+  glowShellBg: string;
+  glowShellBorder: string;
+  glowCoreSheen: string;
 };
 
 // Radius scale - mirrors seshat-web/src/styles/tokens.scss so screens
@@ -103,6 +114,15 @@ const DARK: Tokens = {
   glowBorder: 'rgba(201, 168, 76, 0.22)',
   sheen: 'rgba(255, 255, 255, 0.08)',
   glowShadow: '#C9A84C',
+  shellBg: 'rgba(255, 255, 255, 0.035)',
+  shellBorder: 'rgba(255, 255, 255, 0.06)',
+  // Translucent plate so the gold atmosphere bleeds through (glassy, not a
+  // solid fill). Real frosted blur arrives with the native-glass build.
+  coreBg: 'rgba(22, 22, 22, 0.6)',
+  coreSheen: 'rgba(255, 255, 255, 0.06)',
+  glowShellBg: 'rgba(201, 168, 76, 0.10)',
+  glowShellBorder: 'rgba(201, 168, 76, 0.30)',
+  glowCoreSheen: 'rgba(201, 168, 76, 0.26)',
 };
 
 const LIGHT: Tokens = {
@@ -129,6 +149,13 @@ const LIGHT: Tokens = {
   glowBorder: 'rgba(139, 107, 20, 0.24)',
   sheen: 'rgba(255, 255, 255, 0.7)',
   glowShadow: '#8B6B14',
+  shellBg: 'rgba(0, 0, 0, 0.035)',
+  shellBorder: 'rgba(0, 0, 0, 0.06)',
+  coreBg: 'rgba(255, 255, 255, 0.55)',
+  coreSheen: 'rgba(255, 255, 255, 0.9)',
+  glowShellBg: 'rgba(139, 107, 20, 0.10)',
+  glowShellBorder: 'rgba(139, 107, 20, 0.28)',
+  glowCoreSheen: 'rgba(139, 107, 20, 0.22)',
 };
 
 export function tokens(mode: Mode): Tokens {

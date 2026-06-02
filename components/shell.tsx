@@ -24,13 +24,29 @@ export function RViewSwitcher({ value, onChange }: { value: DashView; onChange: 
     { id: 'hud', Icon: Crosshair },
     { id: 'bento', Icon: LayoutGrid },
   ];
+  // A compact glass pill — three layout icons sharing one track, the active
+  // one lit gold. Replaces the loose naked icons that cluttered the old header.
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: 2,
+      backgroundColor: tok.shellBg,
+      borderWidth: 1, borderColor: tok.shellBorder,
+      borderRadius: 999, padding: 3,
+    }}>
       {views.map((v) => {
         const a = v.id === value;
         return (
-          <Pressable key={v.id} onPress={() => onChange(v.id)} hitSlop={6} style={{ padding: 2 }}>
-            <v.Icon size={16} color={a ? tok.gold : tok.muted} strokeWidth={a ? 1.8 : 1.5} />
+          <Pressable
+            key={v.id}
+            onPress={() => onChange(v.id)}
+            hitSlop={6}
+            style={{
+              width: 30, height: 28, borderRadius: 999,
+              alignItems: 'center', justifyContent: 'center',
+              backgroundColor: a ? tok.glowShellBg : 'transparent',
+            }}
+          >
+            <v.Icon size={15} color={a ? tok.goldLight : tok.muted} strokeWidth={a ? 1.9 : 1.5} />
           </Pressable>
         );
       })}
@@ -39,52 +55,74 @@ export function RViewSwitcher({ value, onChange }: { value: DashView; onChange: 
 }
 
 // ─────────────────────────────────────────────────────────────
-// Home header — greeting + view switcher + animated Seshat mark
+// Seal medallion — the Seshat mark seated in a gold-glass disc with a
+// soft halo. The brand anchor in the header; also the refresh indicator
+// (the mark spins while data is loading).
+// ─────────────────────────────────────────────────────────────
+export function RSeal({ size = 44, refreshing }: { size?: number; refreshing?: boolean }) {
+  const { tok } = useI18n();
+  return (
+    <View style={{
+      width: size, height: size, borderRadius: size / 2,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: tok.glowShellBg,
+      borderWidth: 1, borderColor: tok.glowShellBorder,
+      shadowColor: tok.glowShadow, shadowOpacity: 0.22,
+      shadowRadius: 14, shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    }}>
+      <SeshatMark
+        size={size * 0.55}
+        gold={tok.gold}
+        lightRing
+        // One-shot scan on mount; continuous spin while refreshing so the
+        // mark itself is the loading indicator.
+        animate={!refreshing}
+        spinning={refreshing}
+      />
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Home header — two bands: (1) workspace chip + seal medallion, then
+// (2) the greeting + date eyebrow with the view switcher pill alongside.
 // ─────────────────────────────────────────────────────────────
 export function RHomeHeader({
   userName, view, onViewChange, refreshing,
 }: { userName: string; view: DashView; onViewChange: (v: DashView) => void; refreshing?: boolean }) {
   const { tok, lang, t } = useI18n();
   return (
-    <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 }}>
-      {/* Workspace chip sits as a one-line band above the greeting so the
-          user always knows which ledger feeds the numbers below, and can
-          switch in one tap. */}
+    <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 }}>
+      {/* Band 1 — ledger context + brand anchor. The chip tells the user
+          which ledger feeds the numbers and switches it in one tap; the seal
+          anchors the brand and doubles as the refresh spinner. */}
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', marginBottom: 10,
+        alignItems: 'center', justifyContent: 'space-between', marginBottom: 16,
       }}>
         <WorkspaceChip />
+        <RSeal refreshing={refreshing} />
       </View>
+      {/* Band 2 — greeting + the view switcher. */}
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        alignItems: 'flex-end', justifyContent: 'space-between', gap: 12,
       }}>
         <View style={{ flexShrink: 1, flex: 1 }}>
           <Text style={{
             fontFamily: fontHead(lang),
-            fontSize: lang === 'ar' ? 21 : 20, color: tok.bone, letterSpacing: -0.4,
+            fontSize: lang === 'ar' ? 24 : 25, color: tok.bone, letterSpacing: lang === 'ar' ? 0 : -0.6,
+            lineHeight: lang === 'ar' ? 34 : 29,
             writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
           }}>
             {greeting(lang, userName)}
           </Text>
-          <REyebrow style={{ marginTop: 6, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
+          <REyebrow style={{ marginTop: 8, writingDirection: lang === 'ar' ? 'rtl' : 'ltr' }}>
             {monthYear(lang)} · {t('detected')}
           </REyebrow>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <RViewSwitcher value={view} onChange={onViewChange} />
-          <View style={{ width: 1, height: 18, backgroundColor: tok.border }} />
-          <SeshatMark
-            size={28}
-            gold={tok.gold}
-            lightRing
-            // One-shot scan on mount; switches to a continuous spin while data
-            // is refreshing so the mark itself is the loading indicator.
-            animate={!refreshing}
-            spinning={refreshing}
-          />
-        </View>
+        <RViewSwitcher value={view} onChange={onViewChange} />
       </View>
     </View>
   );

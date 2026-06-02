@@ -1,57 +1,126 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useId, useRef } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, ScrollView, ActivityIndicator,
 } from 'react-native';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useI18n, formatAmount, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 
+// Soft top-down reflection painted inside a card's core. Replaces the old
+// hard `borderTopColor` hairline — gold on focal/glow cards, a faint white
+// highlight elsewhere — so the plate reads as glass catching light, not an
+// edge. Static gradient (no repaint on scroll) so it's cheap per card.
+function CardSheen({ glow }: { glow?: boolean }) {
+  const { tok, mode } = useI18n();
+  const gid = 'sheen-' + useId().replace(/[^a-zA-Z0-9]/g, '');
+  const base = glow ? tok.goldLight : '#FFFFFF';
+  const peak = glow ? 0.2 : mode === 'light' ? 0.5 : 0.08;
+  return (
+    <Svg pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 72 }}>
+      <Defs>
+        <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={base} stopOpacity={peak} />
+          <Stop offset="1" stopColor={base} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
+    </Svg>
+  );
+}
+
+// Keys that describe where/how big a card sits in its parent. These belong on
+// the OUTER shell so margins push the whole card and `flex: 1` stretches it.
+// Everything else (padding, border overrides, background) stays on the INNER
+// core, so existing call sites like `padding={0} style={{ paddingHorizontal: 16 }}`
+// keep insetting their rows from the visible plate, not the bezel.
+const SHELL_STYLE_KEYS = new Set([
+  'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+  'marginHorizontal', 'marginVertical', 'marginStart', 'marginEnd',
+  'flex', 'flexGrow', 'flexShrink', 'flexBasis', 'alignSelf',
+  'width', 'minWidth', 'maxWidth', 'position', 'top', 'right', 'bottom', 'left',
+  'zIndex', 'start', 'end',
+]);
+
+function splitCardStyle(style?: ViewStyle | ViewStyle[]): { shell: ViewStyle; core: ViewStyle } {
+  const flat: ViewStyle = Array.isArray(style)
+    ? Object.assign({}, ...style.filter(Boolean))
+    : (style ?? {});
+  const shell: ViewStyle = {};
+  const core: ViewStyle = {};
+  for (const k of Object.keys(flat) as Array<keyof ViewStyle>) {
+    if (SHELL_STYLE_KEYS.has(k as string)) (shell as any)[k] = (flat as any)[k];
+    else (core as any)[k] = (flat as any)[k];
+  }
+  return { shell, core };
+}
+
 // ─────────────────────────────────────────────────────────────
-// Card — surface with hair-line border, 12/16 radius. No shadows.
+// Card — the "golden shield" double-bezel: an outer shell tray wraps an
+// inner core plate (a glass plate seated in a machined frame). Depth comes
+// from the bezel + lit top edge + the screen atmosphere, NOT from runtime
+// backdrop-blur (a perf foot-gun on scrolling RN lists). `glow` is the
+// gold-tinted focal variant for hero/insight cards.
+//
+// API-preserving: `padding`/`large` set the core padding; `style` is split so
+// layout keys (margin/flex/width/position) drive the shell and content keys
+// (padding/border/bg) drive the core. All existing call sites keep working.
 // ─────────────────────────────────────────────────────────────
 export function RCard({
   children, style, large, accent, padding, glow,
 }: { children: ReactNode; style?: ViewStyle | ViewStyle[]; large?: boolean; accent?: boolean; padding?: number; glow?: boolean }) {
   const { tok, dir } = useI18n();
-  const sizing = padding !== undefined
+  const corePad = padding !== undefined
     ? { padding }
     : large
       ? { padding: 24 }
       // Design RCard small default: '20px 22px' = 20 vertical, 22 horizontal.
       : { paddingVertical: 20, paddingHorizontal: 22 };
+
+  const { shell, core } = splitCardStyle(style);
+  const bezel = 4;
+  const outerRadius = large ? 26 : 22;
+  const innerRadius = outerRadius - bezel;
+
   return (
     <View
       style={[
         {
-          backgroundColor: tok.surface,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: tok.border,
-          // Softer radius across the board to match the web's new tokens.
-          // Cards 14px (was 12), large variants 20px (was 16). Reads more
-          // Copilot/N26 less brutalist.
-          borderRadius: large ? radius.modal : radius.card,
+          padding: bezel,
+          borderRadius: outerRadius,
+          backgroundColor: glow ? tok.glowShellBg : tok.shellBg,
+          borderWidth: 1,
+          borderColor: glow ? tok.glowShellBorder : tok.shellBorder,
         },
-        sizing,
+        // Gold glow lifts focal cards off the void (soft, never a harsh black drop).
+        glow && {
+          shadowColor: tok.glowShadow,
+          shadowOpacity: 0.28,
+          shadowRadius: 22,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 6,
+        },
+        // Accent rail rides the shell's leading edge.
         accent && (dir === 'rtl'
           ? { borderRightWidth: 2, borderRightColor: tok.gold }
           : { borderLeftWidth: 2, borderLeftColor: tok.gold }),
-        // "Lit glass" variant: a gold-tinted edge, a lit top bevel, and a soft
-        // gold glow shadow — the web's double-bezel feel without backdrop-blur
-        // (which is a perf foot-gun on scrolling RN lists).
-        glow && {
-          borderWidth: 1,
-          borderColor: tok.glowBorder,
-          borderTopColor: tok.sheen,
-          shadowColor: tok.glowShadow,
-          shadowOpacity: 0.14,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 8 },
-          elevation: 5,
-        },
-        style as any,
+        shell,
       ]}
     >
-      {children}
+      <View
+        style={[
+          {
+            borderRadius: innerRadius,
+            backgroundColor: tok.coreBg,
+            overflow: 'hidden',
+          },
+          corePad,
+          core,
+        ]}
+      >
+        <CardSheen glow={glow} />
+        {children}
+      </View>
     </View>
   );
 }

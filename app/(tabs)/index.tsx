@@ -7,6 +7,7 @@ import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { fontBody } from '../../lib/fonts';
 import { RHomeHeader, type DashView } from '../../components/shell';
+import { ScreenAtmosphere, ScrollEdgeFade } from '../../components/ScreenAtmosphere';
 import { DashboardNumbers, DashboardHud, DashboardBento, type DashboardData } from '../../components/dashboards';
 import { SkeletonCard, Skeleton, SkeletonRow } from '../../components/Skeleton';
 import { RCard } from '../../components/ui';
@@ -92,6 +93,7 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: tok.void, paddingTop: insets.top }}>
+      <ScreenAtmosphere />
       <RHomeHeader userName={userName} view={view} onViewChange={onViewChange} refreshing={refreshing} />
 
       {needsSalary && <SalaryBanner onPress={() => setSalaryOpen(true)} />}
@@ -99,6 +101,7 @@ export default function HomeScreen() {
         <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
       )}
 
+      <View style={{ flex: 1 }}>
       {loading ? (
         <DashboardSkeleton />
       ) : (
@@ -127,6 +130,8 @@ export default function HomeScreen() {
           )}
         </ScrollView>
       )}
+      <ScrollEdgeFade />
+      </View>
 
       <SetSalarySheet
         visible={salaryOpen}
