@@ -120,9 +120,9 @@ const DARK: Tokens = {
   // solid fill). Real frosted blur arrives with the native-glass build.
   coreBg: 'rgba(22, 22, 22, 0.6)',
   coreSheen: 'rgba(255, 255, 255, 0.06)',
-  glowShellBg: 'rgba(201, 168, 76, 0.10)',
-  glowShellBorder: 'rgba(201, 168, 76, 0.30)',
-  glowCoreSheen: 'rgba(201, 168, 76, 0.26)',
+  glowShellBg: 'rgba(201, 168, 76, 0.07)',
+  glowShellBorder: 'rgba(201, 168, 76, 0.18)',
+  glowCoreSheen: 'rgba(201, 168, 76, 0.16)',
 };
 
 const LIGHT: Tokens = {

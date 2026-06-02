@@ -504,9 +504,34 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             ) : (
               <REyebrow>{t('addTransaction')}</REyebrow>
             )}
-            <Pressable onPress={onClose} hitSlop={8}>
-              <X size={20} color={tok.muted} />
-            </Pressable>
+            <View style={{
+              flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+              alignItems: 'center', gap: 16,
+            }}>
+              {/* Scan a receipt — always one obvious tap from the keypad,
+                  no separate chooser panel. */}
+              {!seshatMode && (
+                <Pressable
+                  onPress={scanReceipt}
+                  disabled={scanning}
+                  hitSlop={6}
+                  style={{
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                    alignItems: 'center', gap: 6, opacity: scanning ? 0.5 : 1,
+                  }}
+                  accessibilityLabel="Scan receipt"
+                >
+                  <Receipt size={15} color={tok.gold} strokeWidth={1.8} />
+                  <Text style={{
+                    color: tok.gold, fontFamily: fontMono('regular'), fontSize: 10,
+                    letterSpacing: 1.4, textTransform: 'uppercase',
+                  }}>{lang === 'ar' ? 'مسح إيصال' : 'Scan'}</Text>
+                </Pressable>
+              )}
+              <Pressable onPress={onClose} hitSlop={8}>
+                <X size={20} color={tok.muted} />
+              </Pressable>
+            </View>
           </View>
 
           {/* Type toggle */}

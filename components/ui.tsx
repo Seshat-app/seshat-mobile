@@ -17,7 +17,7 @@ function CardSheen({ glow }: { glow?: boolean }) {
   const { tok, mode } = useI18n();
   const gid = 'sheen-' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const base = glow ? tok.goldLight : '#FFFFFF';
-  const peak = glow ? 0.2 : mode === 'light' ? 0.5 : 0.08;
+  const peak = glow ? 0.1 : mode === 'light' ? 0.38 : 0.045;
   return (
     <Svg pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 72 }}>
       <Defs>
@@ -94,13 +94,13 @@ export function RCard({
           borderWidth: 1,
           borderColor: glow ? tok.glowShellBorder : tok.shellBorder,
         },
-        // Gold glow lifts focal cards off the void (soft, never a harsh black drop).
+        // Gold glow lifts focal cards off the void — kept soft and faint.
         glow && {
           shadowColor: tok.glowShadow,
-          shadowOpacity: 0.28,
-          shadowRadius: 22,
-          shadowOffset: { width: 0, height: 10 },
-          elevation: 6,
+          shadowOpacity: 0.12,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 3,
         },
         // Accent rail rides the shell's leading edge.
         accent && (dir === 'rtl'

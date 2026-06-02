@@ -9,6 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
+import { radius } from '../../lib/theme';
 import { REyebrow } from '../../components/ui';
 import { ScreenScaffold } from '../../components/Screen';
 import { useRecorder } from '../../components/useRecorder';
@@ -185,8 +186,23 @@ export default function ChatViewScreen() {
           });
       if (picked.canceled || !picked.assets?.[0]?.uri) return;
       setUploading(true);
-      const upload = await uploadReceipt(picked.assets[0].uri);
-      await sendText('', upload.secureUrl);
+      // Transient "uploading" bubble so the user sees the receipt is in flight,
+      // not just a tiny spinner on the icon. Removed once the upload resolves
+      // (sendText then adds the real "(receipt attached)" turn).
+      const tempId = '__uploading__' + Date.now();
+      setMessages((prev) => [...prev, {
+        id: tempId, role: 'user', uploading: true,
+        content: lang === 'ar' ? 'جارٍ رفع الإيصال…' : 'Uploading receipt…',
+      }]);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+      try {
+        const upload = await uploadReceipt(picked.assets[0].uri);
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        await sendText('', upload.secureUrl);
+      } catch (uploadErr) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        throw uploadErr;
+      }
     } catch (err) {
       Alert.alert(
         lang === 'ar' ? 'فشل الرفع' : 'Upload failed',
@@ -204,19 +220,19 @@ export default function ChatViewScreen() {
         style={{ flex: 1 }}
         keyboardVerticalOffset={0}
       >
-      {/* Top bar */}
+      {/* Top bar — borderless, glassy back button */}
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 10,
         paddingHorizontal: 14, paddingVertical: 10,
-        borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tok.border,
       }}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={10}
           style={({ pressed }) => ({
-            width: 34, height: 34, borderRadius: 12,
-            backgroundColor: pressed ? tok.elevated : tok.surface,
+            width: 34, height: 34, borderRadius: radius.btn,
+            backgroundColor: pressed ? tok.elevated : tok.shellBg,
+            borderWidth: 1, borderColor: tok.shellBorder,
             alignItems: 'center', justifyContent: 'center',
           })}
         >
@@ -265,16 +281,15 @@ export default function ChatViewScreen() {
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         paddingHorizontal: 16, paddingTop: 10, paddingBottom: Math.max(insets.bottom, 12),
-        borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: tok.border,
-        backgroundColor: tok.navBg,
-        alignItems: 'center', gap: 8,
+        alignItems: 'flex-end', gap: 8,
       }}>
         <View style={{
-          flex: 1, minHeight: 44,
+          flex: 1, minHeight: 46,
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           alignItems: 'center', gap: 8,
-          backgroundColor: tok.surface, borderWidth: 1, borderColor: tok.border,
-          borderRadius: 14, paddingHorizontal: 12,
+          backgroundColor: tok.coreBg, borderWidth: 1, borderColor: tok.shellBorder,
+          borderTopColor: tok.coreSheen,
+          borderRadius: 22, paddingHorizontal: 14,
         }}>
           <TextInput
             value={input}
@@ -320,12 +335,18 @@ export default function ChatViewScreen() {
           disabled={!input.trim() || sending}
           style={({ pressed }) => ({
             backgroundColor: input.trim() && !sending ? tok.gold : tok.elevated,
-            width: 44, height: 44, borderRadius: 14,
+            width: 46, height: 46, borderRadius: 23,
             alignItems: 'center', justifyContent: 'center',
             opacity: pressed ? 0.85 : 1,
+            ...(input.trim() && !sending ? {
+              shadowColor: tok.glowShadow, shadowOpacity: 0.18,
+              shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3,
+            } : {}),
           })}
         >
-          <ArrowUp size={18} color={input.trim() && !sending ? tok.void : tok.muted} />
+          {sending
+            ? <ActivityIndicator size="small" color={tok.void} />
+            : <ArrowUp size={18} color={input.trim() ? tok.void : tok.muted} />}
         </Pressable>
       </View>
       </KeyboardAvoidingView>

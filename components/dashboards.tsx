@@ -337,10 +337,16 @@ export function DashboardHud({ data, currency }: { data: DashboardData; currency
             {/* crosshairs */}
             <Line x1={cx - 140} y1={cy} x2={cx + 140} y2={cy} stroke={tok.border} strokeWidth={0.6} />
             <Line x1={cx} y1={cy - 140} x2={cx} y2={cy + 140} stroke={tok.border} strokeWidth={0.6} />
-            {/* NE quadrant arc + rays */}
-            <Path d={`M ${cx + 140} ${cy} A 140 140 0 0 0 ${cx} ${cy - 140}`} stroke={tok.gold} strokeWidth={1.5} fill="none" opacity={0.4} strokeLinecap="round" />
-            <Line x1={cx} y1={cy} x2={cx + 140} y2={cy} stroke={tok.gold} strokeWidth={0.8} opacity={0.3} />
-            <Line x1={cx} y1={cy} x2={cx} y2={cy - 140} stroke={tok.gold} strokeWidth={0.8} opacity={0.3} />
+            {/* NE quadrant arc + rays — only once there's enough data to plot,
+                so the empty state reads as an idle instrument (faint rings)
+                rather than a broken half-drawn radar. */}
+            {hasEnough && (
+              <>
+                <Path d={`M ${cx + 140} ${cy} A 140 140 0 0 0 ${cx} ${cy - 140}`} stroke={tok.gold} strokeWidth={1.5} fill="none" opacity={0.4} strokeLinecap="round" />
+                <Line x1={cx} y1={cy} x2={cx + 140} y2={cy} stroke={tok.gold} strokeWidth={0.8} opacity={0.3} />
+                <Line x1={cx} y1={cy} x2={cx} y2={cy - 140} stroke={tok.gold} strokeWidth={0.8} opacity={0.3} />
+              </>
+            )}
             {/* diagonal hint lines */}
             <Line x1={cx} y1={cy} x2={cx + 99} y2={cy - 99} stroke={tok.border} strokeWidth={0.4} />
             <Line x1={cx} y1={cy} x2={cx - 99} y2={cy - 99} stroke={tok.border} strokeWidth={0.4} />

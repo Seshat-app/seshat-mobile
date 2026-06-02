@@ -141,7 +141,7 @@ export default function HomeScreen() {
         <Glass
           variant="liquid"
           dark={mode !== 'light'}
-          fallbackColor={mode === 'light' ? 'rgba(245,244,239,0.85)' : 'rgba(13,13,13,0.75)'}
+          fallbackColor={mode === 'light' ? 'rgba(245,244,239,0.55)' : 'rgba(13,13,13,0.45)'}
           style={{
             paddingTop: insets.top,
           }}
