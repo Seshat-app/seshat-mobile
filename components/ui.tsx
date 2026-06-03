@@ -277,7 +277,7 @@ export function RField({
   returnKeyType?: 'done' | 'next' | 'go' | 'send';
   style?: ViewStyle;
 }) {
-  const { tok, lang, mode } = useI18n();
+  const { tok, lang } = useI18n();
   const [focused, setFocused] = useState(false);
   const forceLtr = ltr ?? (keyboardType === 'email-address' || keyboardType === 'number-pad' || keyboardType === 'decimal-pad' || keyboardType === 'numeric');
   return (
@@ -300,19 +300,12 @@ export function RField({
       }}>
         {/* Inner core = the same frosted glass + top sheen the cards use, so a
             field reads as a miniature golden-shield plate rather than a flat box. */}
-        {/* The frosted glass + sheen are BACKGROUND layers; the TextInput is a
-            sibling rendered on top, never a descendant of the BlurView.
-            Nesting a TextInput inside expo-blur drops first responder on focus
-            (keyboard opens then closes instantly), so we keep them decoupled. */}
+        {/* Shield + top sheen, but NO live blur behind the input. A BlurView
+            that relayouts as the keyboard opens drops the TextInput's first
+            responder on iOS (keyboard opens then closes), so the field uses a
+            translucent core plate instead - same golden-shield read, no
+            keyboard breakage. The cards keep their real blur (no inputs). */}
         <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: tok.coreBg }}>
-          <Glass
-            variant="frost"
-            radius={12}
-            fallbackColor={tok.coreBg}
-            dark={mode !== 'light'}
-            intensity={30}
-            style={StyleSheet.absoluteFillObject}
-          />
           <CardSheen />
           <TextInput
             value={value}
