@@ -298,46 +298,42 @@ export function RField({
         shadowColor: focused ? tok.glowShadow : 'transparent',
         shadowOpacity: focused ? 0.2 : 0, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
       }}>
-        {/* Inner core = the same frosted glass + top sheen the cards use, so a
-            field reads as a miniature golden-shield plate rather than a flat box. */}
-        {/* Shield + top sheen, but NO live blur behind the input. A BlurView
-            that relayouts as the keyboard opens drops the TextInput's first
-            responder on iOS (keyboard opens then closes), so the field uses a
-            translucent core plate instead - same golden-shield read, no
-            keyboard breakage. The cards keep their real blur (no inputs). */}
-        <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: tok.coreBg }}>
-          <CardSheen />
-          <TextInput
-            value={value}
-            onChangeText={onChange}
-            placeholder={placeholder}
-            placeholderTextColor={tok.muted}
-            secureTextEntry={secureTextEntry}
-            keyboardType={keyboardType ?? 'default'}
-            autoCapitalize={autoCapitalize ?? 'none'}
-            autoCorrect={false}
-            autoFocus={autoFocus}
-            autoComplete={autoComplete}
-            textContentType={textContentType}
-            multiline={multiline}
-            maxLength={maxLength}
-            onSubmitEditing={onSubmitEditing}
-            returnKeyType={returnKeyType}
-            textAlignVertical={multiline ? 'top' : undefined}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            style={{
-              backgroundColor: 'transparent',
-              paddingHorizontal: 16, paddingVertical: 14,
-              minHeight: multiline ? (minHeight ?? 120) : undefined,
-              color: tok.bone,
-              fontFamily: mono ? fontMono('regular') : fontBody(lang),
-              fontSize: 15,
-              writingDirection: forceLtr ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
-              textAlign: forceLtr ? 'left' : (lang === 'ar' ? 'right' : 'left'),
-            }}
-          />
-        </View>
+        {/* The shield is the shell tray + this core plate. No SVG sheen
+            overlay and no BlurView inside the field: both can interfere with
+            the TextInput's first responder on iOS and dismiss the keyboard.
+            Field stays a clean double-bezel plate; the cards keep the richer
+            glass + sheen since they hold no inputs. */}
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor={tok.muted}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType ?? 'default'}
+          autoCapitalize={autoCapitalize ?? 'none'}
+          autoCorrect={false}
+          autoFocus={autoFocus}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
+          multiline={multiline}
+          maxLength={maxLength}
+          onSubmitEditing={onSubmitEditing}
+          returnKeyType={returnKeyType}
+          textAlignVertical={multiline ? 'top' : undefined}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            backgroundColor: tok.coreBg,
+            borderRadius: 12,
+            paddingHorizontal: 16, paddingVertical: 14,
+            minHeight: multiline ? (minHeight ?? 120) : undefined,
+            color: tok.bone,
+            fontFamily: mono ? fontMono('regular') : fontBody(lang),
+            fontSize: 15,
+            writingDirection: forceLtr ? 'ltr' : (lang === 'ar' ? 'rtl' : 'ltr'),
+            textAlign: forceLtr ? 'left' : (lang === 'ar' ? 'right' : 'left'),
+          }}
+        />
       </View>
     </View>
   );
