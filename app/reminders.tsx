@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing, Clock } from 'lucide-react-native';
 import { PlanScreen } from '../components/PlanShell';
-import { RCard, REyebrow, RStatus } from '../components/ui';
+import { RCard, REyebrow, RStatus, RButton } from '../components/ui';
 import { useI18n } from '../lib/i18n';
-import { hasToken } from '../lib/api';
+import { hasToken, apiFetch } from '../lib/api';
 import { listHabits, muteHabit, unmuteHabit, type Habit } from '../lib/habits';
 import { fontBody, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
@@ -27,6 +27,31 @@ export default function RemindersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  // Fire a push to this device right now. Lets the user confirm notifications
+  // work end-to-end without waiting for a habit to be detected + scheduled.
+  const sendTest = async () => {
+    if (testing) return;
+    if (!(await hasToken())) return;
+    setTesting(true);
+    try {
+      await apiFetch('/me/test-push', { method: 'POST' });
+      Alert.alert(
+        lang === 'ar' ? 'تم الإرسال' : 'Sent',
+        lang === 'ar'
+          ? 'تحقّق من إشعاراتك خلال لحظات.'
+          : 'Check your notifications in a moment.',
+      );
+    } catch (err) {
+      Alert.alert(
+        lang === 'ar' ? 'تعذّر الإرسال' : "Couldn't send",
+        err instanceof Error ? err.message : String(err),
+      );
+    } finally {
+      setTesting(false);
+    }
+  };
 
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (!(await hasToken())) return;
@@ -98,6 +123,11 @@ export default function RemindersScreen() {
               ? 'عند تسجيل المعاملات بانتظام في وقت محدد، تتعلم ماعت هذا النمط وترسل لك تذكيراً لتسجيل المعاملة. يمكنك إيقاف أي تذكير في أي وقت.'
               : 'When you log transactions at the same time consistently, Maat learns the pattern and reminds you so nothing slips through. You can mute any reminder for 7 days at any time.'}
           </Text>
+          <View style={{ marginTop: 14 }}>
+            <RButton variant="secondary" full onPress={sendTest} loading={testing} disabled={testing}>
+              {lang === 'ar' ? 'إرسال إشعار تجريبي' : 'Send a test notification'}
+            </RButton>
+          </View>
         </RCard>
 
         {loading ? (
