@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { ReactNode, memo, useEffect, useId, useRef, useState } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, ScrollView, ActivityIndicator, TextInput,
 } from 'react-native';
@@ -13,7 +13,10 @@ import { Glass } from './Glass';
 // hard `borderTopColor` hairline — gold on focal/glow cards, a faint white
 // highlight elsewhere — so the plate reads as glass catching light, not an
 // edge. Static gradient (no repaint on scroll) so it's cheap per card.
-function CardSheen({ glow }: { glow?: boolean }) {
+// memo: a field's focus re-render must NOT reconcile this SVG. Reconciling the
+// sheen while the sibling TextInput is focused (under the blur) churns the
+// native layer and drops the keyboard on iOS.
+export const CardSheen = memo(function CardSheen({ glow }: { glow?: boolean }) {
   const { tok, mode } = useI18n();
   const gid = 'sheen-' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const base = glow ? tok.goldLight : '#FFFFFF';
@@ -29,7 +32,7 @@ function CardSheen({ glow }: { glow?: boolean }) {
       <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
     </Svg>
   );
-}
+});
 
 // Keys that describe where/how big a card sits in its parent. These belong on
 // the OUTER shell so margins push the whole card and `flex: 1` stretches it.
@@ -291,12 +294,13 @@ export function RField({
           {secondary}
         </View>
       ) : null}
+      {/* Focus glow is border + bg only. A focus-driven SHADOW here churned
+          the native layer under the blur and dropped the keyboard on iOS, so
+          it's gone; the sheen is memoized for the same reason (see CardSheen). */}
       <View style={{
         padding: 4, borderRadius: 16,
         backgroundColor: focused ? tok.glowShellBg : tok.shellBg,
         borderWidth: 1, borderColor: focused ? tok.glowShellBorder : tok.shellBorder,
-        shadowColor: focused ? tok.glowShadow : 'transparent',
-        shadowOpacity: focused ? 0.2 : 0, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
       }}>
         {/* Glass + sheen restored as BACKGROUND layers, with the TextInput a
             sibling on top (never nested in the blur). The keyboard regression
