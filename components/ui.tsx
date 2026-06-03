@@ -300,17 +300,19 @@ export function RField({
       }}>
         {/* Inner core = the same frosted glass + top sheen the cards use, so a
             field reads as a miniature golden-shield plate rather than a flat box. */}
-        {/* Keep every Glass prop static across focus. Changing intensity (or
-            any BlurView prop) while the inner TextInput is focused rebuilds the
-            native blur layer on iOS and dismisses the keyboard. All focus
-            feedback lives on the outer shell above instead. */}
-        <Glass
-          variant="frost"
-          radius={12}
-          fallbackColor={tok.coreBg}
-          dark={mode !== 'light'}
-          intensity={30}
-        >
+        {/* The frosted glass + sheen are BACKGROUND layers; the TextInput is a
+            sibling rendered on top, never a descendant of the BlurView.
+            Nesting a TextInput inside expo-blur drops first responder on focus
+            (keyboard opens then closes instantly), so we keep them decoupled. */}
+        <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: tok.coreBg }}>
+          <Glass
+            variant="frost"
+            radius={12}
+            fallbackColor={tok.coreBg}
+            dark={mode !== 'light'}
+            intensity={30}
+            style={StyleSheet.absoluteFillObject}
+          />
           <CardSheen />
           <TextInput
             value={value}
@@ -342,7 +344,7 @@ export function RField({
               textAlign: forceLtr ? 'left' : (lang === 'ar' ? 'right' : 'left'),
             }}
           />
-        </Glass>
+        </View>
       </View>
     </View>
   );
