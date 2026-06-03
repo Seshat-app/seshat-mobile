@@ -4,6 +4,7 @@ import { Mic } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
 import { RChip } from './ui';
+import { ChatBlocks, type VisualBlock } from './ChatVisuals';
 
 /**
  * Shared chat primitives used by the Maat tab session list (TypingDots is
@@ -27,6 +28,9 @@ export type Message = {
   // Transaction _ids the agent created in response to this turn. Renders a
   // small "Logged N entries" chip under the bubble when populated.
   createdTransactionIds?: string[];
+  // Structured visuals from the backend (logged-transaction cards + a monthly
+  // insight chart). Rendered beneath the bubble once typing finishes.
+  blocks?: VisualBlock[];
 };
 
 const BUBBLE_RADIUS = 18;
@@ -67,8 +71,16 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
     ? { borderBottomLeftRadius: TAIL }
     : { borderBottomRightRadius: TAIL };
 
+  // Visual blocks render beneath the text once typing finishes. When present
+  // the column widens so the cards + insight chart have room to breathe; the
+  // text bubble itself stays content-width, anchored on its side.
+  const hasBlocks = isAssistant && !!message.blocks && message.blocks.length > 0;
+  const hasTxBlock = !!message.blocks?.some((b) => b.type === 'transactions');
+  const showBlocks = hasBlocks && !stillTyping;
+
   return (
-    <Pressable onPress={stillTyping ? onSkipTyping : undefined} style={{ alignSelf: anchor, maxWidth: '84%', marginBottom: 10 }}>
+    <View style={{ alignSelf: anchor, marginBottom: 10, ...(hasBlocks ? { width: '92%' } : { maxWidth: '84%' }) }}>
+    <Pressable onPress={stillTyping ? onSkipTyping : undefined} style={{ alignSelf: anchor, maxWidth: '100%' }}>
       <View
         style={{
           backgroundColor: isAssistant ? tok.coreBg : tok.gold,
@@ -116,8 +128,9 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
             {stillTyping && <Text style={{ color: tok.gold }}>▍</Text>}
           </Text>
         </View>
-        {/* "Logged N entries" breadcrumb that this turn wrote to the ledger. */}
-        {isAssistant && !stillTyping && message.createdTransactionIds && message.createdTransactionIds.length > 0 && (
+        {/* "Logged N entries" breadcrumb - only when there's no richer
+            transactions block (which already lists the entries as cards). */}
+        {isAssistant && !stillTyping && !hasTxBlock && message.createdTransactionIds && message.createdTransactionIds.length > 0 && (
           <View style={{ marginTop: 8, alignSelf: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
             <RChip
               label={lang === 'ar'
@@ -128,6 +141,12 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
         )}
       </View>
     </Pressable>
+      {showBlocks && (
+        <View style={{ marginTop: 8 }}>
+          <ChatBlocks blocks={message.blocks} />
+        </View>
+      )}
+    </View>
   );
 }
 

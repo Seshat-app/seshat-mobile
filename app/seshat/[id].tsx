@@ -15,6 +15,7 @@ import { ScreenScaffold } from '../../components/Screen';
 import { useRecorder } from '../../components/useRecorder';
 import { uploadReceipt } from '../../lib/cloudinary';
 import { ChatBubble, TypingDots, RecordingMicIcon, type Message } from '../../components/ChatBubble';
+import { type VisualBlock } from '../../components/ChatVisuals';
 
 /**
  * Chat view for a single Seshat session.
@@ -54,12 +55,13 @@ export default function ChatViewScreen() {
         if (!(await hasToken())) return;
         const r = await apiFetch<{ data: {
           id: string; title: string; lastMessageAt: string;
-          messages: Array<{ id: string; role: 'user' | 'assistant'; content: string; createdAt: string; createdTransactionIds?: string[] }>;
+          messages: Array<{ id: string; role: 'user' | 'assistant'; content: string; createdAt: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[] }>;
         } }>(`/chat/sessions/${sessionId}`);
         setTitle(r.data.title);
         setMessages(r.data.messages.map((m) => ({
           id: m.id, role: m.role, content: m.content,
           createdTransactionIds: m.createdTransactionIds,
+          blocks: m.visualBlocks,
         })));
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 80);
       } catch (err) {
@@ -88,7 +90,7 @@ export default function ChatViewScreen() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
     try {
-      const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[] } }>('/chat', {
+      const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[] } }>('/chat', {
         method: 'POST',
         body: JSON.stringify({
           message: text || undefined,
@@ -101,6 +103,7 @@ export default function ChatViewScreen() {
       setMessages((prev) => [...prev, {
         id: String(Date.now() + 1), role: 'assistant', content: res.data.reply, typing: true,
         createdTransactionIds: res.data.createdTransactionIds,
+        blocks: res.data.visualBlocks,
       }]);
     } catch (err) {
       setMessages((prev) => [...prev, { id: String(Date.now() + 1), role: 'assistant', content: t('somethingWrong'), typing: true }]);
@@ -133,7 +136,7 @@ export default function ChatViewScreen() {
     setSending(true);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
     try {
-      const r = await apiFetch<{ data: { transcript: string; reply: string; sessionId: string; createdTransactionIds?: string[] } }>('/voice/chat', {
+      const r = await apiFetch<{ data: { transcript: string; reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[] } }>('/voice/chat', {
         method: 'POST',
         body: JSON.stringify({
           audio_base64: res.base64, format: res.format, language: lang,
@@ -148,6 +151,7 @@ export default function ChatViewScreen() {
         {
           id: String(ts + 1), role: 'assistant', content: r.data.reply, typing: true,
           createdTransactionIds: r.data.createdTransactionIds,
+          blocks: r.data.visualBlocks,
         },
       ]);
     } catch (err) {
