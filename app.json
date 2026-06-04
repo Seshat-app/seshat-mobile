@@ -16,6 +16,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.seshat.app",
+      "entitlements": {
+        "aps-environment": "development"
+      },
       "icon": {
         "light": "./assets/brand/icon-light.png",
         "dark": "./assets/brand/icon.png",

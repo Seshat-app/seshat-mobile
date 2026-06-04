@@ -66,8 +66,9 @@ export async function registerForPushNotifications(): Promise<string | null> {
       const req = await Notifications.requestPermissionsAsync();
       status = req.status;
     }
+    console.log(`[push] permission status: ${status}`);
     if (status !== 'granted') {
-      console.log('[push] permission not granted');
+      console.log('[push] permission not granted - user must allow notifications in Settings');
       return null;
     }
 
@@ -82,14 +83,28 @@ export async function registerForPushNotifications(): Promise<string | null> {
     }
 
     const projectId = resolveProjectId();
+    console.log(`[push] projectId: ${projectId ?? 'MISSING'}`);
     if (!projectId) {
       console.warn('[push] no projectId resolved - cannot fetch Expo push token');
       return null;
     }
 
-    const tokenRes = await Notifications.getExpoPushTokenAsync({ projectId });
-    const token = tokenRes.data;
-    if (!token) return null;
+    // This is the step that fails on iOS when the build has no APNs entitlement
+    // (aps-environment). Log its own error explicitly so it doesn't get
+    // swallowed by the outer catch as a generic "register threw".
+    let token: string;
+    try {
+      const tokenRes = await Notifications.getExpoPushTokenAsync({ projectId });
+      token = tokenRes.data;
+    } catch (tokenErr) {
+      console.warn('[push] getExpoPushTokenAsync FAILED (likely missing APNs entitlement / dev-client needs rebuild):', tokenErr);
+      return null;
+    }
+    if (!token) {
+      console.warn('[push] getExpoPushTokenAsync returned empty token');
+      return null;
+    }
+    console.log(`[push] got Expo token: ${token.slice(0, 24)}...`);
 
     cachedToken = token;
 
@@ -103,6 +118,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
         method: 'POST',
         body: JSON.stringify({ token, timezone }),
       });
+      console.log('[push] token saved to API (/me/push-token)');
     } catch (err) {
       console.warn('[push] failed to save token to API:', err);
     }
