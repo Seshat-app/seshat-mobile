@@ -2,7 +2,7 @@
   <defs>
     <radialGradient id="bg" cx="0.5" cy="0.42" r="0.78"><stop offset="0" stop-color="#16161B"/><stop offset="1" stop-color="#09090B"/></radialGradient>
     <radialGradient id="glow" cx="0.5" cy="0.47" r="0.47"><stop offset="0" stop-color="#ECC362" stop-opacity="0.41"/><stop offset="0.47" stop-color="#CDA344" stop-opacity="0.18"/><stop offset="1" stop-color="#CDA344" stop-opacity="0"/></radialGradient>
-    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="300" y1="200" x2="720" y2="840"><stop offset="0" stop-color="#F4DE96"/><stop offset="1" stop-color="#D4B257"/></linearGradient>
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="300" y1="200" x2="720" y2="840"><stop offset="0" stop-color="#E4BC4E"/><stop offset="1" stop-color="#BE9230"/></linearGradient>
     <clipPath id="r"><rect width="1024" height="1024" rx="232" ry="232"/></clipPath>
   </defs>
   <g clip-path="url(#r)"><rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#glow)"/></g>
