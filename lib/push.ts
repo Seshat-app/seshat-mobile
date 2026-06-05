@@ -138,14 +138,22 @@ export async function registerForPushNotifications(): Promise<string | null> {
  *
  * `onHabitTap` receives the categoryId so a future iteration can pre-open
  * the AddTransactionSheet pre-filled, but for now the caller just routes.
+ *
+ * `onMaatTap` (optional) is called when the user taps a `maat_message` push.
+ * It receives the sessionId so the caller can open the relevant chat thread.
  */
 export function subscribeToNotificationTaps(
   onHabitTap: (data: { categoryId?: string; ledgerId?: string }) => void,
+  onMaatTap?: (data: { sessionId: string }) => void,
 ): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response?.notification?.request?.content?.data as
-      | { type?: string; categoryId?: string; ledgerId?: string }
+      | { type?: string; categoryId?: string; ledgerId?: string; sessionId?: string }
       | undefined;
+    if (data?.type === 'maat_message' && data?.sessionId) {
+      onMaatTap?.({ sessionId: data.sessionId });
+      return;
+    }
     if (data?.type === 'habit_reminder') {
       onHabitTap({ categoryId: data.categoryId, ledgerId: data.ledgerId });
     }
