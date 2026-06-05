@@ -25,13 +25,14 @@ type SessionSummary = {
   lastMessageAt: string;
   createdAt: string;
   messageCount: number;
+  unreadCount: number;
 };
 
 export default function SeshatSessionsScreen() {
   const router = useRouter();
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
-  const { activeLedgerId } = useAppData();
+  const { activeLedgerId, setUnreadMaatTotal } = useAppData();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,13 +43,17 @@ export default function SeshatSessionsScreen() {
     if (mode === 'initial') setLoading(true); else setRefreshing(true);
     try {
       const r = await apiFetch<{ data: SessionSummary[] }>('/chat/sessions');
-      setSessions(r.data ?? []);
+      const data = r.data ?? [];
+      setSessions(data);
+      // Propagate the total unread count to the tab bar badge.
+      const total = data.reduce((sum, s) => sum + (s.unreadCount ?? 0), 0);
+      setUnreadMaatTotal(total);
     } catch (err) {
       console.warn('load sessions failed', err);
     } finally {
       if (mode === 'initial') setLoading(false); else setRefreshing(false);
     }
-  }, []);
+  }, [setUnreadMaatTotal]);
 
   // Refresh whenever the tab regains focus (e.g. after returning from a
   // chat view that may have changed lastMessageAt or created a session).
@@ -215,6 +220,12 @@ export default function SeshatSessionsScreen() {
                       {formatRelative(s.lastMessageAt, lang)} · {s.messageCount} {lang === 'ar' ? 'رسالة' : 'msgs'}
                     </Text>
                   </View>
+                  {(s.unreadCount ?? 0) > 0 && (
+                    <View style={{
+                      width: 8, height: 8, borderRadius: 4,
+                      backgroundColor: tok.gold,
+                    }} />
+                  )}
                   <ChevronRight
                     size={16} color={tok.muted}
                     style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }}

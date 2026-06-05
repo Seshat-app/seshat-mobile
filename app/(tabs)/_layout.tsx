@@ -23,7 +23,7 @@ const NativeTabsNavigator = withLayoutContext(createNativeBottomTabNavigator().N
 
 export default function TabsLayout() {
   const { tok, lang, t } = useI18n();
-  const { categories, projects, profile, bumpVersion, refresh } = useAppData();
+  const { categories, projects, profile, bumpVersion, refresh, unreadMaatTotal } = useAppData();
 
   useEffect(() => { refresh(); }, [refresh]);
   const segments = useSegments();
@@ -111,6 +111,7 @@ export default function TabsLayout() {
             options={{
               title: t('maat'),
               tabBarIcon: () => ({ sfSymbol: 'sparkles' }),
+              tabBarBadge: unreadMaatTotal > 0 ? String(unreadMaatTotal) : undefined,
             }}
           />
           <NativeTabsNavigator.Screen
@@ -159,6 +160,7 @@ export default function TabsLayout() {
               title: t('maat'),
               tabBarIcon: ({ color }) => <Sparkles size={22} color={color} strokeWidth={1.5} />,
               tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('maat')}</TabLabel>,
+              tabBarBadge: unreadMaatTotal > 0 ? unreadMaatTotal : undefined,
             }}
           />
           <Tabs.Screen

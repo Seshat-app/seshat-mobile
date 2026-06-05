@@ -72,6 +72,10 @@ type Ctx = {
   workspaceSheetOpen: boolean;
   openWorkspaceSheet: () => void;
   closeWorkspaceSheet: () => void;
+  // Total unread Maat messages across all sessions. Set by the seshat
+  // session-list screen after each fetch so the tab bar can show a badge.
+  unreadMaatTotal: number;
+  setUnreadMaatTotal: (n: number) => void;
 };
 
 const AppDataContext = createContext<Ctx | null>(null);
@@ -94,6 +98,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [activeLedgerId, setActiveLedgerIdState] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
   const [workspaceSheetOpen, setWorkspaceSheetOpen] = useState(false);
+  const [unreadMaatTotal, setUnreadMaatTotal] = useState(0);
 
   // Projects only exist on org ledgers in v1. We fetch once at the right
   // moment (refresh + ledger switch + after a mutation calls
@@ -247,6 +252,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       workspaceSheetOpen,
       openWorkspaceSheet: () => setWorkspaceSheetOpen(true),
       closeWorkspaceSheet: () => setWorkspaceSheetOpen(false),
+      unreadMaatTotal,
+      setUnreadMaatTotal,
     }}>
       {children}
     </AppDataContext.Provider>
