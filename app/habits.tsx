@@ -93,8 +93,8 @@ export default function RemindersScreen() {
 
   return (
     <PlanScreen
-      title={lang === 'ar' ? 'التذكيرات' : 'Reminders'}
-      subtitle={lang === 'ar' ? 'العادات التي رصدتها ماعت' : 'Habits Maat has noticed'}
+      title={lang === 'ar' ? 'العادات' : 'Habits'}
+      subtitle={lang === 'ar' ? 'الأنماط التي رصدتها ماعت' : 'Spending patterns Maat noticed'}
       refreshing={refreshing}
     >
       <ScrollView

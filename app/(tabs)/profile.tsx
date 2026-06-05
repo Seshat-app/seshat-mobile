@@ -376,8 +376,14 @@ export default function ProfileScreen() {
             />
             <PlanRow
               icon={BellRing}
+              title={lang === 'ar' ? 'العادات' : 'Habits'}
+              hint={lang === 'ar' ? 'الأنماط التي رصدتها ماعت' : 'Spending patterns Maat noticed'}
+              onPress={() => router.push('/habits')}
+            />
+            <PlanRow
+              icon={CalendarClock}
               title={lang === 'ar' ? 'التذكيرات' : 'Reminders'}
-              hint={lang === 'ar' ? 'العادات التي رصدتها ماعت' : 'Habits Maat has noticed'}
+              hint={lang === 'ar' ? 'الفواتير التي تذكّرك بها ماعت' : 'Bills Maat reminds you about'}
               onPress={() => router.push('/reminders')}
             />
             <PlanRow
