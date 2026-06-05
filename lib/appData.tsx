@@ -210,13 +210,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   // for; we route to the transactions tab where the user can add the entry.
   // Future: pop the AddTransactionSheet pre-filled with the category.
   useEffect(() => {
-    return subscribeToNotificationTaps(({ ledgerId }) => {
-      if (ledgerId) {
-        setActiveLedger(ledgerId);
-        setActiveLedgerIdState(ledgerId);
-      }
-      router.replace('/(tabs)/transactions');
-    });
+    return subscribeToNotificationTaps(
+      ({ ledgerId }) => {
+        if (ledgerId) {
+          setActiveLedger(ledgerId);
+          setActiveLedgerIdState(ledgerId);
+        }
+        router.replace('/(tabs)/transactions');
+      },
+      ({ sessionId }) => {
+        router.push(`/seshat/${sessionId}`);
+      },
+    );
   }, []);
 
   // Android: subscribe to bank notifications (only when the user has granted
