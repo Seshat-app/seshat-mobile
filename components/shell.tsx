@@ -11,6 +11,7 @@ import { CategoryIcon, CategoryIconByKey } from './icons';
 import { iconKeyForCategory } from '../lib/categoryMap';
 import type { CatId } from '../lib/categoryMap';
 import { catIdFromName, catLabel } from '../lib/categoryMap';
+import { pressFeel, hapticLight } from './press';
 
 // ─────────────────────────────────────────────────────────────
 // View switcher — three small icons (Numbers / HUD / Bento)
@@ -235,8 +236,9 @@ export function RTxRow({
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
+      onPressIn={hapticLight}
       delayLongPress={400}
-      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }, pressFeel(pressed)]}
     >
       {content}
     </Pressable>
@@ -314,6 +316,11 @@ export function RFAB({
         // Don't fire onPress if the long-press already kicked in.
         if (recordingRef.current) return;
         onPress();
+      }}
+      onPressIn={() => {
+        // Light tick for the short tap only; the long-press voice path has its
+        // own medium haptic via handleLongPress / onVoiceStart.
+        if (!recordingRef.current) hapticLight();
       }}
       onLongPress={handleLongPress}
       onPressOut={handlePressOut}

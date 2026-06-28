@@ -252,17 +252,17 @@ export default function TabsLayout() {
 }
 
 function TabLabel({ focused, color, children }: { focused: boolean; color: string; children: string }) {
-  const { lang } = useI18n();
+  const { lang, tok } = useI18n();
   return (
     <Text
       numberOfLines={1}
       style={{
-        color,
+        // Crisp color swap instead of an opacity dim (no flicker on switch).
+        color: focused ? tok.gold : color,
         fontFamily: fontMono('regular'),
         fontSize: 9.5,
         letterSpacing: lang === 'ar' ? 0 : 1.2,
         textTransform: lang === 'ar' ? 'none' : 'uppercase',
-        opacity: focused ? 1 : 0.7,
         marginTop: 4,
       }}
     >{children}</Text>

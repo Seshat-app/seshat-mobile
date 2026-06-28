@@ -1,47 +1,31 @@
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Defs, RadialGradient, LinearGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useI18n } from '../lib/i18n';
 
 // ─────────────────────────────────────────────────────────────
-// ScreenAtmosphere — the lit gold-on-void backdrop shared by every
-// screen. Soft gold radial washes (top, upper-trailing, bottom) give
-// the same depth as the marketing web, instead of a flat black sheet.
-//
-// Pure SVG (react-native-svg is already in the binary) so it hot-reloads
-// with no dev-client rebuild, and it's a single cheap node per screen —
-// no per-card blur. Drop it as the first child of a screen's root view,
-// above the void background colour but below the content.
+// ScreenAtmosphere — a clean, even backdrop. No radial "blobs": just a
+// single, very soft top-down warmth that fades to the void, so screens
+// have a hint of depth without gradient balls. One cheap gradient node,
+// memoized. Drop it as the first child of a screen's root view, above the
+// void background colour but below the content.
 // ─────────────────────────────────────────────────────────────
-export function ScreenAtmosphere() {
+export const ScreenAtmosphere = memo(function ScreenAtmosphere() {
   const { tok, mode } = useI18n();
-  const gold = tok.gold;
-  // Light mode (parchment) needs a much gentler wash or it muddies; dark
-  // mode can carry a stronger glow.
-  const top = mode === 'light' ? 0.07 : 0.14;
-  const side = mode === 'light' ? 0.03 : 0.05;
-  const bottom = mode === 'light' ? 0.03 : 0.06;
+  // Whisper of warmth at the very top, gone by ~40% down. Light mode stays flat.
+  const warm = mode === 'light' ? 0.0 : 0.06;
   return (
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
-        <RadialGradient id="atm-top" cx="0.5" cy="0" r="0.72">
-          <Stop offset="0" stopColor={gold} stopOpacity={top} />
-          <Stop offset="0.6" stopColor={gold} stopOpacity={0} />
-        </RadialGradient>
-        <RadialGradient id="atm-side" cx="0.88" cy="0.2" r="0.5">
-          <Stop offset="0" stopColor={gold} stopOpacity={side} />
-          <Stop offset="0.7" stopColor={gold} stopOpacity={0} />
-        </RadialGradient>
-        <RadialGradient id="atm-bottom" cx="0.5" cy="1.05" r="0.6">
-          <Stop offset="0" stopColor={gold} stopOpacity={bottom} />
-          <Stop offset="0.6" stopColor={gold} stopOpacity={0} />
-        </RadialGradient>
+        <LinearGradient id="atm-wash" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={tok.gold} stopOpacity={warm} />
+          <Stop offset="0.4" stopColor={tok.gold} stopOpacity={0} />
+        </LinearGradient>
       </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#atm-top)" />
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#atm-side)" />
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#atm-bottom)" />
+      <Rect x="0" y="0" width="100%" height="100%" fill="url(#atm-wash)" />
     </Svg>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────
 // ScrollEdgeFade — a void→transparent gradient pinned to the top of a

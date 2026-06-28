@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Animated, ActivityIndicator } from 'react-native';
 import { Mic } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
@@ -36,7 +36,7 @@ export type Message = {
 const BUBBLE_RADIUS = 18;
 const TAIL = 5;
 
-export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkipTyping: () => void }) {
+function ChatBubbleInner({ message, onSkipTyping }: { message: Message; onSkipTyping: (id: string) => void }) {
   const { tok, lang } = useI18n();
   const [visibleLen, setVisibleLen] = useState(message.typing ? 0 : message.content.length);
 
@@ -80,7 +80,7 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
 
   return (
     <View style={{ alignSelf: anchor, marginBottom: 10, ...(hasBlocks ? { width: '92%' } : { maxWidth: '84%' }) }}>
-    <Pressable onPress={stillTyping ? onSkipTyping : undefined} style={{ alignSelf: anchor, maxWidth: '100%' }}>
+    <Pressable onPress={stillTyping ? () => onSkipTyping(message.id) : undefined} style={{ alignSelf: anchor, maxWidth: '100%' }}>
       <View
         style={{
           backgroundColor: isAssistant ? tok.coreBg : tok.gold,
@@ -149,6 +149,8 @@ export function ChatBubble({ message, onSkipTyping }: { message: Message; onSkip
     </View>
   );
 }
+
+export const ChatBubble = memo(ChatBubbleInner);
 
 export function TypingDots() {
   const { tok, lang } = useI18n();

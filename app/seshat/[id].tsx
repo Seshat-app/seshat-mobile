@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
@@ -44,6 +44,7 @@ export default function ChatViewScreen() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const recorder = useRecorder();
 
@@ -87,7 +88,6 @@ export default function ChatViewScreen() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setSending(true);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
     try {
       const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[] } }>('/chat', {
@@ -109,7 +109,6 @@ export default function ChatViewScreen() {
       setMessages((prev) => [...prev, { id: String(Date.now() + 1), role: 'assistant', content: t('somethingWrong'), typing: true }]);
     } finally {
       setSending(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
     }
   };
 
@@ -125,6 +124,21 @@ export default function ChatViewScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialText]);
 
+  // Single effect that scrolls to the end whenever a message is added.
+  // Replaces the scattered per-call setTimeout(scrollToEnd) calls to avoid
+  // multiple competing scroll animations per turn.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const id = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    return () => clearTimeout(id);
+  }, [messages.length]);
+
+  // Stable callback for skipping a bubble's typing animation. Passed to all
+  // ChatBubble instances so memoization actually fires.
+  const handleSkipTyping = useCallback((id: string) => {
+    setMessages((prev) => prev.map((p) => p.id === id ? { ...p, typing: false } : p));
+  }, []);
+
   // Voice: same flow as text + uses /voice/chat which now takes sessionId.
   const sendVoice = async () => {
     const res = await recorder.stop();
@@ -134,7 +148,6 @@ export default function ChatViewScreen() {
       return;
     }
     setSending(true);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
     try {
       const r = await apiFetch<{ data: { transcript: string; reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[] } }>('/voice/chat', {
         method: 'POST',
@@ -159,7 +172,6 @@ export default function ChatViewScreen() {
       setMessages((prev) => [...prev, { id: String(Date.now()), role: 'assistant', content: msg, typing: true }]);
     } finally {
       setSending(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
     }
   };
 
@@ -198,7 +210,6 @@ export default function ChatViewScreen() {
         id: tempId, role: 'user', uploading: true,
         content: lang === 'ar' ? 'جارٍ رفع الإيصال…' : 'Uploading receipt…',
       }]);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
       try {
         const upload = await uploadReceipt(picked.assets[0].uri);
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -259,7 +270,6 @@ export default function ChatViewScreen() {
         ref={scrollRef}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
         {messages.length === 0 && (
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
@@ -276,7 +286,7 @@ export default function ChatViewScreen() {
           <ChatBubble
             key={m.id}
             message={m}
-            onSkipTyping={() => setMessages((prev) => prev.map((p) => p.id === m.id ? { ...p, typing: false } : p))}
+            onSkipTyping={handleSkipTyping}
           />
         ))}
         {sending && <TypingDots />}
@@ -288,26 +298,33 @@ export default function ChatViewScreen() {
         alignItems: 'flex-end', gap: 8,
       }}>
         <View style={{
-          flex: 1, minHeight: 46,
+          flex: 1, minHeight: 48,
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           alignItems: 'center', gap: 8,
-          backgroundColor: tok.coreBg, borderWidth: 1, borderColor: tok.shellBorder,
-          borderTopColor: tok.coreSheen,
-          borderRadius: 22, paddingHorizontal: 14,
+          backgroundColor: tok.coreBg, borderWidth: 1,
+          // gold glow on focus — the input becomes the star
+          borderColor: inputFocused ? tok.glowShellBorder : tok.shellBorder,
+          borderTopColor: inputFocused ? tok.glowShellBorder : tok.coreSheen,
+          borderRadius: 24, paddingHorizontal: 16,
+          shadowColor: tok.glowShadow,
+          shadowOpacity: inputFocused ? 0.14 : 0,
+          shadowRadius: 12, shadowOffset: { width: 0, height: 0 },
         }}>
           <TextInput
             value={input}
             onChangeText={setInput}
             onSubmitEditing={() => sendText()}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             placeholder={recorder.isRecording ? (lang === 'ar' ? 'يتم التسجيل…' : 'Recording…') : t('message')}
             placeholderTextColor={recorder.isRecording ? tok.gold : tok.muted}
             returnKeyType="send"
             multiline
             editable={!sending && !recorder.isRecording && !uploading}
             style={{
-              flex: 1, color: tok.bone, fontFamily: fontBody(lang), fontSize: 14,
-              paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-              maxHeight: 100,
+              flex: 1, color: tok.bone, fontFamily: fontBody(lang), fontSize: 16,
+              paddingVertical: Platform.OS === 'ios' ? 13 : 9,
+              maxHeight: 110,
               writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
               textAlign: lang === 'ar' ? 'right' : 'left',
             }}

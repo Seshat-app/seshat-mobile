@@ -21,6 +21,7 @@ import { WorkspaceCard } from '../../components/WorkspaceSwitcher';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { BRAND } from '../../lib/brand';
+import { pressFeel, hapticLight } from '../../components/press';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
 
@@ -661,13 +662,17 @@ function PlanRow({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 12, paddingVertical: 14,
-        borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
-        borderBottomColor: tok.border,
-        opacity: pressed ? 0.7 : 1,
-      })}
+      onPressIn={hapticLight}
+      style={({ pressed }) => [
+        {
+          flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+          alignItems: 'center', gap: 12, paddingVertical: 14,
+          borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
+          borderBottomColor: tok.border,
+          opacity: pressed ? 0.7 : 1,
+        },
+        pressFeel(pressed),
+      ]}
     >
       <View style={{
         width: 36, height: 36, borderRadius: 10,

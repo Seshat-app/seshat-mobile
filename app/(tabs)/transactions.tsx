@@ -115,6 +115,8 @@ export default function TransactionsScreen() {
   useEffect(() => { fetchTxs('initial'); }, [fetchTxs, dataVersion]);
 
   // Group by relative day for the section headers (Today / Yesterday / older).
+  // Each entry also carries a precomputed dayTotal so the render loop can read
+  // it directly instead of calling .reduce() per group on every render pass.
   const groups = useMemo(() => {
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const map = new Map<string, TxRowData[]>();
@@ -129,7 +131,11 @@ export default function TransactionsScreen() {
       arr.push(tx);
       map.set(key, arr);
     }
-    return Array.from(map.entries());
+    return Array.from(map.entries()).map(([day, list]) => ({
+      day,
+      list,
+      dayTotal: list.reduce((s, tx) => s + (tx.type === 'income' ? tx.amount : -tx.amount), 0),
+    }));
   }, [txs, lang, t]);
 
   return (
@@ -246,8 +252,7 @@ export default function TransactionsScreen() {
               />
             }
           >
-            {groups.map(([day, list]) => {
-              const total = list.reduce((s, tx) => s + (tx.type === 'income' ? tx.amount : -tx.amount), 0);
+            {groups.map(({ day, list, dayTotal }) => {
               return (
                 <View key={day} style={{ marginBottom: 14 }}>
                   <View style={{
@@ -256,7 +261,7 @@ export default function TransactionsScreen() {
                     paddingHorizontal: 4, paddingBottom: 8,
                   }}>
                     <REyebrow>{day}</REyebrow>
-                    <RAmount value={total} size={11} weight="regular" currency={list[0]?.currency ?? 'EGP'} sign decimals={0} />
+                    <RAmount value={dayTotal} size={11} weight="regular" currency={list[0]?.currency ?? 'EGP'} sign decimals={0} />
                   </View>
                   <RCard padding={0} style={{ paddingHorizontal: 18 }}>
                     {list.map((tx, i) => (

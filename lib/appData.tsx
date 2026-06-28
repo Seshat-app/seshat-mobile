@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { apiFetch, hasToken, setActiveLedger, getActiveLedger } from './api';
@@ -240,26 +240,47 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const bumpVersion = useCallback(() => setDataVersion((v) => v + 1), []);
 
-  const workspaces = buildWorkspaces(profile, orgs);
+  const openWorkspaceSheet = useCallback(() => setWorkspaceSheetOpen(true), []);
+  const closeWorkspaceSheet = useCallback(() => setWorkspaceSheetOpen(false), []);
+
+  const workspaces = useMemo(() => buildWorkspaces(profile, orgs), [buildWorkspaces, profile, orgs]);
+
+  const ctxValue = useMemo(() => ({
+    categories,
+    projects,
+    profile,
+    workspaces,
+    activeLedgerId: activeLedgerId ?? getActiveLedger(),
+    switchLedger,
+    refresh,
+    refreshProjects,
+    dataVersion,
+    bumpVersion,
+    workspaceSheetOpen,
+    openWorkspaceSheet,
+    closeWorkspaceSheet,
+    unreadMaatTotal,
+    setUnreadMaatTotal,
+  }), [
+    categories,
+    projects,
+    profile,
+    workspaces,
+    activeLedgerId,
+    switchLedger,
+    refresh,
+    refreshProjects,
+    dataVersion,
+    bumpVersion,
+    workspaceSheetOpen,
+    openWorkspaceSheet,
+    closeWorkspaceSheet,
+    unreadMaatTotal,
+    setUnreadMaatTotal,
+  ]);
 
   return (
-    <AppDataContext.Provider value={{
-      categories,
-      projects,
-      profile,
-      workspaces,
-      activeLedgerId: activeLedgerId ?? getActiveLedger(),
-      switchLedger,
-      refresh,
-      refreshProjects,
-      dataVersion,
-      bumpVersion,
-      workspaceSheetOpen,
-      openWorkspaceSheet: () => setWorkspaceSheetOpen(true),
-      closeWorkspaceSheet: () => setWorkspaceSheetOpen(false),
-      unreadMaatTotal,
-      setUnreadMaatTotal,
-    }}>
+    <AppDataContext.Provider value={ctxValue}>
       {children}
     </AppDataContext.Provider>
   );

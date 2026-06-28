@@ -8,6 +8,7 @@ import { useI18n, formatAmount, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 import { Glass } from './Glass';
+import { pressFeel, hapticLight, hapticSelection } from './press';
 
 // Soft top-down reflection painted inside a card's core. Replaces the old
 // hard `borderTopColor` hairline — gold on focal/glow cards, a faint white
@@ -218,6 +219,7 @@ export function RPill({
   return (
     <Pressable
       onPress={onPress}
+      onPressIn={hapticSelection}
       style={({ pressed }) => [
         {
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -231,6 +233,7 @@ export function RPill({
           opacity: pressed ? 0.85 : 1,
         },
         style,
+        pressFeel(pressed),
       ]}
     >
       {icon}
@@ -512,9 +515,11 @@ export function RButton({
   return (
     <Pressable
       onPress={blocked ? undefined : onPress}
+      onPressIn={blocked ? undefined : hapticLight}
       disabled={blocked}
       style={({ pressed }) => [
         base, border, { backgroundColor: bg, opacity: disabled ? 0.45 : pressed ? 0.9 : 1 }, style,
+        pressFeel(pressed),
       ]}
     >
       {loading ? <ActivityIndicator size="small" color={fg} /> : icon}
