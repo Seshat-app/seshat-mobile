@@ -1,172 +1,214 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, View, Text, Easing, Platform } from 'react-native';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
-import { useI18n } from '../lib/i18n';
-import { fontHead, fontMono } from '../lib/fonts';
-import { BRAND } from '../lib/brand';
-import { SeshatMark } from './SeshatMark';
+import { useEffect, useRef } from 'react';
+import { Animated, View, Text, Easing, AccessibilityInfo, StyleSheet } from 'react-native';
+import Svg, { Circle, Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
+import { FF } from '../lib/fonts';
 
 /**
- * Animated splash that takes over from the static native splash and reveals
- * the Seshat brand mark before fading out into the app.
+ * Animated splash — the Seshat name *writes itself*, then ignites.
  *
- * Gold-on-void, matching the web tour's "struck seal" entrance: a soft gold
- * halo blooms, the Seshat mark (the real in-app SeshatMark, so the hand-off to
- * the running app is seamless) scales in, one strike-ring pulses outward, then
- * the SESHAT wordmark and tagline rise.
+ * Choreography (Seshat is the goddess of writing):
+ *   1. "SESHAT" types in letter-by-letter (blinking gold cursor).
+ *   2. A gold glow sweeps across the letters, one at a time, until the whole
+ *      word burns gold.
+ *   3. The glow bursts out of the word and floods the screen with gold light.
+ *   4. The overlay fades, revealing the app home underneath.
  *
- * Choreography:
- *   0 - 220ms     backdrop fades in
- *   220 - 1000ms  halo blooms + mark springs in + strike-ring pulses out;
- *                  wordmark fades up partway through
- *   1000 - 1400ms tagline fades in
- *   1400 - 1760ms whole splash fades out, onDone fires
- *
- * The wordmark + tagline use the app fonts (Syne / Cairo) so they match the UI.
+ * Always the dark gold-on-void brand palette (matches the native splash and
+ * stays consistent in light mode). Wordmark is Syne ExtraBold — the app head
+ * font. Falls back to a simple fade when reduce-motion is on.
  */
-const SPLASH_BOX = 300;  // px on screen for the mark + halo stack
-const SPLASH_MARK = 150; // the brand mark itself
+
+// Fixed brand palette — this is a branded moment, not theme-dependent.
+const VOID = '#0C0C0E';
+const GOLD = '#C9A84C';
+const GOLD_LIGHT = '#E8C97A';
+const DIM = '#8A8068';      // un-ignited letter
+const HOT = '#FFF7E0';      // flood core
+const LETTERS = ['S', 'E', 'S', 'H', 'A', 'T'];
+const FS = 44;              // wordmark size
+const LSP = 8;              // letter spacing
 
 export function AnimatedSplash({ onDone }: { onDone: () => void }) {
-  const { tok, lang } = useI18n();
-
-  const stageFade = useRef(new Animated.Value(0)).current;
-  const haloOpacity = useRef(new Animated.Value(0)).current;
-  const markScale = useRef(new Animated.Value(0.8)).current;
-  const markFade = useRef(new Animated.Value(0)).current;
-  const ring = useRef(new Animated.Value(0)).current; // one-shot strike pulse
-  const wordmarkFade = useRef(new Animated.Value(0)).current;
-  const taglineFade = useRef(new Animated.Value(0)).current;
+  const letterIn = useRef(LETTERS.map(() => new Animated.Value(0))).current;
+  const letterGlow = useRef(LETTERS.map(() => new Animated.Value(0))).current;
+  const cursor = useRef(new Animated.Value(0)).current;
+  const floodScale = useRef(new Animated.Value(0)).current;
+  const floodOpacity = useRef(new Animated.Value(0)).current;
+  const wordScale = useRef(new Animated.Value(1)).current;
+  const wordFade = useRef(new Animated.Value(1)).current;
   const exitFade = useRef(new Animated.Value(1)).current;
 
-  // Guard so the sequence runs exactly once, not on every re-render (keyboard,
-  // locale change, etc.).
-  const [started, setStarted] = useState(false);
+  // Run exactly once on mount. A ref guard (not state) so we never re-run the
+  // effect — a state update here would re-fire the effect, and its cleanup would
+  // cancel the async reduce-motion check before it resolves, leaving the splash
+  // stuck at opacity 0 forever.
+  const ran = useRef(false);
 
   useEffect(() => {
-    if (started) return;
-    setStarted(true);
+    if (ran.current) return;
+    ran.current = true;
+    let cancelled = false;
+
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((reduce) => {
+        if (cancelled) return;
+        if (reduce) {
+          // No motion: show the lit word, brief hold, fade out.
+          letterIn.forEach((v) => v.setValue(1));
+          letterGlow.forEach((v) => v.setValue(1));
+          Animated.sequence([
+            Animated.delay(650),
+            Animated.timing(exitFade, { toValue: 0, duration: 380, useNativeDriver: true }),
+          ]).start(({ finished }) => finished && onDone());
+        } else {
+          runFull();
+        }
+      })
+      .catch(() => { if (!cancelled) runFull(); });
+
+    // Failsafe: never let the splash block the app. Reveal home no matter what.
+    const failsafe = setTimeout(() => { if (!cancelled) onDone(); }, 6000);
+
+    return () => { cancelled = true; clearTimeout(failsafe); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function runFull() {
+    // Blinking cursor while typing.
+    const blink = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cursor, { toValue: 1, duration: 1, useNativeDriver: true }),
+        Animated.delay(280),
+        Animated.timing(cursor, { toValue: 0, duration: 1, useNativeDriver: true }),
+        Animated.delay(280),
+      ]),
+    );
+    blink.start();
 
     Animated.sequence([
-      Animated.timing(stageFade, {
-        toValue: 1, duration: 220, useNativeDriver: true,
-      }),
-      Animated.parallel([
-        Animated.timing(haloOpacity, {
-          toValue: 1, duration: 760, easing: Easing.out(Easing.quad), useNativeDriver: true,
-        }),
-        Animated.spring(markScale, {
-          toValue: 1, damping: 12, mass: 0.7, stiffness: 150, useNativeDriver: true,
-        }),
-        Animated.timing(markFade, {
-          toValue: 1, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.delay(160),
-          Animated.timing(ring, {
-            toValue: 1, duration: 820, easing: Easing.out(Easing.quad), useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.delay(380),
-          Animated.timing(wordmarkFade, {
-            toValue: 1, duration: 560, easing: Easing.out(Easing.cubic), useNativeDriver: true,
-          }),
-        ]),
-      ]),
-      Animated.timing(taglineFade, {
-        toValue: 1, duration: 400, useNativeDriver: true,
-      }),
-      Animated.delay(360),
-      Animated.timing(exitFade, {
-        toValue: 0, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished) onDone();
-    });
-  }, [started]); // eslint-disable-line react-hooks/exhaustive-deps
+      // 1) typewriter — letters snap in
+      Animated.stagger(
+        135,
+        letterIn.map((v) => Animated.timing(v, { toValue: 1, duration: 80, useNativeDriver: true })),
+      ),
+      Animated.delay(170),
+    ]).start(() => {
+      blink.stop();
+      Animated.timing(cursor, { toValue: 0, duration: 150, useNativeDriver: true }).start();
 
-  const ringScale = ring.interpolate({ inputRange: [0, 1], outputRange: [0.55, 2.0] });
-  const ringOpacity = ring.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0, 0.32, 0] });
-  const haloSettled = haloOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.9] });
+      Animated.sequence([
+        // 2) glow sweep, letter by letter
+        Animated.stagger(
+          100,
+          letterGlow.map((v) =>
+            Animated.timing(v, {
+              toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true,
+            }),
+          ),
+        ),
+        Animated.delay(150),
+        // 3) flood burst out of the word; word blooms away
+        Animated.parallel([
+          Animated.timing(floodOpacity, { toValue: 1, duration: 130, useNativeDriver: true }),
+          Animated.timing(floodScale, { toValue: 38, duration: 620, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(wordScale, { toValue: 1.22, duration: 540, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.sequence([
+            Animated.delay(230),
+            Animated.timing(wordFade, { toValue: 0, duration: 340, useNativeDriver: true }),
+          ]),
+        ]),
+        // 4) fade the whole overlay → reveal the app home underneath
+        Animated.timing(exitFade, { toValue: 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start(({ finished }) => finished && onDone());
+    });
+  }
 
   return (
     <Animated.View
       pointerEvents="none"
-      style={{
-        ...(Platform.OS === 'web' ? { position: 'fixed' } as object : { position: 'absolute' }),
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: tok.void,
-        alignItems: 'center', justifyContent: 'center',
-        opacity: exitFade,
-        zIndex: 999,
-      }}
+      style={[StyleSheet.absoluteFill, styles.root, { backgroundColor: VOID, opacity: exitFade }]}
     >
-      <Animated.View style={{ opacity: stageFade, alignItems: 'center' }}>
-        <View style={{ width: SPLASH_BOX, height: SPLASH_BOX, alignItems: 'center', justifyContent: 'center' }}>
-          {/* soft gold halo, lit from behind the mark */}
-          <Animated.View
-            pointerEvents="none"
-            style={{ position: 'absolute', width: SPLASH_BOX, height: SPLASH_BOX, opacity: haloSettled }}
-          >
-            <Svg width={SPLASH_BOX} height={SPLASH_BOX} viewBox="-100 -100 200 200">
-              <Defs>
-                <RadialGradient id="halo" cx="0" cy="0" r="100" gradientUnits="userSpaceOnUse">
-                  <Stop offset="0" stopColor={tok.gold} stopOpacity="0.5" />
-                  <Stop offset="0.55" stopColor={tok.gold} stopOpacity="0.12" />
-                  <Stop offset="1" stopColor={tok.gold} stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Circle cx="0" cy="0" r="100" fill="url(#halo)" />
-            </Svg>
+      {/* soft gold atmosphere */}
+      <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Defs>
+          <RadialGradient id="splash-atmo" cx="0.5" cy="0.42" r="0.62">
+            <Stop offset="0" stopColor={GOLD} stopOpacity={0.1} />
+            <Stop offset="0.7" stopColor={GOLD} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#splash-atmo)" />
+      </Svg>
+
+      {/* the word */}
+      <Animated.View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          opacity: wordFade,
+          transform: [{ scale: wordScale }],
+        }}
+      >
+        {LETTERS.map((ch, i) => (
+          <Animated.View key={i} style={{ opacity: letterIn[i] }}>
+            <Text style={{ fontFamily: FF.syneExtraBold, fontSize: FS, letterSpacing: LSP, color: DIM }}>
+              {ch}
+            </Text>
+            {/* ignited layer, fades in during the sweep */}
+            <Animated.Text
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                fontFamily: FF.syneExtraBold,
+                fontSize: FS,
+                letterSpacing: LSP,
+                color: GOLD_LIGHT,
+                opacity: letterGlow[i],
+                textShadowColor: GOLD,
+                textShadowRadius: 16,
+                textShadowOffset: { width: 0, height: 0 },
+              }}
+            >
+              {ch}
+            </Animated.Text>
           </Animated.View>
+        ))}
 
-          {/* one-shot strike ring, pulses outward as the mark lands */}
-          <Animated.View
-            pointerEvents="none"
-            style={{
-              position: 'absolute', width: SPLASH_BOX, height: SPLASH_BOX,
-              alignItems: 'center', justifyContent: 'center',
-              opacity: ringOpacity, transform: [{ scale: ringScale }],
-            }}
-          >
-            <Svg width={SPLASH_BOX} height={SPLASH_BOX} viewBox="-100 -100 200 200">
-              <Circle cx="0" cy="0" r="72" fill="none" stroke={tok.gold} strokeWidth="2.5" />
-            </Svg>
-          </Animated.View>
-
-          {/* the Seshat mark itself, springing in */}
-          <Animated.View style={{ opacity: markFade, transform: [{ scale: markScale }] }}>
-            <SeshatMark size={SPLASH_MARK} gold={tok.gold} />
-          </Animated.View>
-        </View>
-
-        {/* Wordmark + tagline */}
-        <Animated.View style={{ marginTop: 32, alignItems: 'center', opacity: wordmarkFade }}>
-          <Text style={{
-            fontFamily: fontHead(lang, 'bold'),
-            fontSize: lang === 'ar' ? 42 : 38,
-            color: tok.bone,
-            letterSpacing: lang === 'ar' ? 0 : 14,
-            textTransform: lang === 'ar' ? 'none' : 'uppercase',
-          }}>
-            {lang === 'ar' ? BRAND.nameAr : BRAND.name.toUpperCase()}
-          </Text>
-          <View style={{ height: 1, width: 80, backgroundColor: tok.gold, opacity: 0.5, marginTop: 12 }} />
-        </Animated.View>
-
-        <Animated.View style={{ marginTop: 14, opacity: taglineFade }}>
-          <Text style={{
-            fontFamily: fontMono('regular'),
-            fontSize: 11,
-            color: tok.muted,
-            letterSpacing: lang === 'ar' ? 0 : 3.6,
-            textTransform: 'uppercase',
-          }}>
-            {lang === 'ar' ? 'مساعدك المالي' : 'YOUR FINANCIAL ASSISTANT'}
-          </Text>
-        </Animated.View>
+        {/* blinking cursor */}
+        <Animated.View
+          style={{
+            width: 3,
+            height: FS * 0.9,
+            marginLeft: 6,
+            backgroundColor: GOLD,
+            opacity: cursor,
+            shadowColor: GOLD,
+            shadowOpacity: 0.8,
+            shadowRadius: 8,
+          }}
+        />
       </Animated.View>
+
+      {/* light flood, bursting from the word's centre */}
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.center]}>
+        <Animated.View style={{ opacity: floodOpacity, transform: [{ scale: floodScale }] }}>
+          <Svg width={160} height={160} viewBox="-80 -80 160 160">
+            <Defs>
+              <RadialGradient id="splash-flood" cx="0" cy="0" r="80" gradientUnits="userSpaceOnUse">
+                <Stop offset="0" stopColor={HOT} stopOpacity={0.95} />
+                <Stop offset="0.3" stopColor={GOLD_LIGHT} stopOpacity={0.8} />
+                <Stop offset="0.6" stopColor={GOLD} stopOpacity={0.4} />
+                <Stop offset="1" stopColor={GOLD} stopOpacity={0} />
+              </RadialGradient>
+            </Defs>
+            <Circle cx={0} cy={0} r={80} fill="url(#splash-flood)" />
+          </Svg>
+        </Animated.View>
+      </View>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { alignItems: 'center', justifyContent: 'center', zIndex: 999 },
+  center: { alignItems: 'center', justifyContent: 'center' },
+});
