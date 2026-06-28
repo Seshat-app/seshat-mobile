@@ -46,7 +46,12 @@ function RootStack() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: tok.void },
-          animation: 'fade',
+          // Native platform transition (crisp iOS slide + the back-swipe
+          // gesture) instead of a fade — a fade reveals the destination screen
+          // while it's still mounting, so you see it stutter in.
+          animation: 'default',
+          // Freeze off-screen screens so they stop re-rendering in the background.
+          freezeOnBlur: true,
         }}
       />
       <WorkspaceSheet visible={workspaceSheetOpen} onClose={closeWorkspaceSheet} />
