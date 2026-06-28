@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert, ActivityIndicator,
+  View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -45,7 +45,7 @@ export default function ChatViewScreen() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<FlatList<Message>>(null);
   const recorder = useRecorder();
 
   // Load existing session messages on mount.
@@ -266,12 +266,17 @@ export default function ChatViewScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <FlatList
         ref={scrollRef}
+        data={messages}
+        keyExtractor={(m) => m.id}
+        renderItem={({ item }) => (
+          <ChatBubble message={item} onSkipTyping={handleSkipTyping} />
+        )}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
-      >
-        {messages.length === 0 && (
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
             <Text style={{
               fontFamily: fontBody(lang), fontSize: 14, color: tok.muted, textAlign: 'center',
@@ -281,16 +286,9 @@ export default function ChatViewScreen() {
                 : 'Type to me, hold the mic to talk, or attach a receipt.'}
             </Text>
           </View>
-        )}
-        {messages.map((m) => (
-          <ChatBubble
-            key={m.id}
-            message={m}
-            onSkipTyping={handleSkipTyping}
-          />
-        ))}
-        {sending && <TypingDots />}
-      </ScrollView>
+        }
+        ListFooterComponent={sending ? <TypingDots /> : null}
+      />
 
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',

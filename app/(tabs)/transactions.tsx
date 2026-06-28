@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SlidersHorizontal } from 'lucide-react-native';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -235,12 +235,12 @@ export default function TransactionsScreen() {
             }}>{t('noRecordsSub')}</Text>
           </View>
         ) : (
-          <ScrollView
+          <FlatList
+            data={groups}
+            keyExtractor={(g) => g.day}
             showsVerticalScrollIndicator={false}
-            // Bottom padding sits inside contentContainerStyle so it pads the
-            // END of scrollable content (clearing the FAB + tab bar) without
-            // shrinking the visible scroll area from the top. Derived from the
-            // safe-area inset plus tab-bar + FAB clearance.
+            // Bottom padding pads the END of scrollable content (clearing the
+            // FAB + tab bar): safe-area inset plus tab-bar + FAB clearance.
             contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
             refreshControl={
               <RefreshControl
@@ -251,32 +251,29 @@ export default function TransactionsScreen() {
                 progressBackgroundColor={tok.surface}
               />
             }
-          >
-            {groups.map(({ day, list, dayTotal }) => {
-              return (
-                <View key={day} style={{ marginBottom: 14 }}>
-                  <View style={{
-                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                    justifyContent: 'space-between', alignItems: 'baseline',
-                    paddingHorizontal: 4, paddingBottom: 8,
-                  }}>
-                    <REyebrow>{day}</REyebrow>
-                    <RAmount value={dayTotal} size={11} weight="regular" currency={list[0]?.currency ?? 'EGP'} sign decimals={0} />
-                  </View>
-                  <RCard padding={0} style={{ paddingHorizontal: 18 }}>
-                    {list.map((tx, i) => (
-                      <RTxRow
-                        key={tx._id}
-                        tx={tx}
-                        last={i === list.length - 1}
-                        onLongPress={() => onRowAction(tx)}
-                      />
-                    ))}
-                  </RCard>
+            renderItem={({ item: { day, list, dayTotal } }) => (
+              <View style={{ marginBottom: 14 }}>
+                <View style={{
+                  flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                  justifyContent: 'space-between', alignItems: 'baseline',
+                  paddingHorizontal: 4, paddingBottom: 8,
+                }}>
+                  <REyebrow>{day}</REyebrow>
+                  <RAmount value={dayTotal} size={11} weight="regular" currency={list[0]?.currency ?? 'EGP'} sign decimals={0} />
                 </View>
-              );
-            })}
-          </ScrollView>
+                <RCard padding={0} style={{ paddingHorizontal: 18 }}>
+                  {list.map((tx, i) => (
+                    <RTxRow
+                      key={tx._id}
+                      tx={tx}
+                      last={i === list.length - 1}
+                      onLongPress={() => onRowAction(tx)}
+                    />
+                  ))}
+                </RCard>
+              </View>
+            )}
+          />
         )}
       </View>
 
