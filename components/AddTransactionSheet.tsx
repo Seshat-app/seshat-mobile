@@ -406,7 +406,10 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   };
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(translate, { toValue: visible ? 0 : 800, duration: 320, useNativeDriver: true }),
+      // Spring up on open (the "Telda" rise); quick clean slide on close.
+      visible
+        ? Animated.spring(translate, { toValue: 0, damping: 20, stiffness: 190, mass: 0.9, useNativeDriver: true })
+        : Animated.timing(translate, { toValue: 800, duration: 240, useNativeDriver: true }),
       Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: 220, useNativeDriver: true }),
     ]).start();
   }, [visible]);
