@@ -116,17 +116,22 @@ export function RCard({
         shell,
       ]}
     >
-      <Glass
-        variant="frost"
-        radius={innerRadius}
-        fallbackColor={tok.coreBg}
-        dark={mode !== 'light'}
-        intensity={glow ? 48 : 32}
-        style={[corePad, ...(accentRail ? [accentRail] : []), core]}
+      {/* Translucent core plate — NO live backdrop-blur. A BlurView per card is
+          a per-frame foot-gun on scrolling lists (there are 90+ of these), and
+          over the dark void the frost is barely visible anyway. Depth comes from
+          the bezel above + the screen atmosphere showing through the translucent
+          coreBg. */}
+      <View
+        style={[
+          { borderRadius: innerRadius, backgroundColor: tok.coreBg, overflow: 'hidden' },
+          corePad,
+          ...(accentRail ? [accentRail] : []),
+          core,
+        ]}
       >
         <CardSheen glow={glow} />
         {children}
-      </Glass>
+      </View>
     </View>
   );
 }
