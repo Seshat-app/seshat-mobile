@@ -140,7 +140,7 @@ export function SalaryCheckInSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: '#000A' }} onPress={onClose} />
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' }} onPress={onClose} />
       <View style={{
         position: 'absolute', left: 0, right: 0, bottom: 0,
         backgroundColor: tok.void,
@@ -150,7 +150,8 @@ export function SalaryCheckInSheet({
         // sheet is lifted above it via marginBottom so the input stays visible.
         paddingBottom: insets.bottom + 18,
         marginBottom: kbHeight,
-        borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+        borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+        overflow: 'hidden',
         gap: 14,
       }}>
         <View style={{

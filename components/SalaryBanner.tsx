@@ -102,7 +102,7 @@ export function SetSalarySheet({
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={{ flex: 1 }}>
         <Animated.View
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', opacity: overlay }}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', opacity: overlay }}
           pointerEvents={visible ? 'auto' : 'none'}
         >
           <Pressable style={{ flex: 1 }} onPress={onClose} />
@@ -111,7 +111,8 @@ export function SetSalarySheet({
           style={{
             backgroundColor: tok.void,
             borderTopLeftRadius: 24, borderTopRightRadius: 24,
-            borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+            overflow: 'hidden',
             paddingBottom: Math.max(26, insets.bottom + 12),
             marginBottom: kbHeight,
             paddingTop: kbHeight > 0 ? insets.top : 0,

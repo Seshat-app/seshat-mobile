@@ -78,7 +78,7 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: '#000A' }} onPress={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' }} onPress={onClose}>
         <View style={{ flex: 1 }} />
       </Pressable>
       <View style={{

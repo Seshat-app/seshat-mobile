@@ -174,7 +174,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.66)' }} onPress={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' }} onPress={onClose}>
         <View style={{ flex: 1 }} />
       </Pressable>
       <View style={{

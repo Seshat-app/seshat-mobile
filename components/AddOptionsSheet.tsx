@@ -45,7 +45,7 @@ export function AddOptionsSheet({ visible, onClose, onPickManual, onPickReceipt 
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={{ flex: 1 }}>
         <Animated.View
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', opacity: overlay }}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', opacity: overlay }}
           pointerEvents={visible ? 'auto' : 'none'}
         >
           <Pressable style={{ flex: 1 }} onPress={onClose} />
@@ -56,7 +56,8 @@ export function AddOptionsSheet({ visible, onClose, onPickManual, onPickReceipt 
             position: 'absolute', left: 0, right: 0, bottom: 0,
             backgroundColor: tok.void,
             borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
-            borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+            overflow: 'hidden',
             paddingHorizontal: 18, paddingTop: 12,
             paddingBottom: insets.bottom + 18,
             transform: [{ translateY }],
