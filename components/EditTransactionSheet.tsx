@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { View, Text, Modal, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
+import { CategoryIconByKey } from './icons';
+import { iconKeyForCategory } from '../lib/categoryMap';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -147,7 +149,7 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
                     flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 6,
                   }}
                 >
-                  <Text style={{ fontSize: 14 }}>{c.emoji ?? '📦'}</Text>
+                  <CategoryIconByKey iconKey={iconKeyForCategory(c)} size={16} color={active ? tok.void : tok.bone} />
                   <Text style={{
                     fontFamily: fontBody(lang, active ? 'semibold' : 'medium'), fontSize: 13,
                     color: active ? tok.void : tok.bone,

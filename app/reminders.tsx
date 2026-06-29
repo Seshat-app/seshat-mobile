@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing } from 'lucide-react-native';
+import { CategoryIconByKey } from '../components/icons';
 import { PlanScreen } from '../components/PlanShell';
 import { RCard, REyebrow, RStatus, RButton } from '../components/ui';
 import { useI18n, formatAmount } from '../lib/i18n';
@@ -204,7 +205,7 @@ export default function BillRemindersScreen() {
                             justifyContent: 'center',
                           }}
                         >
-                          <Text style={{ fontSize: 18 }}>💳</Text>
+                          <CategoryIconByKey iconKey="bill" size={18} color={tok.bone} />
                         </View>
                         {/* Text */}
                         <View style={{ flex: 1 }}>

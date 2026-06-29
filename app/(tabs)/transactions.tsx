@@ -332,7 +332,7 @@ function summarizeFilters(
     const name = cat ? ((lang === 'ar' && cat.nameAr) ? cat.nameAr : cat.nameEn) : '?';
     chips.push({
       key: `cat-${id}`,
-      label: cat?.emoji ? `${cat.emoji} ${name}` : name,
+      label: name,
       remove: (cur) => ({ ...cur, categoryIds: cur.categoryIds.filter((x) => x !== id) }),
     });
   }

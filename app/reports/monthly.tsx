@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TrendingUp, TrendingDown, Sparkles, Download, Hourglass } from 'lucide-react-native';
+import { CategoryIconByKey } from '../../components/icons';
+import { iconKeyForCategory } from '../../lib/categoryMap';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { PlanScreen } from '../../components/PlanShell';
@@ -238,7 +240,7 @@ export default function MonthlyReportScreen() {
                   borderBottomWidth: i === Math.min(9, report.byCategory.length - 1) ? 0 : 1,
                   borderBottomColor: tok.border, gap: 10,
                 }}>
-                  <Text style={{ fontSize: 18 }}>{c.emoji ?? '·'}</Text>
+                  <CategoryIconByKey iconKey={iconKeyForCategory(c)} size={18} color={tok.bone} />
                   <View style={{ flex: 1 }}>
                     <Text style={{
                       fontFamily: fontBody(lang), fontSize: 14, color: tok.bone,

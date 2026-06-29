@@ -252,7 +252,7 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
                     active={draft.categoryIds.includes(c._id)}
                     onPress={() => toggleCategory(c._id)}
                   >
-                    {c.emoji ? `${c.emoji} ` : ''}{lang === 'ar' && c.nameAr ? c.nameAr : c.nameEn}
+                    {lang === 'ar' && c.nameAr ? c.nameAr : c.nameEn}
                   </RPill>
                 ))}
               </Row>

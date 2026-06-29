@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing, Clock } from 'lucide-react-native';
+import { CategoryIconByKey } from '../components/icons';
+import { iconKeyForCategory } from '../lib/categoryMap';
 import { PlanScreen } from '../components/PlanShell';
 import { RCard, REyebrow, RStatus, RButton } from '../components/ui';
 import { useI18n } from '../lib/i18n';
@@ -145,7 +147,7 @@ export default function RemindersScreen() {
                     backgroundColor: tok.elevated,
                     alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Text style={{ fontSize: 18 }}>{h.emoji ?? '🔔'}</Text>
+                    <CategoryIconByKey iconKey={iconKeyForCategory({ nameEn: h.categoryNameEn })} size={18} color={tok.bone} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{
