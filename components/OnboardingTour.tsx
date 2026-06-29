@@ -14,7 +14,7 @@ import { ScreenAtmosphere } from './ScreenAtmosphere';
 
 // ─────────────────────────────────────────────────────────────
 // OnboardingTour — a guided, ceremonial walk that mirrors the landing's
-// chamber tour. One fixed gold-on-void atmosphere; each scene rises in, Maat
+// chamber tour. One fixed gold-on-void atmosphere; each scene rises in, Seshat
 // narrates, one thing is collected, and the last scene is the threshold into
 // the app. Scenes: Gate, Name (EN + AR), Salary, Month-start, Threshold.
 //
@@ -123,7 +123,7 @@ export function OnboardingTour({
 
             {scene === 'name' && (
               <SceneBody
-                narration={ar ? 'أولاً، بم نناديك؟ تناديك ماعت باسمك.' : 'First, what shall we call you? Maat greets you by name.'}
+                narration={ar ? 'أولاً، بم نناديك؟ تناديك سيشات باسمك.' : 'First, what shall we call you? Seshat greets you by name.'}
                 l1={ar ? 'ما' : 'Your'} l2={ar ? 'اسمك' : 'name'}
               >
                 <View style={{ gap: 12, marginTop: 26 }}>
@@ -139,7 +139,7 @@ export function OnboardingTour({
 
             {scene === 'salary' && (
               <SceneBody
-                narration={ar ? 'كم يدخل كل شهر؟ تقيس ماعت الباقي بالنسبة له.' : 'What flows in each month? Maat measures the rest against it.'}
+                narration={ar ? 'كم يدخل كل شهر؟ تقيس سيشات الباقي بالنسبة له.' : 'What flows in each month? Seshat measures the rest against it.'}
                 l1={ar ? 'الراتب' : 'Monthly'} l2={ar ? 'الشهري' : 'salary'}
               >
                 <View style={{

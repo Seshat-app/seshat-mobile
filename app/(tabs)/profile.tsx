@@ -378,13 +378,13 @@ export default function ProfileScreen() {
             <PlanRow
               icon={BellRing}
               title={lang === 'ar' ? 'العادات' : 'Habits'}
-              hint={lang === 'ar' ? 'الأنماط التي رصدتها ماعت' : 'Spending patterns Maat noticed'}
+              hint={lang === 'ar' ? 'الأنماط التي رصدتها سيشات' : 'Spending patterns Seshat noticed'}
               onPress={() => router.push('/habits')}
             />
             <PlanRow
               icon={CalendarClock}
               title={lang === 'ar' ? 'التذكيرات' : 'Reminders'}
-              hint={lang === 'ar' ? 'الفواتير التي تذكّرك بها ماعت' : 'Bills Maat reminds you about'}
+              hint={lang === 'ar' ? 'الفواتير التي تذكّرك بها سيشات' : 'Bills Seshat reminds you about'}
               onPress={() => router.push('/reminders')}
             />
             <PlanRow
@@ -426,7 +426,7 @@ export default function ProfileScreen() {
             <PlanRow
               icon={Send}
               title={lang === 'ar' ? 'بوت تيليجرام' : 'Telegram bot'}
-              hint={lang === 'ar' ? 'تحدّث مع ماعت من تيليجرام' : 'Chat with Maat from Telegram'}
+              hint={lang === 'ar' ? 'تحدّث مع سيشات من تيليجرام' : 'Chat with Seshat from Telegram'}
               onPress={async () => {
                 // Mint a one-time deep-link token so the bot can auto-link this
                 // chat to the signed-in user without a second email + OTP step.

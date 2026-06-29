@@ -72,7 +72,7 @@ type Ctx = {
   workspaceSheetOpen: boolean;
   openWorkspaceSheet: () => void;
   closeWorkspaceSheet: () => void;
-  // Total unread Maat messages across all sessions. Set by the seshat
+  // Total unread Seshat messages across all sessions. Set by the seshat
   // session-list screen after each fetch so the tab bar can show a badge.
   unreadMaatTotal: number;
   setUnreadMaatTotal: (n: number) => void;

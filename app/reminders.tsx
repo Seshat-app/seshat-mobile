@@ -43,7 +43,7 @@ export default function BillRemindersScreen() {
   return (
     <PlanScreen
       title={lang === 'ar' ? 'التذكيرات' : 'Reminders'}
-      subtitle={lang === 'ar' ? 'الفواتير التي تذكّرك بها ماعت' : 'Bills Maat reminds you about'}
+      subtitle={lang === 'ar' ? 'الفواتير التي تذكّرك بها سيشات' : 'Bills Seshat reminds you about'}
       refreshing={refreshing}
     >
       <ScrollView
@@ -294,8 +294,8 @@ function EmptyState({ tok, lang }: { tok: any; lang: 'en' | 'ar' }) {
         }}
       >
         {lang === 'ar'
-          ? 'لا توجد فواتير بعد. عندما ترصد ماعت فاتورة متكررة ستسألك هنا.'
-          : "When Maat spots a recurring bill, it'll ask you in chat and list it here."}
+          ? 'لا توجد فواتير بعد. عندما ترصد سيشات فاتورة متكررة ستسألك هنا.'
+          : "When Seshat spots a recurring bill, it'll ask you in chat and list it here."}
       </Text>
     </RCard>
   );

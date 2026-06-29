@@ -7,11 +7,11 @@ import { RChip } from './ui';
 import { ChatBlocks, type VisualBlock } from './ChatVisuals';
 
 /**
- * Shared chat primitives used by the Maat tab session list (TypingDots is
+ * Shared chat primitives used by the Seshat tab session list (TypingDots is
  * reused for the loading state) and the per-session chat view.
  *
- * Bubble language: the assistant (Maat) speaks in a calm glass bubble with a
- * small gold dot + "Maat" label and a bottom tail on its anchored side; the
+ * Bubble language: the assistant (Seshat) speaks in a calm glass bubble with a
+ * small gold dot + "Seshat" label and a bottom tail on its anchored side; the
  * user speaks in a solid gold bubble (on-gold text = tok.void). Both flip
  * their anchor + tail for Arabic.
  */
@@ -108,7 +108,7 @@ function ChatBubbleInner({ message, onSkipTyping }: { message: Message; onSkipTy
               fontFamily: fontMono('regular'), fontSize: 9.5, letterSpacing: 1.6,
               color: tok.gold, textTransform: 'uppercase',
             }}>
-              {lang === 'ar' ? 'ماعت' : 'Maat'}
+              {lang === 'ar' ? 'سيشات' : 'Seshat'}
             </Text>
           </View>
         )}

@@ -152,7 +152,7 @@ function sourceChipLabel(source: TxRowData['source'], lang: 'en' | 'ar'): string
   if (lang === 'ar') {
     return ({
       voice: 'صوت',
-      seshat: 'ماعت',
+      seshat: 'سيشات',
       bot: 'تيليجرام',
       notification: 'إشعار',
       'receipt-ocr': 'إيصال',
@@ -160,7 +160,7 @@ function sourceChipLabel(source: TxRowData['source'], lang: 'en' | 'ar'): string
   }
   return ({
     voice: 'voice',
-    seshat: 'maat',
+    seshat: 'seshat',
     bot: 'telegram',
     notification: 'notification',
     'receipt-ocr': 'receipt',
@@ -347,7 +347,7 @@ export function RFAB({
         zIndex: 30,
       })}
       accessibilityLabel={recording ? 'Recording, release to send' : 'Add transaction'}
-      accessibilityHint={onVoiceStart ? 'Tap to choose, long-press to speak to Maat' : undefined}
+      accessibilityHint={onVoiceStart ? 'Tap to choose, long-press to speak to Seshat' : undefined}
     >
       {recording
         ? <Mic size={26} color={tok.void} strokeWidth={2.2} />

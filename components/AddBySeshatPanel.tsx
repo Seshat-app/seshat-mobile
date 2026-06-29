@@ -205,7 +205,7 @@ export function AddBySeshatPanel({
             color: tok.gold, fontFamily: fontMono('regular'),
             fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase',
           }}>
-            {lang === 'ar' ? 'إضافة بماعت' : 'Add by Maat'}
+            {lang === 'ar' ? 'إضافة بسيشات' : 'Add by Seshat'}
           </Text>
         </View>
         <View style={{ width: 20 }} />

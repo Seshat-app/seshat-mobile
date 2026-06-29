@@ -9,7 +9,7 @@ import { SeshatMark } from './SeshatMark';
 import { RButton } from './ui';
 
 // First-launch welcome. One calm, premium screen (gold-on-void) that sets the
-// tone and introduces Seshat (the record) and Maat (the voice you talk to),
+// tone and introduces Seshat (the voice you talk to),
 // instead of the old driver.js-style coachmark spotlight that dimmed the app
 // and pointed at tab bars. Same flag + mount wiring as before.
 
@@ -51,8 +51,8 @@ export function Tour({ visible, onClose }: { visible: boolean; onClose: () => vo
       ar: 'سجّل بالكتابة أو الصوت أو صورة إيصال أو تنبيه بنكك.',
     },
     {
-      en: 'Talk to Maat. Ask for a summary, set a budget, or just say hi.',
-      ar: 'تحدّث مع ماعت. اطلب ملخصاً، حدّد ميزانية، أو قل مرحباً.',
+      en: 'Talk to Seshat. Ask for a summary, set a budget, or just say hi.',
+      ar: 'تحدّث مع سيشات. اطلب ملخصاً، حدّد ميزانية، أو قل مرحباً.',
     },
     {
       en: 'English or Egyptian Arabic, from the first word.',

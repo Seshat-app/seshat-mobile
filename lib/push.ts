@@ -139,7 +139,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
  * `onHabitTap` receives the categoryId so a future iteration can pre-open
  * the AddTransactionSheet pre-filled, but for now the caller just routes.
  *
- * `onMaatTap` (optional) is called when the user taps a `maat_message` push.
+ * `onMaatTap` (optional) is called when the user taps a `maat_message` push (Seshat proactive message).
  * It receives the sessionId so the caller can open the relevant chat thread.
  */
 export function subscribeToNotificationTaps(

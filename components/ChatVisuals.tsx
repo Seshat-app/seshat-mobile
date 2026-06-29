@@ -8,11 +8,11 @@ import { CategoryIconByKey } from './icons';
 import { iconKeyForCategory } from '../lib/categoryMap';
 
 /**
- * Visual blocks rendered beneath a Maat reply (see seshat-api/lib/visualBlocks).
+ * Visual blocks rendered beneath a Seshat reply (see seshat-api/lib/visualBlocks).
  *
  *  - transactions: the entries this turn logged, as compact cards (icons unified
  *    with the rest of the app via CategoryIconByKey).
- *  - chart: GENERATIVE - Maat called render_chart, so we draw whatever it asked
+ *  - chart: GENERATIVE - Seshat called render_chart, so we draw whatever it asked
  *    for (bars / donut / stat / trend) in the gold-on-void language. The client
  *    is a themed "playground"; the server validated the spec.
  *  - summary: back-compat for older persisted turns (no longer emitted).

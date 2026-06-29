@@ -202,8 +202,8 @@ export default function CaptureSetupIosScreen() {
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>
             {lang === 'ar'
-              ? 'كل رسالة بنكية تحلّلها ماعت وتفتح صفحة "رصد" داخل سيشات بالمبلغ والتصنيف. أنت تؤكد أو تعدّل وتحفظ. تظل الخصوصية كاملة. الرسالة لا تُرسل لأي مكان آخر.'
-              : 'Each bank SMS gets parsed by Maat and opens the Capture screen with the amount and category pre-filled. You confirm or edit and save. Full privacy. The SMS never goes anywhere else.'}
+              ? 'كل رسالة بنكية تحلّلها سيشات وتفتح صفحة "رصد" داخل سيشات بالمبلغ والتصنيف. أنت تؤكد أو تعدّل وتحفظ. تظل الخصوصية كاملة. الرسالة لا تُرسل لأي مكان آخر.'
+              : 'Each bank SMS gets parsed by Seshat and opens the Capture screen with the amount and category pre-filled. You confirm or edit and save. Full privacy. The SMS never goes anywhere else.'}
           </Text>
         </RCard>
       </ScrollView>

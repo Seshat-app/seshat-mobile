@@ -109,8 +109,8 @@ export default function CaptureScreen() {
     isMonthlyBaseline: parsed.isMonthlyBaselineHint,
     source: 'notification',
     detectionBanner: lang === 'ar'
-      ? `رصدت ماعت ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. تأكد وحفظ.`
-      : `Maat detected ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. Confirm and save.`,
+      ? `رصدت سيشات ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. تأكد وحفظ.`
+      : `Seshat detected ${parsed.amount} ${parsed.currency ?? ''} ${sourceLabel}. Confirm and save.`,
   } : undefined;
 
   return (
@@ -148,11 +148,11 @@ export default function CaptureScreen() {
             }}>
               {lang === 'ar'
                 ? (parsed?.reason
-                    ? `لم تتعرف ماعت على هذه الرسالة كمعاملة (${parsed.reason}).`
-                    : 'لم تتعرف ماعت على هذه الرسالة كمعاملة.')
+                    ? `لم تتعرف سيشات على هذه الرسالة كمعاملة (${parsed.reason}).`
+                    : 'لم تتعرف سيشات على هذه الرسالة كمعاملة.')
                 : (parsed?.reason
-                    ? `Maat couldn't recognize this as a transaction (${parsed.reason}).`
-                    : "Maat couldn't recognize this as a transaction.")}
+                    ? `Seshat couldn't recognize this as a transaction (${parsed.reason}).`
+                    : "Seshat couldn't recognize this as a transaction.")}
             </Text>
             <View style={{ gap: S[2], marginTop: S[4] }}>
               <RButton full onPress={() => setSheetOpen(true)}>

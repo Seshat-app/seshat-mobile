@@ -116,7 +116,7 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
           fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 2,
           color: tok.gold, textTransform: 'uppercase',
         }}>
-          {lang === 'ar' ? 'ماعت لاحظت' : 'Maat noticed'}
+          {lang === 'ar' ? 'سيشات لاحظت' : 'Seshat noticed'}
         </Text>
       </View>
 
@@ -598,7 +598,7 @@ export function DashboardBento({ data, currency}: { data: DashboardData; currenc
 //
 // The hero is a swipeable carousel of three NET-this-month chart styles, all
 // at a uniform height (CHART_INNER) so they line up; the page dots sit under
-// it. Income/expenses, top category, the Maat insight, and recent activity
+// it. Income/expenses, top category, the Seshat insight, and recent activity
 // live in one shared body below that stays put while you swipe the chart.
 // (DashboardNumbers/Hud/Bento above are retained for reference, now unused.)
 // ═══════════════════════════════════════════════════════════════
@@ -817,7 +817,7 @@ export function DashboardBody({ data, currency }: { data: DashboardData; currenc
         </View>
       )}
 
-      {/* Maat insight */}
+      {/* Seshat insight */}
       <View style={{ marginTop: 14 }}>
         <SeshatInsightCard data={data} currency={currency} />
       </View>

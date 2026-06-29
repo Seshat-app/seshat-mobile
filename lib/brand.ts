@@ -7,17 +7,27 @@
  * When the name changes, edit BRAND.name + BRAND.nameAr here AND in the
  * web mirror. Two-file commit, zero hunting through screens.
  *
- * Product: "Seshat" (Arabic: "سيشات"). The AI assistant inside Seshat is
- * "Maat" (Arabic: "ماعت"), read it from BRAND.aiName. The crosshair mark +
- * gold accent carry the identity; the wordmark + copy reference this file.
+ * Product: "Seshat" (Arabic: "سيشات"). Two voices live inside it:
+ *   • Seshat — the everyday scribe you chat with (logs, answers, captures).
+ *     Read from BRAND.aiName; it shares the product name on purpose ("ask
+ *     Seshat"), because the app IS the scribe.
+ *   • Maat — goddess of truth, reserved for the monthly report + insights +
+ *     the verdict ("the weighing of your month"). Read from BRAND.truthName.
+ * Seshat records; Maat weighs. The crosshair mark + gold accent carry the
+ * identity; the wordmark + copy reference this file.
  */
 
 export type BrandConfig = {
   name: string;
   nameAr: string;
-  // AI assistant name (distinct from the product).
+  // The everyday scribe assistant you chat with. Shares the product name
+  // (you "ask Seshat"). Distinct from the truth voice below.
   aiName: string;
   aiNameAr: string;
+  // The truth/weighing voice — Maat. ONLY the monthly report + insights +
+  // the verdict. Never the daily chat. Seshat records; Maat weighs.
+  truthName: string;
+  truthNameAr: string;
   tagline: string;
   taglineAr: string;
   domain: string;
@@ -36,11 +46,15 @@ export type BrandConfig = {
 
 export const BRAND: BrandConfig = {
   // Product name. The mobile splash, navbar, profile screen, monthly
-  // report header all read this. The AI assistant is "Maat" (BRAND.aiName).
+  // report header all read this.
   name: 'Seshat',
   nameAr: 'سيشات',
-  aiName: 'Maat',
-  aiNameAr: 'ماعت',
+  // The daily scribe — shares the product name on purpose ("ask Seshat").
+  aiName: 'Seshat',
+  aiNameAr: 'سيشات',
+  // The weighing voice — surfaces only in the monthly report + verdict.
+  truthName: 'Maat',
+  truthNameAr: 'ماعت',
   tagline: '',
   taglineAr: '',
   domain: 'seshat.site',
