@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing, Clock } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { RCard, REyebrow, RStatus, RButton } from '../components/ui';
 import { useI18n } from '../lib/i18n';
 import { hasToken, apiFetch } from '../lib/api';
 import { listHabits, muteHabit, unmuteHabit, type Habit } from '../lib/habits';
+import { useFetchList } from '../lib/hooks/useFetchList';
 import { fontBody, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 
@@ -23,9 +24,9 @@ import { radius } from '../lib/theme';
 export default function RemindersScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<Habit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { items, setItems, loading, refreshing, load } = useFetchList<Habit>(
+    () => listHabits(),
+  );
   const [busyId, setBusyId] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
 
@@ -52,21 +53,6 @@ export default function RemindersScreen() {
       setTesting(false);
     }
   };
-
-  const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
-    if (!(await hasToken())) return;
-    if (mode === 'initial') setLoading(true); else setRefreshing(true);
-    try {
-      const data = await listHabits();
-      setItems(data);
-    } catch (err) {
-      console.warn('listHabits failed', err);
-    } finally {
-      if (mode === 'initial') setLoading(false); else setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const onToggleMute = async (h: Habit) => {
     setBusyId(h.id);

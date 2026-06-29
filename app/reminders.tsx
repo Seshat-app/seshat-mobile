@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing } from 'lucide-react-native';
 import { PlanScreen } from '../components/PlanShell';
 import { RCard, REyebrow, RStatus, RButton } from '../components/ui';
 import { useI18n, formatAmount } from '../lib/i18n';
-import { hasToken } from '../lib/api';
 import { listReminders, updateReminder, type Reminder } from '../lib/reminders';
+import { useFetchList } from '../lib/hooks/useFetchList';
 import { fontBody, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 
@@ -20,25 +20,10 @@ function ordinal(n: number): string {
 export default function BillRemindersScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<Reminder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { items, setItems, loading, refreshing, load } = useFetchList<Reminder>(
+    () => listReminders(),
+  );
   const [busyId, setBusyId] = useState<string | null>(null);
-
-  const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
-    if (!(await hasToken())) return;
-    if (mode === 'initial') setLoading(true); else setRefreshing(true);
-    try {
-      const data = await listReminders();
-      setItems(data);
-    } catch (err) {
-      console.warn('listReminders failed', err);
-    } finally {
-      if (mode === 'initial') setLoading(false); else setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleAction = async (id: string, status: string) => {
     setBusyId(id);

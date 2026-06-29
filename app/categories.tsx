@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, RefreshControl, Alert, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
-import { apiFetch, hasToken, newIdempotencyKey } from '../lib/api';
+import { apiFetch, newIdempotencyKey } from '../lib/api';
+import { useFetchList } from '../lib/hooks/useFetchList';
 import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -27,26 +28,10 @@ export default function CategoriesScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
   const { bumpVersion } = useAppData();
-  const [items, setItems] = useState<ApiCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { items, setItems, loading, refreshing, load } = useFetchList<ApiCategory>(
+    () => apiFetch<{ data: ApiCategory[] }>('/categories').then((r) => r.data),
+  );
   const [adding, setAdding] = useState(false);
-
-  const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
-    if (!(await hasToken())) return;
-    if (mode === 'initial') setLoading(true);
-    else setRefreshing(true);
-    try {
-      const res = await apiFetch<{ data: ApiCategory[] }>('/categories');
-      setItems(res.data);
-    } catch (err) { console.warn('categories load', err); }
-    finally {
-      if (mode === 'initial') setLoading(false);
-      else setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const onDelete = (cat: ApiCategory) => {
     if (cat.isDefault) return;

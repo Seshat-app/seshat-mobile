@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
-import { apiFetch, hasToken, newIdempotencyKey } from '../lib/api';
+import { apiFetch, newIdempotencyKey } from '../lib/api';
+import { useFetchList } from '../lib/hooks/useFetchList';
 import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -26,26 +27,10 @@ export default function GoalsScreen() {
   const { tok, lang, t } = useI18n();
   const { profile } = useAppData();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { items, setItems, loading, refreshing, load } = useFetchList<Goal>(
+    () => apiFetch<{ data: Goal[] }>('/goals').then((r) => r.data),
+  );
   const [editing, setEditing] = useState<Goal | 'new' | null>(null);
-
-  const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
-    if (!(await hasToken())) return;
-    if (mode === 'initial') setLoading(true);
-    else setRefreshing(true);
-    try {
-      const res = await apiFetch<{ data: Goal[] }>('/goals');
-      setItems(res.data);
-    } catch (err) { console.warn('goals load', err); }
-    finally {
-      if (mode === 'initial') setLoading(false);
-      else setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const onSave = async (g: Partial<Goal>) => {
     if (editing && editing !== 'new') {

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
 import { Trash2, X } from 'lucide-react-native';
-import { apiFetch, hasToken, newIdempotencyKey } from '../lib/api';
+import { apiFetch, newIdempotencyKey } from '../lib/api';
+import { useFetchList } from '../lib/hooks/useFetchList';
 import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -29,26 +30,10 @@ export default function BudgetsScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
   const { categories, profile } = useAppData();
-  const [items, setItems] = useState<Budget[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { items, setItems, loading, refreshing, load } = useFetchList<Budget>(
+    () => apiFetch<{ data: Budget[] }>('/budgets').then((r) => r.data),
+  );
   const [editing, setEditing] = useState<{ categoryId: string; amount?: number; budgetId?: string } | null>(null);
-
-  const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
-    if (!(await hasToken())) return;
-    if (mode === 'initial') setLoading(true);
-    else setRefreshing(true);
-    try {
-      const res = await apiFetch<{ data: Budget[] }>('/budgets');
-      setItems(res.data);
-    } catch (err) { console.warn('budgets load', err); }
-    finally {
-      if (mode === 'initial') setLoading(false);
-      else setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const budgetByCat = useMemo(() => {
     const m = new Map<string, Budget>();
