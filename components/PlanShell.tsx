@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { ReactNode, useEffect, useRef } from 'react';
+import { View, Text, Pressable, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
@@ -18,6 +18,14 @@ export function PlanScreen({
 }: { title: string; subtitle?: string; onAdd?: () => void; refreshing?: boolean; children: ReactNode }) {
   const router = useRouter();
   const { tok, lang } = useI18n();
+  // Content flows in just after the screen finishes sliding (the delay keeps it
+  // from animating while it's still mid-transition). Native-driver, so cheap.
+  const enter = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(enter, {
+      toValue: 1, duration: 340, delay: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+    }).start();
+  }, [enter]);
   return (
     <ScreenScaffold>
       <View style={{
@@ -64,7 +72,13 @@ export function PlanScreen({
           </Pressable>
         )}
       </View>
-      <View style={{ flex: 1 }}>{children}</View>
+      <Animated.View style={{
+        flex: 1,
+        opacity: enter,
+        transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+      }}>
+        {children}
+      </Animated.View>
     </ScreenScaffold>
   );
 }

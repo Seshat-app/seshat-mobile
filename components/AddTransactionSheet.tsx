@@ -443,7 +443,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={{ flex: 1 }}>
         <Animated.View
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', opacity: overlay }}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', opacity: overlay }}
           pointerEvents={visible ? 'auto' : 'none'}
         >
           <Pressable style={{ flex: 1 }} onPress={onClose} />
@@ -453,7 +453,10 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           style={{
             backgroundColor: tok.void,
             borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
-            borderTopWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+            // Full hairline border (not top-only) — RN renders a top-only border
+            // around a rounded corner with a visible mismatch; a full border is clean.
+            borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+            overflow: 'hidden',
             paddingBottom: 26 + insets.bottom,
             // Cap height to whatever's between the status bar and the keyboard.
             // Without this, when the keyboard pushes the sheet up the top edge
