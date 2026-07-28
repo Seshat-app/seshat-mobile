@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/brand/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#0C0C0E"
+      "backgroundColor": "#0D0D0D"
     },
     "ios": {
       "supportsTablet": true,
@@ -40,8 +40,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/brand/icon.png",
-        "backgroundColor": "#0C0C0E"
+        "foregroundImage": "./assets/brand/adaptive-foreground.png",
+        "backgroundColor": "#0D0D0D"
       },
       "package": "com.seshat.app",
       "edgeToEdgeEnabled": true,
