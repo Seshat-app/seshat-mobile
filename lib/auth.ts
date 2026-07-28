@@ -15,7 +15,8 @@ function resolveApiBase(): string {
     const host = String(hostUri).split(':')[0];
     if (host) return `http://${host}:4000/api/v1`;
   }
-  return 'http://localhost:4000/api/v1';
+  // Production / release builds (no Metro host, no env override) → the live API.
+  return 'https://seshat-api.vercel.app/api/v1';
 }
 
 const API_BASE = resolveApiBase();
