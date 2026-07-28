@@ -37,6 +37,7 @@ export type BrandConfig = {
   social: {
     instagram: string;
     x: string;
+    facebook: string;
     tiktok: string;
     linkedin: string;
     youtube: string;
@@ -62,10 +63,13 @@ export const BRAND: BrandConfig = {
   legalName: 'Seshat',
   founderName: "Mo'men Khaled",
   social: {
-    instagram: '',
-    x: '',
+    instagram: 'https://www.instagram.com/seshat.finance',
+    x: 'https://x.com/seshat_finance',
+    // No username claimed yet, so the stable profile-id URL. Swap to
+    // facebook.com/<username> once the page claims one.
+    facebook: 'https://www.facebook.com/profile.php?id=61592307433664',
     tiktok: '',
-    linkedin: '',
+    linkedin: 'https://www.linkedin.com/company/seshatfinance',
     youtube: '',
     github: '',
   },
