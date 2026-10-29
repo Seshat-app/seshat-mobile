@@ -16,6 +16,9 @@
 # and drag the .ipa into the Transporter app / Xcode Organizer.
 set -euo pipefail
 
+# The Sentry build phase uploads debug symbols and fails without an org/auth token.
+export SENTRY_DISABLE_AUTO_UPLOAD=true
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IOS="$ROOT/ios"
 TEAM="LTYTC93ARN"
@@ -89,6 +92,14 @@ else:
     print("  Release signing already set")
 PY
 ok "Release = Apple Distribution + $PROFILE_NAME + production push"
+
+# Expo writes CFBundleVersion / CFBundleShortVersionString as literals, so the
+# xcodebuild overrides below would be ignored and every upload would be build "1"
+# (App Store Connect needs a higher build number each time). Point them at the
+# build settings instead.
+/usr/libexec/PlistBuddy -c 'Set :CFBundleVersion $(CURRENT_PROJECT_VERSION)' "$IOS/Seshat/Info.plist"
+/usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString $(MARKETING_VERSION)' "$IOS/Seshat/Info.plist"
+ok "version + build number come from the build settings"
 
 [ "$MODE" = "--check" ] && { say "All checks passed. Run without --check to build."; exit 0; }
 
