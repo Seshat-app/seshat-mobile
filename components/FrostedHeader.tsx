@@ -27,7 +27,7 @@ function FrostLayer({ edge, inset }: { edge: 'top' | 'bottom'; inset: number }) 
     >
       <Glass
         style={StyleSheet.absoluteFill as ViewStyle}
-        intensity={100}
+        intensity={65}
         dark={dark}
         material={dark ? 'dark' : 'light'}
         fallbackColor={tint(0.2)}
@@ -35,7 +35,7 @@ function FrostLayer({ edge, inset }: { edge: 'top' | 'bottom'; inset: number }) 
         {/* Page colour over the blur cancels the material's grey cast, so the bar
             matches the screen and only the blurred content shows through. Kept
             light so the blur reads as see-through, not solid. */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(0,0,0,0.24)' : tint(0.2) }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: dark ? 'rgba(0,0,0,0.05)' : tint(0.2) }]} />
       </Glass>
     </View>
   );

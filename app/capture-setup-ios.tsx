@@ -7,6 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { PlanScreen } from '../components/PlanShell';
 import { RCard, REyebrow, RButton } from '../components/ui';
 import { useI18n } from '../lib/i18n';
+import { useAccountCurrency, captureKeywordsFor } from '../lib/captureKeywords';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { S } from '../lib/theme';
 
@@ -17,13 +18,13 @@ import { S } from '../lib/theme';
  * automation on "EGP" covers all banks. Seshat ships a native Shortcuts action
  * ("Log bank message") that the automation runs; it opens the Capture screen.
  */
-const KEYWORDS = ['EGP', 'جنيه', 'LE'];
-
 
 export default function CaptureSetupIosScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
   const ar = lang === 'ar';
+  const currency = useAccountCurrency();
+  const KEYWORDS = captureKeywordsFor(currency);
   const [copied, setCopied] = useState<string | null>(null);
 
   const copyKeyword = async (k: string) => {
@@ -49,8 +50,8 @@ export default function CaptureSetupIosScreen() {
           </REyebrow>
           <Text style={[para, { fontSize: 13.5, lineHeight: 20 }]}>
             {ar
-              ? 'كل رسالة بنكية تحمل العملة. أتمتة واحدة تعمل عندما تصلك رسالة تحتوي على "EGP"، وتشغّل إجراء سيشات الجاهز داخل تطبيق الاختصارات. الرسالة تُفتح داخل سيشات على نفس الهاتف ولا تُرسل لأي مكان آخر.'
-              : 'Every bank message carries the currency. One automation fires when a message containing "EGP" arrives and runs Seshat\'s own action inside the Shortcuts app. The text opens in Seshat on this phone and is not sent anywhere else.'}
+              ? `كل رسالة بنكية تحمل العملة. أتمتة واحدة تعمل عندما تصلك رسالة تحتوي على "${currency}"، وتشغّل إجراء سيشات الجاهز داخل تطبيق الاختصارات. الرسالة تُفتح داخل سيشات على نفس الهاتف ولا تُرسل لأي مكان آخر.`
+              : `Every bank message carries the currency. One automation fires when a message containing "${currency}" arrives and runs Seshat's own action inside the Shortcuts app. The text opens in Seshat on this phone and is not sent anywhere else.`}
           </Text>
         </RCard>
 
@@ -73,8 +74,8 @@ export default function CaptureSetupIosScreen() {
         <StepCard step={2} title={ar ? 'الكلمة المفتاحية' : 'Keyword: "Message Contains"'} tok={tok} lang={lang}>
           <Text style={[para, { marginBottom: 10 }]}>
             {ar
-              ? 'في "الرسالة تحتوي على" ألصق الكلمة. اضغط لنسخها. أضف أتمتة ثانية بـ "جنيه" لو بنكك يرسل بالعربي.'
-              : 'In "Message Contains" paste the keyword (tap to copy). Add a second automation with the Arabic one if your bank texts in Arabic.'}
+              ? 'في "الرسالة تحتوي على" ألصق الكلمة. اضغط لنسخها. أضف أتمتة ثانية بالكلمة العربية لو بنكك يرسل بالعربي.'
+              : 'In "Message Contains" paste the keyword (tap to copy). Add a second automation with the Arabic word if your bank texts in Arabic.'}
           </Text>
           <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
             {KEYWORDS.map((k) => (

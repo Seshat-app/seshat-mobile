@@ -207,8 +207,8 @@ export function OnboardingTour({
                   lineHeight: 20, color: tok.muted,
                 }}>
                   {ar
-                    ? 'أتمتة واحدة عند وصول رسالة تحتوي على "EGP" تكفي لكل البنوك. سنرشدك للخطوات من الصفحة الرئيسية، وتجدها دائماً في الملف الشخصي ← الرصد التلقائي.'
-                    : 'One automation on messages containing "EGP" covers every bank. We\'ll walk you through it from Home, and the steps are always in Profile → Auto-capture.'}
+                    ? `أتمتة واحدة عند وصول رسالة تحتوي على "${currency}" تكفي لكل البنوك. سنرشدك للخطوات من الصفحة الرئيسية، وتجدها دائماً في الملف الشخصي ← الرصد التلقائي.`
+                    : `One automation on messages containing "${currency}" covers every bank. We'll walk you through it from Home, and the steps are always in Profile → Auto-capture.`}
                 </Text>
                 <Spacer />
                 <CTA label={ar ? 'متابعة' : 'Continue'} onPress={goNext} />

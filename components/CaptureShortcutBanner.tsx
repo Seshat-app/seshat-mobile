@@ -6,6 +6,7 @@ import { Zap, X } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
 import { RCard } from './ui';
+import { useAccountCurrency } from '../lib/captureKeywords';
 
 // Home-screen prompt for iPhone users (existing accounts included — the onboarding
 // scene only reaches new sign-ups) to install the bank-SMS capture Shortcut.
@@ -15,6 +16,7 @@ const KEY = 'capture_shortcut_prompt';
 export function CaptureShortcutBanner() {
   const { tok, lang } = useI18n();
   const router = useRouter();
+  const currency = useAccountCurrency();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function CaptureShortcutBanner() {
               marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12,
               textAlign: ar ? 'right' : 'left',
             }}>
-              {ar ? 'أتمتة واحدة على "EGP" تكفي. جهّزها في دقيقة.' : 'One automation on "EGP" does it. Set it up in a minute.'}
+              {ar ? `أتمتة واحدة على "${currency}" تكفي. جهّزها في دقيقة.` : `One automation on "${currency}" does it. Set it up in a minute.`}
             </Text>
           </View>
           <Pressable onPress={close} hitSlop={10} accessibilityLabel={ar ? 'إغلاق' : 'Dismiss'}>
