@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.seshat.app",
+      "bundleIdentifier": "com.seshat.mobile",
       "entitlements": {
         "aps-environment": "development"
       },
