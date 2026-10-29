@@ -3,7 +3,8 @@ import {
   View, Text, TextInput, ScrollView, Pressable, RefreshControl,
   ActivityIndicator, Alert, StyleSheet,
 } from 'react-native';
-import { ScrollView as ScreenScroll } from '../../components/Scroll';
+// The search box sits between the header and this list, so it must clip (not slide under it).
+import { ScrollView as ScreenScroll } from 'react-native';
 import { FrostedHeader } from '../../components/FrostedHeader';
 import { ScreenScaffold } from '../../components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

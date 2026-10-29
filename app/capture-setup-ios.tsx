@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Linking, Alert } from 'react-native';
+import { View, Text, Pressable, Linking } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,201 +11,106 @@ import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { S } from '../lib/theme';
 
 /**
- * /capture-setup-ios - one-time onboarding for the iOS notification capture
- * flow. Apple blocks reading other apps' push notifications, but lets us
- * trigger Personal Automations on incoming SMS content - which every
- * Egyptian bank still sends alongside their app push. The user installs
- * our published Shortcut once, then sets up a Personal Automation per bank.
- *
- * Steps shown:
- *  1. Install the Seshat Capture Shortcut (iCloud link).
- *  2. Open the Shortcuts app -> Automation tab -> New Personal Automation.
- *  3. Trigger: "Message" -> "Message Contains" -> keyword from your bank.
- *  4. Action: Run "Seshat Capture" with the Message Text as input.
- *  5. Disable "Ask Before Running" so it auto-runs.
- *  6. Repeat for each bank / payment app.
+ * /capture-setup-ios - one-time setup for the iOS bank-message capture. Apple blocks
+ * reading other apps' notifications, but a Personal Automation can fire when a message
+ * arrives that contains a keyword. Every Egyptian bank SMS carries the currency, so ONE
+ * automation on "EGP" covers all banks. Seshat ships a native Shortcuts action
+ * ("Log bank message") that the automation runs; it opens the Capture screen.
  */
+const KEYWORDS = ['EGP', 'جنيه', 'LE'];
 
-// Signed Shortcut hosted on the website (seshat-web/public/seshat-capture.shortcut).
-// The shortcuts:// link makes the Shortcuts app import it directly.
-const SHORTCUT_URL =
-  'shortcuts://import-shortcut?url=' + encodeURIComponent('https://seshat.site/seshat-capture.shortcut') + '&name=' + encodeURIComponent('Seshat Capture');
-
-const BANK_KEYWORDS: { label: string; keywords: string[] }[] = [
-  { label: 'CIB', keywords: ['CIB', 'Commercial International'] },
-  { label: 'NBE', keywords: ['NBE', 'National Bank of Egypt'] },
-  { label: 'Banque Misr', keywords: ['Banque Misr', 'بنك مصر'] },
-  { label: 'QNB Alahli', keywords: ['QNB', 'الأهلي'] },
-  { label: 'Alex Bank', keywords: ['AlexBank', 'Alex Bank', 'بنك الإسكندرية'] },
-  { label: 'InstaPay', keywords: ['InstaPay', 'انستاباي'] },
-  { label: 'HSBC', keywords: ['HSBC'] },
-  { label: 'Telda', keywords: ['Telda'] },
-];
 
 export default function CaptureSetupIosScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
+  const ar = lang === 'ar';
   const [copied, setCopied] = useState<string | null>(null);
 
-  const copyKeyword = async (label: string, keyword: string) => {
-    await Clipboard.setStringAsync(keyword);
-    setCopied(label);
+  const copyKeyword = async (k: string) => {
+    await Clipboard.setStringAsync(k);
+    setCopied(k);
     setTimeout(() => setCopied(null), 1500);
   };
 
-  const openShortcut = () => {
-    Linking.openURL(SHORTCUT_URL).catch(() =>
-      Alert.alert(
-        lang === 'ar' ? 'تعذّر فتح الاختصارات' : 'Could not open Shortcuts',
-        lang === 'ar'
-          ? 'تأكد من وجود تطبيق الاختصارات على جهازك ثم أعد المحاولة.'
-          : 'Make sure the Shortcuts app is installed on your iPhone, then try again.',
-      ),
-    );
-  };
+  const para = {
+    fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted,
+    textAlign: ar ? 'right' : 'left',
+  } as const;
 
   return (
     <PlanScreen
-      title={lang === 'ar' ? 'إعداد رصد الإشعارات' : 'Notification capture setup'}
-      subtitle={lang === 'ar' ? 'لـ iOS - مرة واحدة' : 'iOS - one-time setup'}
+      title={ar ? 'إعداد رصد الرسائل' : 'Message capture setup'}
+      subtitle={ar ? 'لـ iOS - مرة واحدة' : 'iOS - one-time setup'}
     >
       <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + S[6], paddingTop: 8 }}>
         <RCard padding={16} style={{ marginBottom: 14 }}>
-          <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-            {lang === 'ar' ? 'لماذا الإعداد؟' : 'Why this setup?'}
+          <REyebrow style={{ marginBottom: 6, textAlign: ar ? 'right' : 'left' }}>
+            {ar ? 'كيف تعمل؟' : 'How it works'}
           </REyebrow>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'أبل لا تسمح للتطبيقات بقراءة إشعارات تطبيقات أخرى. لكن تطبيق "الاختصارات" يستطيع أن يشغّل عملية تلقائية عندما تصلك رسالة SMS بكلمة معينة. سنستخدم هذا لرصد رسائل البنوك تلقائياً.'
-              : 'Apple does not allow apps to read other apps\' notifications. The Shortcuts app, however, can run a Personal Automation when an SMS arrives matching a keyword. We use this to capture bank SMS automatically.'}
+          <Text style={[para, { fontSize: 13.5, lineHeight: 20 }]}>
+            {ar
+              ? 'كل رسالة بنكية تحمل العملة. أتمتة واحدة تعمل عندما تصلك رسالة تحتوي على "EGP"، وتشغّل إجراء سيشات الجاهز داخل تطبيق الاختصارات. الرسالة تُفتح داخل سيشات على نفس الهاتف ولا تُرسل لأي مكان آخر.'
+              : 'Every bank message carries the currency. One automation fires when a message containing "EGP" arrives and runs Seshat\'s own action inside the Shortcuts app. The text opens in Seshat on this phone and is not sent anywhere else.'}
           </Text>
         </RCard>
 
-        <StepCard step={1} title={lang === 'ar' ? 'ثبّت اختصار سيشات' : 'Install the Seshat Shortcut'} tok={tok} lang={lang}>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'اضغط الزر لإضافة اختصار "Seshat Capture" من iCloud. الاختصار يأخذ نص الرسالة ويفتحه داخل التطبيق.'
-              : 'Tap the button to add the "Seshat Capture" shortcut from iCloud. It takes the SMS body and opens it inside this app.'}
+        <StepCard step={1} title={ar ? 'افتح الاختصارات ← الأتمتة' : 'Shortcuts → Automation'} tok={tok} lang={lang}>
+          <Text style={para}>
+            {ar
+              ? 'افتح تطبيق "الاختصارات" على iPhone، واذهب إلى تبويب "الأتمتة" ثم اضغط +، واختر "رسالة" (Message).'
+              : 'Open the Shortcuts app on your iPhone, go to the Automation tab, tap +, and choose "Message".'}
           </Text>
           <RButton
             full
-            onPress={openShortcut}
+            onPress={() => { void Linking.openURL('shortcuts://').catch(() => {}); }}
             style={{ marginTop: 12 }}
             icon={<ExternalLink size={14} color={tok.void} />}
           >
-            {lang === 'ar' ? 'إضافة الاختصار' : 'Get the Shortcut'}
+            {ar ? 'فتح الاختصارات' : 'Open Shortcuts'}
           </RButton>
         </StepCard>
 
-        <StepCard step={2} title={lang === 'ar' ? 'افتح تطبيق الاختصارات' : 'Open the Shortcuts app'} tok={tok} lang={lang}>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'افتح تطبيق "الاختصارات" المثبّت أصلاً على iPhone، ثم اذهب إلى تبويب "الأتمتة" (Automation) من الأسفل.'
-              : 'Open the built-in "Shortcuts" app on your iPhone and tap the "Automation" tab at the bottom.'}
+        <StepCard step={2} title={ar ? 'الكلمة المفتاحية' : 'Keyword: "Message Contains"'} tok={tok} lang={lang}>
+          <Text style={[para, { marginBottom: 10 }]}>
+            {ar
+              ? 'في "الرسالة تحتوي على" ألصق الكلمة. اضغط لنسخها. أضف أتمتة ثانية بـ "جنيه" لو بنكك يرسل بالعربي.'
+              : 'In "Message Contains" paste the keyword (tap to copy). Add a second automation with the Arabic one if your bank texts in Arabic.'}
           </Text>
-        </StepCard>
-
-        <StepCard step={3} title={lang === 'ar' ? 'إنشاء أتمتة شخصية' : 'New Personal Automation'} tok={tok} lang={lang}>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'اضغط زر + ثم "إنشاء أتمتة شخصية"، واختر "رسالة" (Message) كمحفّز. فعّل خيار "تحتوي الرسالة على" (Message Contains).'
-              : 'Tap +, then "Create Personal Automation", and choose "Message" as the trigger. Enable "Message Contains".'}
-          </Text>
-        </StepCard>
-
-        <StepCard step={4} title={lang === 'ar' ? 'الكلمة المفتاحية لكل بنك' : 'Bank keywords'} tok={tok} lang={lang}>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted, marginBottom: 10,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'اضغط على البنك لنسخ كلمة مفتاحية. ألصقها داخل "تحتوي الرسالة على". أنشئ أتمتة لكل بنك تتعامل معه.'
-              : 'Tap a bank to copy a keyword. Paste it in "Message Contains". Create one automation per bank you use.'}
-          </Text>
-          <View style={{ gap: 6 }}>
-            {BANK_KEYWORDS.map((b) => (
+          <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+            {KEYWORDS.map((k) => (
               <Pressable
-                key={b.label}
-                onPress={() => copyKeyword(b.label, b.keywords[0])}
+                key={k}
+                onPress={() => copyKeyword(k)}
                 style={({ pressed }) => ({
-                  flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-                  alignItems: 'center', justifyContent: 'space-between',
-                  paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10,
-                  backgroundColor: copied === b.label ? tok.glowShellBg : tok.coreBg,
-                  borderWidth: 1,
-                  borderColor: copied === b.label ? tok.glowShellBorder : tok.border,
+                  flexDirection: 'row', alignItems: 'center', gap: 8,
+                  paddingVertical: 9, paddingHorizontal: 14, borderRadius: 10,
+                  backgroundColor: copied === k ? tok.glowShellBg : tok.coreBg,
+                  borderWidth: 1, borderColor: copied === k ? tok.glowShellBorder : tok.border,
                   opacity: pressed ? 0.85 : 1,
                 })}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={{
-                    fontFamily: fontBody(lang), fontSize: 14, color: tok.bone,
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}>
-                    {b.label}
-                  </Text>
-                  <Text style={{
-                    fontFamily: fontMono(), fontSize: 11, color: tok.muted, marginTop: 2,
-                    textAlign: lang === 'ar' ? 'right' : 'left',
-                  }}>
-                    {b.keywords.join(' · ')}
-                  </Text>
-                </View>
-                {copied === b.label
-                  ? <Check size={16} color={tok.gold} />
-                  : <Copy size={14} color={tok.muted} />}
+                <Text style={{ fontFamily: fontMono(), fontSize: 14, color: tok.bone }}>{k}</Text>
+                {copied === k ? <Check size={14} color={tok.gold} /> : <Copy size={13} color={tok.muted} />}
               </Pressable>
             ))}
           </View>
         </StepCard>
 
-        <StepCard step={5} title={lang === 'ar' ? 'إجراء الأتمتة' : 'Action: run Seshat Capture'} tok={tok} lang={lang}>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'بعد المحفّز، اضغط "التالي". أضف الإجراء "تشغيل الاختصار" واختر "Seshat Capture". مرّر "نص الرسالة" كمدخل.'
-              : 'After the trigger, tap Next. Add the action "Run Shortcut" and pick "Seshat Capture". Pass "Message Text" as input.'}
+        <StepCard step={3} title={ar ? 'الإجراء: Log bank message' : 'Action: "Log bank message"'} tok={tok} lang={lang}>
+          <Text style={para}>
+            {ar
+              ? 'اضغط "التالي" ثم "أتمتة جديدة فارغة". اضغط "إضافة إجراء"، وابحث عن "Seshat" واختر "Log bank message". اضغط على "Message" واختر "مدخل الاختصار" (Shortcut Input).'
+              : 'Tap Next, then "New Blank Automation". Tap "Add Action", search "Seshat" and pick "Log bank message". Tap "Message" and choose "Shortcut Input".'}
           </Text>
         </StepCard>
 
-        <StepCard step={6} title={lang === 'ar' ? 'تعطيل "اسأل قبل التشغيل"' : 'Turn off "Ask Before Running"'} tok={tok} lang={lang}>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'هذا هو السر، بدون تعطيله سيظهر سؤال في كل رسالة. الآن كل رسالة بنكية ستفتح سيشات مع المعاملة مرصودة جاهزة للتأكيد.'
-              : 'This is the trick - without disabling it you\'ll get a confirm prompt on every SMS. After this, every bank SMS auto-opens Seshat with the entry ready to confirm.'}
+        <StepCard step={4} title={ar ? 'شغّلها فوراً' : 'Run Immediately'} tok={tok} lang={lang}>
+          <Text style={para}>
+            {ar
+              ? 'اضغط "التالي"، اختر "تشغيل فوراً" (Run Immediately) وأوقف "إشعار عند التشغيل"، ثم "تم". من الآن كل رسالة بنكية تفتح سيشات بالمعاملة جاهزة للتأكيد.'
+              : 'Tap Next, pick "Run Immediately" and turn off "Notify When Run", then Done. From now on every bank message opens Seshat with the entry ready to confirm.'}
           </Text>
         </StepCard>
-
-        <RCard padding={16}>
-          <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-            {lang === 'ar' ? 'ما الذي يحدث بعد ذلك؟' : 'What happens next'}
-          </REyebrow>
-          <Text style={{
-            fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.muted,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {lang === 'ar'
-              ? 'كل رسالة بنكية تحلّلها سيشات وتفتح صفحة "رصد" داخل سيشات بالمبلغ والتصنيف. أنت تؤكد أو تعدّل وتحفظ. تظل الخصوصية كاملة. الرسالة لا تُرسل لأي مكان آخر.'
-              : 'Each bank SMS gets parsed by Seshat and opens the Capture screen with the amount and category pre-filled. You confirm or edit and save. Full privacy. The SMS never goes anywhere else.'}
-          </Text>
-        </RCard>
       </ScreenScroll>
     </PlanScreen>
   );

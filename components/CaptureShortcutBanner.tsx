@@ -50,7 +50,7 @@ export function CaptureShortcutBanner() {
               marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12,
               textAlign: ar ? 'right' : 'left',
             }}>
-              {ar ? 'أضف اختصار Seshat Capture بخطوة واحدة.' : 'Add the Seshat Capture shortcut in one tap.'}
+              {ar ? 'أتمتة واحدة على "EGP" تكفي. جهّزها في دقيقة.' : 'One automation on "EGP" does it. Set it up in a minute.'}
             </Text>
           </View>
           <Pressable onPress={close} hitSlop={10} accessibilityLabel={ar ? 'إغلاق' : 'Dismiss'}>

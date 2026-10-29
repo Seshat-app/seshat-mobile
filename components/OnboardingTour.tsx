@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   View, Text, Pressable, TextInput, Animated, Easing,
-  ScrollView, KeyboardAvoidingView, Platform, Linking,
+  ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight, Check } from 'lucide-react-native';
@@ -27,8 +27,6 @@ import { ScreenAtmosphere } from './ScreenAtmosphere';
 const SCENES = (Platform.OS === 'ios'
   ? ['gate', 'name', 'salary', 'month', 'capture', 'threshold']
   : ['gate', 'name', 'salary', 'month', 'threshold']) as readonly ('gate' | 'name' | 'salary' | 'month' | 'capture' | 'threshold')[];
-const SHORTCUT_URL =
-  'shortcuts://import-shortcut?url=' + encodeURIComponent('https://seshat.site/seshat-capture.shortcut') + '&name=' + encodeURIComponent('Seshat Capture');
 // The stepper shows for the four numbered scenes (Gate..Month); the threshold
 // is the finale and drops it.
 const RAIL_COUNT = Platform.OS === 'ios' ? 5 : 4;
@@ -200,8 +198,8 @@ export function OnboardingTour({
             {scene === 'capture' && (
               <SceneBody
                 narration={ar
-                  ? 'ليسجّل سيشات معاملات بنكك تلقائياً: ثبّت اختصار "Seshat Capture"، ثم اضبط الأتمتة مرة واحدة.'
-                  : 'Let Seshat log your bank messages automatically: add the "Seshat Capture" shortcut, then set up the automation once.'}
+                  ? 'سيشات تضيف إجراءً خاصاً إلى تطبيق الاختصارات ليسجّل رسائل بنكك تلقائياً.'
+                  : 'Seshat adds its own action to the Shortcuts app, so your bank messages can be logged automatically.'}
                 l1={ar ? 'الرصد' : 'Auto'} l2={ar ? 'التلقائي' : 'capture'}
               >
                 <Text style={{
@@ -209,16 +207,11 @@ export function OnboardingTour({
                   lineHeight: 20, color: tok.muted,
                 }}>
                   {ar
-                    ? 'بعد إضافة الاختصار افتح تطبيق الاختصارات ← الأتمتة ← أتمتة شخصية ← رسالة، واختر اسم بنكك. الخطوات الكاملة في الملف الشخصي ← الرصد التلقائي.'
-                    : 'After adding it, open Shortcuts → Automation → New Personal Automation → Message, and pick your bank. Full steps are always in Profile → Auto-capture.'}
+                    ? 'أتمتة واحدة عند وصول رسالة تحتوي على "EGP" تكفي لكل البنوك. سنرشدك للخطوات من الصفحة الرئيسية، وتجدها دائماً في الملف الشخصي ← الرصد التلقائي.'
+                    : 'One automation on messages containing "EGP" covers every bank. We\'ll walk you through it from Home, and the steps are always in Profile → Auto-capture.'}
                 </Text>
                 <Spacer />
-                <CTA label={ar ? 'إضافة الاختصار' : 'Get the Shortcut'} onPress={() => { void Linking.openURL(SHORTCUT_URL).catch(() => {}); }} />
-                <Pressable onPress={goNext} hitSlop={8} style={{ alignSelf: 'center', marginTop: 14 }}>
-                  <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 12.5 }}>
-                    {ar ? 'لاحقاً' : 'Maybe later'}
-                  </Text>
-                </Pressable>
+                <CTA label={ar ? 'متابعة' : 'Continue'} onPress={goNext} />
               </SceneBody>
             )}
 

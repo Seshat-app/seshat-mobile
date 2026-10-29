@@ -90,6 +90,7 @@
       ],
       "@sentry/react-native",
       "./plugins/withPodDeploymentTarget",
+      "./plugins/withSeshatAppIntent",
       "expo-font",
       "expo-sharing",
       "expo-status-bar",

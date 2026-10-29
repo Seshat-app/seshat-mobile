@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, Alert } from 'react-native';
-import { FlatList as ScreenFlatList } from '../../components/Scroll';
+// Search + filter chips sit between the header and this list, so it must clip (not slide under them).
+import { FlatList as ScreenFlatList } from 'react-native';
 import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SlidersHorizontal } from 'lucide-react-native';
