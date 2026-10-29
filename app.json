@@ -117,7 +117,7 @@
       },
       "sentryDsn": "https://31f367cde39775c604d069691940e0c6@o4511474205458432.ingest.de.sentry.io/4511474257494096"
     },
-    "owner": "radar-app",
+    "owner": "moamen.khalled",
     "runtimeVersion": {
       "policy": "appVersion"
     },
