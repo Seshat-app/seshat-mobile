@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { apiFetch, hasToken, setActiveLedger, getActiveLedger } from './api';
 import { registerForPushNotifications, subscribeToNotificationTaps } from './push';
 import { subscribeToBankNotifications, flattenEventText } from './androidNotificationListener';
+import { usePendingCapture } from './pendingCapture';
 import type { ApiCategory } from '../components/AddTransactionSheet';
 
 type Profile = {
@@ -223,6 +224,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       },
     );
   }, []);
+
+  // iOS: pick up a message handed over by the "Log bank message" Shortcuts action.
+  usePendingCapture();
 
   // Android: subscribe to bank notifications (only when the user has granted
   // Notification access via the consent screen). Every event from a known

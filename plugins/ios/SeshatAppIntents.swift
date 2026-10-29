@@ -1,10 +1,9 @@
 import AppIntents
-import UIKit
 
 // "Log bank message" — a native Shortcuts action exposed by the Seshat app.
 //
 // A Personal Automation ("When I receive a message that contains EGP") passes the
-// message text to this action; it opens Seshat on its capture screen, which parses
+// message text to this action; the app opens and shows its capture screen, which parses
 // the amount and merchant and asks the user to confirm. Nothing is sent anywhere
 // from the Shortcuts side — the text goes straight to this app on the same phone.
 @available(iOS 16.0, *)
@@ -22,17 +21,14 @@ struct LogBankMessageIntent: AppIntent {
     Summary("Log \(\.$message) in Seshat")
   }
 
+  // Hand the text to the app through a small file in its own Documents folder; the app
+  // reads and deletes it as soon as it is active (see lib/pendingCapture.ts). A file
+  // survives a cold start, unlike a URL opened before the JavaScript side is listening.
   @MainActor
   func perform() async throws -> some IntentResult {
-    var comps = URLComponents()
-    comps.scheme = "seshat"
-    comps.host = "capture"
-    comps.queryItems = [
-      URLQueryItem(name: "text", value: message),
-      URLQueryItem(name: "source", value: "sms"),
-    ]
-    if let url = comps.url {
-      await UIApplication.shared.open(url)
+    if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+      let file = dir.appendingPathComponent("pending-capture.txt")
+      try? message.write(to: file, atomically: true, encoding: .utf8)
     }
     return .result()
   }
