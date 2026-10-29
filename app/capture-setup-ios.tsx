@@ -50,16 +50,16 @@ export default function CaptureSetupIosScreen() {
           </REyebrow>
           <Text style={[para, { fontSize: 13.5, lineHeight: 20 }]}>
             {ar
-              ? `كل رسالة بنكية تحمل العملة. أتمتة واحدة تعمل عندما تصلك رسالة تحتوي على "${currency}"، وتشغّل إجراء سيشات الجاهز داخل تطبيق الاختصارات. الرسالة تُفتح داخل سيشات على نفس الهاتف ولا تُرسل لأي مكان آخر.`
-              : `Every bank message carries the currency. One automation fires when a message containing "${currency}" arrives and runs Seshat's own action inside the Shortcuts app. The text opens in Seshat on this phone and is not sent anywhere else.`}
+              ? `كل رسالة بنكية تحمل العملة. أتمتة واحدة تعمل عندما تصلك رسالة تحتوي على "${currency}"، وتسجّلها سيشات في الخلفية دون فتح التطبيق: المبلغ والتاجر والفئة والبطاقة. يصلك إشعار بما سُجّل، وتجد كل بطاقة في الملف الشخصي ← البطاقات.`
+              : `Every bank message carries the currency. One automation fires when a message containing "${currency}" arrives, and Seshat logs it in the background without opening the app: amount, merchant, category and card. You get a notification of what was logged, and each card shows up under Profile → Cards.`}
           </Text>
         </RCard>
 
-        <StepCard step={1} title={ar ? 'افتح الاختصارات ← الأتمتة' : 'Shortcuts → Automation'} tok={tok} lang={lang}>
+        <StepCard step={1} title={ar ? 'افتح الاختصارات واضغط +' : 'Open Shortcuts and tap +'} tok={tok} lang={lang}>
           <Text style={para}>
             {ar
-              ? 'افتح تطبيق "الاختصارات" على iPhone، واذهب إلى تبويب "الأتمتة" ثم اضغط +، واختر "رسالة" (Message).'
-              : 'Open the Shortcuts app on your iPhone, go to the Automation tab, tap +, and choose "Message".'}
+              ? 'افتح تطبيق "الاختصارات" واضغط زر + في الأسفل لإنشاء اختصار جديد.'
+              : 'Open the Shortcuts app and tap the + button at the bottom to start a new shortcut.'}
           </Text>
           <RButton
             full
@@ -71,11 +71,19 @@ export default function CaptureSetupIosScreen() {
           </RButton>
         </StepCard>
 
-        <StepCard step={2} title={ar ? 'الكلمة المفتاحية' : 'Keyword: "Message Contains"'} tok={tok} lang={lang}>
+        <StepCard step={2} title={ar ? 'اختر محفّز "رسالة"' : 'Pick the "Message" trigger'} tok={tok} lang={lang}>
+          <Text style={para}>
+            {ar
+              ? 'في شريط البحث بالأسفل اضغط على "Automation" (الأتمتة)، ثم اختر "Message" (عندما أستلم رسالة).'
+              : 'In the search panel at the bottom, tap "Automation", then choose "Message" ("When I receive a message").'}
+          </Text>
+        </StepCard>
+
+        <StepCard step={3} title={ar ? 'الكلمة المفتاحية' : 'Set the keyword'} tok={tok} lang={lang}>
           <Text style={[para, { marginBottom: 10 }]}>
             {ar
-              ? 'في "الرسالة تحتوي على" ألصق الكلمة. اضغط لنسخها. أضف أتمتة ثانية بالكلمة العربية لو بنكك يرسل بالعربي.'
-              : 'In "Message Contains" paste the keyword (tap to copy). Add a second automation with the Arabic word if your bank texts in Arabic.'}
+              ? 'سيظهر "Sender is": اضغط على "Sender" وغيّرها إلى "Message" (الرسالة). ثم اضغط الخانة بعد "contains" واكتب الكلمة (اضغط لنسخها)، ثم علامة ✓ في لوحة المفاتيح.'
+              : 'You will see "Sender is": tap "Sender" and change it to "Message". Then tap the empty box after "contains", type the keyword (tap to copy), and press ✓ on the keyboard.'}
           </Text>
           <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
             {KEYWORDS.map((k) => (
@@ -95,21 +103,32 @@ export default function CaptureSetupIosScreen() {
               </Pressable>
             ))}
           </View>
-        </StepCard>
-
-        <StepCard step={3} title={ar ? 'الإجراء: Log bank message' : 'Action: "Log bank message"'} tok={tok} lang={lang}>
-          <Text style={para}>
-            {ar
-              ? 'اضغط "التالي" ثم "أتمتة جديدة فارغة". اضغط "إضافة إجراء"، وابحث عن "Seshat" واختر "Log bank message". اضغط على "Message" واختر "مدخل الاختصار" (Shortcut Input).'
-              : 'Tap Next, then "New Blank Automation". Tap "Add Action", search "Seshat" and pick "Log bank message". Tap "Message" and choose "Shortcut Input".'}
+          <Text style={[para, { marginTop: 10 }]}>
+            {ar ? 'لو بنكك يرسل بالعربي كرّر الخطوات بالكلمة العربية.' : 'If your bank texts in Arabic, repeat once with the Arabic word.'}
           </Text>
         </StepCard>
 
-        <StepCard step={4} title={ar ? 'شغّلها فوراً' : 'Run Immediately'} tok={tok} lang={lang}>
+        <StepCard step={4} title={ar ? 'أضف إجراء سيشات' : 'Add the Seshat action'} tok={tok} lang={lang}>
           <Text style={para}>
             {ar
-              ? 'اضغط "التالي"، اختر "تشغيل فوراً" (Run Immediately) وأوقف "إشعار عند التشغيل"، ثم "تم". من الآن كل رسالة بنكية تفتح سيشات بالمعاملة جاهزة للتأكيد.'
-              : 'Tap Next, pick "Run Immediately" and turn off "Notify When Run", then Done. From now on every bank message opens Seshat with the entry ready to confirm.'}
+              ? 'في شريط البحث بالأسفل اكتب "Seshat"، ثم اضغط "Log bank message". سيظهر تحت المحفّز.'
+              : 'In the search panel at the bottom, type "Seshat", then tap "Log bank message". It appears under the trigger.'}
+          </Text>
+        </StepCard>
+
+        <StepCard step={5} title={ar ? 'مرّر الرسالة' : 'Pass the message'} tok={tok} lang={lang}>
+          <Text style={para}>
+            {ar
+              ? 'اضغط على كلمة "Message" الزرقاء الباهتة داخل الإجراء، ثم من الشريط فوق لوحة المفاتيح اختر "Message".'
+              : 'Tap the faded blue "Message" inside the action, then in the bar above the keyboard choose "Message".'}
+          </Text>
+        </StepCard>
+
+        <StepCard step={6} title={ar ? 'احفظ' : 'Save'} tok={tok} lang={lang}>
+          <Text style={para}>
+            {ar
+              ? 'اضغط سهم الرجوع أعلى اليسار. تُحفظ الأتمتة وتعمل وحدها. جرّب بإرسال رسالة تحتوي على العملة من رقم آخر، ثم افتح الملف الشخصي ← البطاقات.'
+              : 'Tap the back arrow at the top left. The automation saves and runs on its own. Test it by texting yourself a message containing the currency from another number, then open Profile → Cards.'}
           </Text>
         </StepCard>
       </ScreenScroll>

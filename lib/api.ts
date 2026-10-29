@@ -24,6 +24,7 @@ function resolveApiBase(): string {
 }
 
 const API_BASE = resolveApiBase();
+export const API_BASE_URL = API_BASE;
 
 async function getToken(): Promise<string | null> {
   return SecureStore.getItemAsync('auth_token');
@@ -35,6 +36,8 @@ export async function setToken(token: string): Promise<void> {
 
 export async function clearToken(): Promise<void> {
   await SecureStore.deleteItemAsync('auth_token');
+  // The capture-only device token (read by the iOS Shortcuts action) goes with the session.
+  await SecureStore.deleteItemAsync('capture_config').catch(() => {});
 }
 
 export async function hasToken(): Promise<boolean> {

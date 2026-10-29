@@ -14,6 +14,7 @@ import { ScreenScaffold } from '../../components/Screen';
 import { RTxRow, RefreshSpinner, type TxRowData } from '../../components/shell';
 import { SkeletonRow } from '../../components/Skeleton';
 import { EditTransactionSheet, type EditingTx } from '../../components/EditTransactionSheet';
+import type { CardSummary } from '../../lib/cards';
 import { TxFiltersSheet, EMPTY_FILTERS, type TxFilters } from '../../components/TxFiltersSheet';
 
 export default function TransactionsScreen() {
@@ -32,6 +33,19 @@ export default function TransactionsScreen() {
   useEffect(() => {
     if (projects.length === 0 && projectFilter !== null) setProjectFilter(null);
   }, [projects.length, projectFilter]);
+  // Card filter (single-select): null = all, 'none' = entries without a card, else a card id.
+  const [cards, setCards] = useState<CardSummary[]>([]);
+  const [cardFilter, setCardFilter] = useState<string | 'none' | null>(null);
+  useEffect(() => {
+    (async () => {
+      if (!(await hasToken())) return;
+      try {
+        const r = await apiFetch<{ data: CardSummary[] }>('/cards');
+        setCards(r.data);
+        setCardFilter((cur) => (cur && cur !== 'none' && !r.data.some((c) => c.id === cur) ? null : cur));
+      } catch { /* no cards yet */ }
+    })();
+  }, [dataVersion]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [query, setQuery] = useState('');
   // Debounce the search box so we fetch once the user pauses, not on every
@@ -103,6 +117,7 @@ export default function TransactionsScreen() {
       if (typeof filters.minAmount === 'number') params.set('minAmount', String(filters.minAmount));
       if (typeof filters.maxAmount === 'number') params.set('maxAmount', String(filters.maxAmount));
       if (projectFilter) params.set('projectId', projectFilter);
+      if (cardFilter) params.set('cardId', cardFilter);
       params.set('limit', '100');
       if (debouncedQuery.trim()) params.set('search', debouncedQuery.trim());
       const res = await apiFetch<{ data: TxRowData[] }>(`/transactions?${params.toString()}`);
@@ -113,7 +128,7 @@ export default function TransactionsScreen() {
       if (mode === 'initial') setLoading(false);
       else setRefreshing(false);
     }
-  }, [filters, debouncedQuery, projectFilter]);
+  }, [filters, debouncedQuery, projectFilter, cardFilter]);
 
   useEffect(() => { fetchTxs('initial'); }, [fetchTxs, dataVersion]);
 
@@ -182,6 +197,24 @@ export default function TransactionsScreen() {
             {''}
           </RPill>
         </View>
+
+        {/* Card filter row - shown once the user has at least one card (created from
+            captured bank messages or added by hand). Single-select. */}
+        {cards.length > 0 ? (
+          <RHScroll style={{ marginBottom: 8 }}>
+            <RPill active={cardFilter === null} onPress={() => setCardFilter(null)}>
+              {lang === 'ar' ? 'كل البطاقات' : 'All cards'}
+            </RPill>
+            {cards.map((c) => (
+              <RPill key={c.id} active={cardFilter === c.id} onPress={() => setCardFilter(c.id)}>
+                {c.name}
+              </RPill>
+            ))}
+            <RPill active={cardFilter === 'none'} onPress={() => setCardFilter('none')}>
+              {lang === 'ar' ? 'بدون بطاقة' : 'No card'}
+            </RPill>
+          </RHScroll>
+        ) : null}
 
         {/* Project filter row - only rendered when the active workspace has
             projects (an org ledger). Single-select: "All", "No project"

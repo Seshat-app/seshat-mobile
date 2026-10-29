@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { LiquidBackdrop } from './LiquidBackdrop';
+import { cardChipName } from '../lib/cards';
 import { isLiquid } from './Glass';
 import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing, ActivityIndicator } from 'react-native';
 import { FrostedHeader } from './FrostedHeader';
@@ -199,6 +200,8 @@ export type TxRowData = {
   // anything other than 'manual'. Lets the user spot AI-created, voice,
   // receipt, or bot-created entries at a glance.
   source?: 'manual' | 'voice' | 'seshat' | 'bot' | 'notification' | 'receipt-ocr';
+  // The card / account used (populated by the API).
+  cardId?: { _id?: string; bank?: string | null; last4?: string; label?: string | null; kind?: string } | null;
 };
 
 function sourceChipLabel(source: TxRowData['source'], lang: 'en' | 'ar'): string | null {
@@ -278,7 +281,7 @@ export function RTxRow({
           })()}
         </View>
         <REyebrow style={{ marginTop: 3, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-          {catLabel(tx.categoryId, lang)} · {dateLabel}
+          {catLabel(tx.categoryId, lang)} · {dateLabel}{cardChipName(tx.cardId) ? ` · ${cardChipName(tx.cardId)}` : ''}
         </REyebrow>
       </View>
       <RAmount value={signed} currency={tx.currency} size={15} sign={signed > 0} decimals={signed % 1 === 0 ? 0 : 2} />

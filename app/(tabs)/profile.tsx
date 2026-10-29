@@ -407,6 +407,12 @@ export default function ProfileScreen() {
               onPress={() => router.push('/reminders')}
             />
             <PlanRow
+              icon={CreditCard}
+              title={lang === 'ar' ? 'البطاقات' : 'Cards'}
+              hint={lang === 'ar' ? 'مصروف ودخل كل بطاقة على حدة' : 'Spending and income per card'}
+              onPress={() => router.push('/cards')}
+            />
+            <PlanRow
               icon={FileText}
               title={lang === 'ar' ? 'التقرير الشهري' : 'Monthly report'}
               hint={lang === 'ar' ? 'ملخص ذكي بالأرقام والتوصيات' : 'AI-powered breakdown of your month'}
