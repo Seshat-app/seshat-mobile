@@ -38,12 +38,16 @@ function useMarkdownStyles() {
       justifyContent: 'flex-start',
       width: '100%',
     },
+    // flexShrink lets a long line wrap inside the row-wrap paragraph instead of
+    // running past the bubble edge and getting clipped.
     text: {
+      flexShrink: 1,
       color: tok.bone,
       textAlign: align,
       writingDirection: rtl ? 'rtl' : 'ltr',
     },
     textgroup: {
+      flexShrink: 1,
       textAlign: align,
     },
     // A bold key figure — the persona's emphasis. Medium weight, full-strength.

@@ -98,7 +98,7 @@ export default function ChatViewScreen() {
         if (!(await hasToken())) return;
         const r = await apiFetch<{ data: {
           id: string; title: string; lastMessageAt: string; persona?: Persona;
-          messages: Array<{ id: string; role: 'user' | 'assistant'; content: string; createdAt: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[]; activity?: Message['activity']; imageUrl?: string }>;
+          messages: Array<{ id: string; role: 'user' | 'assistant'; content: string; createdAt: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[]; quickReplies?: string[]; activity?: Message['activity']; imageUrl?: string }>;
         } }>(`/chat/sessions/${sessionId}`);
         setTitle(r.data.title);
         if (r.data.persona === 'seshat' || r.data.persona === 'maat') setPersona(r.data.persona);
@@ -106,6 +106,7 @@ export default function ChatViewScreen() {
           id: m.id, role: m.role, content: m.content,
           createdTransactionIds: m.createdTransactionIds,
           blocks: m.visualBlocks,
+          quickReplies: m.quickReplies?.length ? m.quickReplies : undefined,
           activity: m.activity,
           imageUrl: m.imageUrl,
         })));
@@ -119,7 +120,7 @@ export default function ChatViewScreen() {
   // Non-stream JSON send — used for image/receipt turns (the streaming contract
   // is message-based) and as the fallback when streaming can't start.
   const sendViaJson = async (text: string, pendingId: string, imageUrl?: string) => {
-    const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[]; activity?: Message['activity'] } }>('/chat', {
+    const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[]; quickReplies?: string[]; activity?: Message['activity'] } }>('/chat', {
       method: 'POST',
       body: JSON.stringify({
         message: text || undefined,
@@ -136,6 +137,7 @@ export default function ChatViewScreen() {
       pending: false,
       createdTransactionIds: res.data.createdTransactionIds,
       blocks: res.data.visualBlocks,
+      quickReplies: res.data.quickReplies?.length ? res.data.quickReplies : undefined,
       activity: res.data.activity ?? m.activity,
     } : m)));
   };
@@ -170,6 +172,7 @@ export default function ChatViewScreen() {
             pending: false,
             createdTransactionIds: frame.createdTransactionIds,
             blocks: frame.visualBlocks as VisualBlock[] | undefined,
+            quickReplies: frame.quickReplies?.length ? frame.quickReplies : undefined,
             activity: frame.activity ?? m.activity,
           } : m)));
         } else if (frame.t === 'error') {
@@ -191,7 +194,7 @@ export default function ChatViewScreen() {
         // Streaming never started (unsupported / failed handshake) — fall back
         // to the plain non-stream JSON path on the same pending bubble.
         try {
-          const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[]; activity?: Message['activity'] } }>('/chat', {
+          const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[]; quickReplies?: string[]; activity?: Message['activity'] } }>('/chat', {
             method: 'POST',
             body: JSON.stringify({ ...body, sessionId: sessionId || undefined, persona }),
           });
@@ -203,6 +206,7 @@ export default function ChatViewScreen() {
             pending: false,
             createdTransactionIds: res.data.createdTransactionIds,
             blocks: res.data.visualBlocks,
+            quickReplies: res.data.quickReplies?.length ? res.data.quickReplies : undefined,
             activity: res.data.activity ?? m.activity,
           } : m)));
         } catch (jsonErr) {
@@ -468,7 +472,9 @@ export default function ChatViewScreen() {
   const lastMsg = messages[messages.length - 1];
   const showFollowups = !sending && !!lastMsg && lastMsg.role === 'assistant'
     && !!lastMsg.content && !lastMsg.pending;
-  const followups = persona === 'maat'
+  // When the reply asked a question, its answer options replace the generic chips.
+  const asked = lastMsg?.role === 'assistant' ? lastMsg.quickReplies : undefined;
+  const followups = asked && asked.length ? asked : persona === 'maat'
     ? (lang === 'ar'
         ? ['قارن بالشهر الماضي', 'أكبر فئة', 'اتجاه الإنفاق']
         : ['Compare to last month', 'Biggest category', 'Spending trend'])

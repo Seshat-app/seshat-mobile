@@ -39,6 +39,7 @@ export type Message = {
   // Structured visuals from the backend (logged-transaction cards + a monthly
   // insight chart). Rendered beneath the bubble once typing finishes.
   blocks?: VisualBlock[];
+  quickReplies?: string[];
   // Live-activity trace (the assistant's thinking/doing steps). Streamed in
   // frame-by-frame during a turn and finalized on `done`. Rendered above the
   // reply text via <ActivityTrace/>.

@@ -60,6 +60,7 @@ export type ChatStreamFrame =
       sessionId: string;
       createdTransactionIds?: string[];
       visualBlocks?: unknown[];
+      quickReplies?: string[];
       activity?: ActivityStep[];
     }
   | { t: 'error'; message: string };
