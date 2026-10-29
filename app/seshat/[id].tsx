@@ -52,6 +52,8 @@ export default function ChatViewScreen() {
   const autoSentRef = useRef(false);
 
   const [sessionId, setSessionId] = useState<string | null>(initialId);
+  // True while a brand-new chat is being created and Seshat's opening message written.
+  const [opening, setOpening] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [title, setTitle] = useState<string>(lang === 'ar' ? 'محادثة جديدة' : 'New chat');
   const [input, setInput] = useState('');
@@ -88,7 +90,37 @@ export default function ChatViewScreen() {
   const changePersona = useCallback((p: Persona) => {
     setPersona(p);
     setActivePersona(p);
-  }, []);
+    // A fresh chat that only holds the opening message restarts under the new
+    // persona (a thread's persona is fixed once created).
+    if (!initialId && sessionId && messages.every((m) => m.role !== 'user')) {
+      setSessionId(null);
+      setMessages([]);
+    }
+  }, [initialId, sessionId, messages]);
+
+  // A new chat opens with a real message from Seshat (written server-side from the
+  // user's own data) instead of an empty screen. Creating the session loads it via the
+  // effect below. Skipped for the voice-FAB flow, which sends its own first message.
+  useEffect(() => {
+    if (initialId || initialText || sessionId !== null) return;
+    let alive = true;
+    (async () => {
+      setOpening(true);
+      try {
+        if (!(await hasToken())) return;
+        const r = await apiFetch<{ data: { id: string } }>('/chat/sessions', {
+          method: 'POST',
+          body: JSON.stringify({ persona }),
+        });
+        if (alive) setSessionId(r.data.id);
+      } catch (err) {
+        console.warn('open new chat failed', err);
+      } finally {
+        if (alive) setOpening(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [persona, sessionId, initialId, initialText]);
 
   // Load existing session messages on mount.
   useEffect(() => {
@@ -116,6 +148,20 @@ export default function ChatViewScreen() {
       }
     })();
   }, [sessionId]);
+
+  // The server names a thread with the model a few seconds after the first reply;
+  // pick the new title up so the header doesn't keep saying "New chat".
+  const userTurns = messages.filter((m) => m.role === 'user').length;
+  useEffect(() => {
+    if (!sessionId || sending || userTurns !== 1) return;
+    const timer = setTimeout(async () => {
+      try {
+        const r = await apiFetch<{ data: { title: string } }>(`/chat/sessions/${sessionId}`);
+        if (r.data.title) setTitle(r.data.title);
+      } catch { /* keep the current title */ }
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [sessionId, sending, userTurns]);
 
   // Non-stream JSON send — used for image/receipt turns (the streaming contract
   // is message-based) and as the fallback when streaming can't start.
@@ -542,7 +588,7 @@ export default function ChatViewScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', paddingTop: 60 }}>
+          opening ? null : <View style={{ alignItems: 'center', paddingTop: 60 }}>
             <Text style={{
               fontFamily: fontBody(lang), fontSize: 14, color: tok.muted, textAlign: 'center',
             }}>
@@ -557,7 +603,7 @@ export default function ChatViewScreen() {
           </View>
         }
         ListFooterComponent={
-          sending && !messages.some((m) => m.pending)
+          (sending && !messages.some((m) => m.pending)) || (opening && messages.length === 0)
             ? <TypingDots />
             : showFollowups
               ? (

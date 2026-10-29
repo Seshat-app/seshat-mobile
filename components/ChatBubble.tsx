@@ -131,6 +131,12 @@ function ChatBubbleInner({
     // that breaks labels mid-word — and so the shape doesn't jump when the
     // reply lands.
     <View style={{ alignSelf: anchor, marginBottom: 10, ...(hasBlocks ? { width: '92%' } : message.pending ? { width: '84%' } : { maxWidth: '84%' }) }}>
+    {/* What Seshat did this turn sits ABOVE the bubble, not inside it. */}
+    {isAssistant && (message.pending || (message.activity && message.activity.length > 0)) && (
+      <View style={{ paddingHorizontal: 4, marginBottom: 8 }}>
+        <ActivityTrace steps={message.activity} active={message.pending} />
+      </View>
+    )}
     <Pressable onPress={stillTyping ? () => onSkipTyping(message.id) : undefined} style={{ alignSelf: message.pending ? 'stretch' : anchor, maxWidth: '100%' }}>
       <View
         style={{
@@ -162,9 +168,6 @@ function ChatBubbleInner({
               {lang === 'ar' ? 'سيشات' : 'Seshat'}
             </Text>
           </View>
-        )}
-        {isAssistant && (message.pending || (message.activity && message.activity.length > 0)) && (
-          <ActivityTrace steps={message.activity} active={message.pending} />
         )}
         {message.imageUrl && (
           <Pressable
