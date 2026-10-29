@@ -80,6 +80,7 @@
             "enableSceneSupport": true
           },
           "android": {
+            "buildArchs": ["arm64-v8a", "armeabi-v7a"],
             "extraGradleProperties": {
               "org.gradle.jvmargs": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC",
               "kotlin.daemon.jvm.options": "-Xmx2048m",
