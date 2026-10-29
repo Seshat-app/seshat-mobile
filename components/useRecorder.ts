@@ -1,20 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { Alert } from 'react-native';
+import {
+  AudioModule,
+  RecordingPresets,
+  getRecordingPermissionsAsync,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  type AudioRecorder,
+} from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 
 // ─────────────────────────────────────────────────────────────
-// useRecorder — wraps expo-av's recording API in a tap-and-hold
+// useRecorder — wraps expo-audio's recorder in a tap-and-hold
 // friendly hook. Returns `start()`, `stop()`, and `isRecording`.
 //
 // `stop()` resolves with `{ base64, format }` so the caller can
 // upload to the backend without needing to know anything about
 // the file system. Returns null on no-permission or empty clip.
+//
+// (expo-audio replaced expo-av, which Expo removed in SDK 55.)
 // ─────────────────────────────────────────────────────────────
 export type RecordingResult = { base64: string; format: 'm4a' | 'wav' } | null;
 
 export function useRecorder() {
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recordingRef = useRef<AudioRecorder | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [permissionAsked, setPermissionAsked] = useState(false);
 
@@ -24,17 +33,17 @@ export function useRecorder() {
     return () => {
       const rec = recordingRef.current;
       if (rec) {
-        rec.stopAndUnloadAsync().catch(() => {});
+        rec.stop().catch(() => {});
         recordingRef.current = null;
       }
     };
   }, []);
 
   const ensurePermission = useCallback(async (): Promise<boolean> => {
-    const existing = await Audio.getPermissionsAsync();
+    const existing = await getRecordingPermissionsAsync();
     if (existing.granted) return true;
     if (!permissionAsked) setPermissionAsked(true);
-    const req = await Audio.requestPermissionsAsync();
+    const req = await requestRecordingPermissionsAsync();
     if (!req.granted) {
       Alert.alert(
         'Microphone access needed',
@@ -53,13 +62,13 @@ export function useRecorder() {
     try {
       // Routes audio through the recording session so iOS will actually open
       // the mic; without this the recording silently captures nothing.
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
-      const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await rec.startAsync();
+      const rec = new AudioModule.AudioRecorder(RecordingPresets.HIGH_QUALITY);
+      await rec.prepareToRecordAsync();
+      rec.record();
       recordingRef.current = rec;
       setIsRecording(true);
       return true;
@@ -77,19 +86,17 @@ export function useRecorder() {
     recordingRef.current = null;
     setIsRecording(false);
     try {
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
+      await rec.stop();
+      const uri = rec.uri;
       if (!uri) return null;
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       // Reset the audio session so playback works normally afterward.
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-      // expo-av HIGH_QUALITY preset records m4a on iOS and wav on Android by
-      // default. We send m4a always — Android's wav is also supported by Whisper.
-      const format = Platform.OS === 'ios' ? 'm4a' : 'wav';
+      await setAudioModeAsync({ allowsRecording: false });
+      // The HIGH_QUALITY preset records AAC in an m4a container on both iOS and Android.
       if (!base64) return null;
-      return { base64, format };
+      return { base64, format: 'm4a' };
     } catch (err) {
       console.warn('[useRecorder] stop failed', err);
       return null;
@@ -103,10 +110,10 @@ export function useRecorder() {
     recordingRef.current = null;
     setIsRecording(false);
     try {
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
+      await rec.stop();
+      const uri = rec.uri;
       if (uri) await FileSystem.deleteAsync(uri, { idempotent: true });
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      await setAudioModeAsync({ allowsRecording: false });
     } catch { /* ignore */ }
   }, []);
 

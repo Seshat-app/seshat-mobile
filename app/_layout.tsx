@@ -43,7 +43,7 @@ function RootStack() {
 
   return (
     <>
-      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} backgroundColor={tok.void} />
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Tabs, useSegments, withLayoutContext, router } from 'expo-router';
-import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
+import { View, Text, StyleSheet, Platform, type ColorValue } from 'react-native';
+import { Tabs, useSegments, router } from 'expo-router';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Home as HomeIcon, List, Sparkles, User, Bell } from 'lucide-react-native';
 import { useNotifications } from '../../lib/notifications';
 import { useI18n } from '../../lib/i18n';
@@ -16,11 +16,10 @@ import { RToast } from '../../components/ui';
 import { Tour, hasTourBeenSeen } from '../../components/Tour';
 import { useRecorder } from '../../components/useRecorder';
 
-// On iOS we use react-native-bottom-tabs' native UITabBar (renders as Liquid
-// Glass on iOS 26+, regular blur on 17/18). On Android we keep the JS Tabs
-// from expo-router, since the native variant is iOS-tuned and Android's
-// Material 3 NavigationBar doesn't gain anything from going native here.
-const NativeTabsNavigator = withLayoutContext(createNativeBottomTabNavigator().Navigator);
+// On iOS we use Expo Router's NativeTabs: the real UITabBar (Liquid Glass on
+// iOS 26+, regular blur on 17/18). On Android we keep the JS Tabs from
+// expo-router, since the native variant is iOS-tuned and Android's Material 3
+// NavigationBar doesn't gain anything from going native here.
 
 export default function TabsLayout() {
   const { tok, lang, t } = useI18n();
@@ -92,49 +91,30 @@ export default function TabsLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: tok.void }}>
       {Platform.OS === 'ios' ? (
-        <NativeTabsNavigator
-          tabBarActiveTintColor={tok.gold}
-          tabBarInactiveTintColor={tok.muted}
-          hapticFeedbackEnabled
-        >
-          <NativeTabsNavigator.Screen
-            name="index"
-            options={{
-              title: t('home'),
-              tabBarIcon: () => ({ sfSymbol: 'house' }),
-            }}
-          />
-          <NativeTabsNavigator.Screen
-            name="transactions"
-            options={{
-              title: t('transactions'),
-              tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
-            }}
-          />
-          <NativeTabsNavigator.Screen
-            name="seshat"
-            options={{
-              title: t('maat'),
-              tabBarIcon: () => ({ sfSymbol: 'sparkles' }),
-              tabBarBadge: unreadMaatTotal > 0 ? String(unreadMaatTotal) : undefined,
-            }}
-          />
-          <NativeTabsNavigator.Screen
-            name="notifications"
-            options={{
-              title: lang === 'ar' ? 'الإشعارات' : 'Alerts',
-              tabBarIcon: () => ({ sfSymbol: 'bell' }),
-              tabBarBadge: notifUnread > 0 ? String(notifUnread) : undefined,
-            }}
-          />
-          <NativeTabsNavigator.Screen
-            name="profile"
-            options={{
-              title: t('profile'),
-              tabBarIcon: () => ({ sfSymbol: 'person.crop.circle' }),
-            }}
-          />
-        </NativeTabsNavigator>
+        <NativeTabs tintColor={tok.gold} iconColor={tok.muted}>
+          <NativeTabs.Trigger name="index">
+            <NativeTabs.Trigger.Icon sf="house" />
+            <NativeTabs.Trigger.Label>{t('home')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="transactions">
+            <NativeTabs.Trigger.Icon sf="list.bullet" />
+            <NativeTabs.Trigger.Label>{t('transactions')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="seshat">
+            <NativeTabs.Trigger.Icon sf="sparkles" />
+            <NativeTabs.Trigger.Label>{t('maat')}</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Badge hidden={unreadMaatTotal <= 0}>{String(unreadMaatTotal)}</NativeTabs.Trigger.Badge>
+          </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="notifications">
+            <NativeTabs.Trigger.Icon sf="bell" />
+            <NativeTabs.Trigger.Label>{lang === 'ar' ? 'الإشعارات' : 'Alerts'}</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Badge hidden={notifUnread <= 0}>{String(notifUnread)}</NativeTabs.Trigger.Badge>
+          </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="profile">
+            <NativeTabs.Trigger.Icon sf="person.crop.circle" />
+            <NativeTabs.Trigger.Label>{t('profile')}</NativeTabs.Trigger.Label>
+          </NativeTabs.Trigger>
+        </NativeTabs>
       ) : (
         <Tabs
           screenOptions={{
@@ -275,7 +255,7 @@ export default function TabsLayout() {
   );
 }
 
-function TabLabel({ focused, color, children }: { focused: boolean; color: string; children: string }) {
+function TabLabel({ focused, color, children }: { focused: boolean; color: ColorValue; children: string }) {
   const { lang, tok } = useI18n();
   return (
     <Text

@@ -109,7 +109,7 @@ export function ImageViewer({ visible, uri, onClose }: Props) {
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <StatusBar style="light" backgroundColor="#000000" />
+      <StatusBar style="light" />
       <Animated.View style={{ flex: 1, backgroundColor: '#000000', opacity: backdrop }}>
         <Pressable
           style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}

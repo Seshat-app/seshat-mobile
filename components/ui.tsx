@@ -322,7 +322,7 @@ export function RField({
             fallbackColor={tok.coreBg}
             dark={mode !== 'light'}
             intensity={30}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
           />
           <CardSheen />
           <TextInput

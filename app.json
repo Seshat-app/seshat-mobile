@@ -6,13 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "scheme": "seshat",
-    "splash": {
-      "image": "./assets/brand/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#0D0D0D"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.seshat.mobile",
@@ -44,7 +38,6 @@
         "backgroundColor": "#0D0D0D"
       },
       "package": "com.seshat.app",
-      "edgeToEdgeEnabled": true,
       "allowBackup": false,
       "permissions": [
         "android.permission.RECORD_AUDIO",
@@ -83,7 +76,8 @@
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "17.0"
+            "deploymentTarget": "17.0",
+            "enableSceneSupport": true
           },
           "android": {
             "extraGradleProperties": {
@@ -95,7 +89,24 @@
         }
       ],
       "@sentry/react-native",
-      "./plugins/withPodDeploymentTarget"
+      "./plugins/withPodDeploymentTarget",
+      "expo-font",
+      "expo-sharing",
+      "expo-status-bar",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Seshat uses the microphone so you can talk to her instead of typing - describe a transaction by voice and she records it."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/splash.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#0D0D0D"
+        }
+      ]
     ],
     "extra": {
       "router": {},
