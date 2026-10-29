@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, Animated, Easing, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
@@ -74,7 +75,7 @@ export default function DebtsScreen() {
       onAdd={() => setEditing('new')}
       refreshing={refreshing}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -96,7 +97,7 @@ export default function DebtsScreen() {
             {items.map((d) => <DebtRow key={d._id} debt={d} onPress={() => setEditing(d)} />)}
           </View>
         )}
-      </ScrollView>
+      </ScreenScroll>
 
       {editing && (
         <EditDebtSheet

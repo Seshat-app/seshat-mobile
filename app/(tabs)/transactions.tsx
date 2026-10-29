@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, Alert } from 'react-native';
+import { FlatList as ScreenFlatList } from '../../components/Scroll';
+import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SlidersHorizontal } from 'lucide-react-native';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -140,7 +142,7 @@ export default function TransactionsScreen() {
 
   return (
     <ScreenScaffold>
-      <View style={{
+      <FrostedHeader style={{
         paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -156,7 +158,7 @@ export default function TransactionsScreen() {
           </REyebrow>
         </View>
         <RefreshSpinner refreshing={refreshing} />
-      </View>
+      </FrostedHeader>
 
       <View style={{ paddingHorizontal: 16, flex: 1 }}>
         {/* Search + filter */}
@@ -235,7 +237,7 @@ export default function TransactionsScreen() {
             }}>{t('noRecordsSub')}</Text>
           </View>
         ) : (
-          <FlatList
+          <ScreenFlatList
             data={groups}
             keyExtractor={(g) => g.day}
             showsVerticalScrollIndicator={false}

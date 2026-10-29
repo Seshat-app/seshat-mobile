@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, RefreshControl, Alert, StyleSheet } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
@@ -62,7 +63,7 @@ export default function CategoriesScreen() {
       refreshing={refreshing}
       onAdd={() => setAdding(true)}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -158,7 +159,7 @@ export default function CategoriesScreen() {
             {lang === 'ar' ? 'اضغط مطوّلاً على تصنيف مخصص لحذفه' : 'LONG-PRESS A CUSTOM CATEGORY TO DELETE'}
           </Text>
         )}
-      </ScrollView>
+      </ScreenScroll>
 
       <AddCategorySheet
         visible={adding}

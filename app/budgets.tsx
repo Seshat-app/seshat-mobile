@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { Trash2, X } from 'lucide-react-native';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { useFetchList } from '../lib/hooks/useFetchList';
@@ -66,7 +67,7 @@ export default function BudgetsScreen() {
       subtitle={lang === 'ar' ? 'حد شهري لكل فئة' : 'A monthly cap per category'}
       refreshing={refreshing}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 32, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -113,7 +114,7 @@ export default function BudgetsScreen() {
             )}
           </View>
         )}
-      </ScrollView>
+      </ScreenScroll>
 
       {editing && (
         <EditSheet

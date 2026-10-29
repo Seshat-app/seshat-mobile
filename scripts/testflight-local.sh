@@ -69,25 +69,36 @@ fi
 ok "workspace + Pods in sync"
 
 # Release signing for the app target only (never the Pods): Apple Distribution, the
-# App Store profile, and a production push entitlement. Idempotent.
-python3 - "$IOS" "$PROFILE_NAME" <<'PY'
+# App Store profile, and a production push entitlement. Works on a freshly
+# generated project (which has no manual-signing settings) and is idempotent.
+python3 - "$IOS" "$PROFILE_NAME" "$TEAM" <<'PY'
 import re, sys
-ios, profile = sys.argv[1], sys.argv[2]
+ios, profile, team = sys.argv[1], sys.argv[2], sys.argv[3]
 ent_dev = f"{ios}/Seshat/Seshat.entitlements"
 ent_rel = f"{ios}/Seshat/SeshatRelease.entitlements"
 open(ent_rel, "w").write(open(ent_dev).read().replace("<string>development</string>", "<string>production</string>"))
 p = f"{ios}/Seshat.xcodeproj/project.pbxproj"
 s = open(p).read()
-m = re.search(r"(13B07F951A680F5B00A75B9A /\* Release \*/ = \{.*?\n\t\t\};)", s, re.S)
-assert m, "Release block of the Seshat target not found"
-blk = m.group(1)
+# The app target's Release configuration: the one that sets PRODUCT_BUNDLE_IDENTIFIER and INFOPLIST_FILE.
+blocks = re.findall(r"(\t\t[0-9A-F]{24} /\* Release \*/ = \{\n\t\t\tisa = XCBuildConfiguration;.*?\n\t\t\};)", s, re.S)
+target = [b for b in blocks if "PRODUCT_BUNDLE_IDENTIFIER" in b and "INFOPLIST_FILE" in b]
+assert len(target) == 1, f"expected one app Release block, found {len(target)}"
+blk = target[0]
 new = blk
-new = new.replace("CODE_SIGN_ENTITLEMENTS = Seshat/Seshat.entitlements;", "CODE_SIGN_ENTITLEMENTS = Seshat/SeshatRelease.entitlements;")
-new = re.sub(r'"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "[^"]*";', '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";', new)
-new = re.sub(r'"PROVISIONING_PROFILE_SPECIFIER\[sdk=iphoneos\*\]" = [^;]*;', f'"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = {profile};', new)
+for key in ("CODE_SIGN_STYLE", "DEVELOPMENT_TEAM", "CODE_SIGN_ENTITLEMENTS", 'CODE_SIGN_IDENTITY', '"CODE_SIGN_IDENTITY[sdk=iphoneos*]"', '"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]"', "PROVISIONING_PROFILE_SPECIFIER"):
+    new = re.sub(r"\n\t\t\t\t" + re.escape(key) + r" = [^;]*;", "", new)
+settings = [
+    "CODE_SIGN_STYLE = Manual;",
+    f"DEVELOPMENT_TEAM = {team};",
+    "CODE_SIGN_ENTITLEMENTS = Seshat/SeshatRelease.entitlements;",
+    '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";',
+    f'"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "{profile}";',
+]
+inject = "".join("\n\t\t\t\t" + x for x in settings)
+new = new.replace("buildSettings = {", "buildSettings = {" + inject, 1)
 if new != blk:
     open(p, "w").write(s.replace(blk, new))
-    print("  patched Release signing")
+    print("  set Release signing")
 else:
     print("  Release signing already set")
 PY
@@ -97,8 +108,11 @@ ok "Release = Apple Distribution + $PROFILE_NAME + production push"
 # xcodebuild overrides below would be ignored and every upload would be build "1"
 # (App Store Connect needs a higher build number each time). Point them at the
 # build settings instead.
-/usr/libexec/PlistBuddy -c 'Set :CFBundleVersion $(CURRENT_PROJECT_VERSION)' "$IOS/Seshat/Info.plist"
-/usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString $(MARKETING_VERSION)' "$IOS/Seshat/Info.plist"
+for pair in "CFBundleVersion:\$(CURRENT_PROJECT_VERSION)" "CFBundleShortVersionString:\$(MARKETING_VERSION)"; do
+  key="${pair%%:*}"; val="${pair#*:}"
+  /usr/libexec/PlistBuddy -c "Set :$key $val" "$IOS/Seshat/Info.plist" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c "Add :$key string $val" "$IOS/Seshat/Info.plist"
+done
 ok "version + build number come from the build settings"
 
 [ "$MODE" = "--check" ] && { say "All checks passed. Run without --check to build."; exit 0; }

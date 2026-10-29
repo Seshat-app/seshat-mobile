@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Building2, ChevronRight, Plus, Send } from 'lucide-react-native';
@@ -64,7 +65,7 @@ export default function OrgsListScreen() {
       subtitle={lang === 'ar' ? 'مساحات العمل المشتركة' : 'Shared workspaces'}
       onAdd={() => router.push('/orgs/new')}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -144,7 +145,7 @@ export default function OrgsListScreen() {
             ))}
           </RCard>
         )}
-      </ScrollView>
+      </ScreenScroll>
     </PlanScreen>
   );
 }

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
+import { FlatList as ScreenFlatList } from '../../components/Scroll';
+import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowUp, ChevronLeft, ImagePlus, Square } from 'lucide-react-native';
@@ -480,7 +482,7 @@ export default function ChatViewScreen() {
         keyboardVerticalOffset={0}
       >
       {/* Top bar — borderless, glassy back button */}
-      <View style={{
+      <FrostedHeader style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 10,
         paddingHorizontal: 14, paddingVertical: 10,
@@ -510,9 +512,9 @@ export default function ChatViewScreen() {
         </View>
         {/* Persona switch — reflects/sets which persona answers this thread. */}
         <PersonaSwitch value={persona} onChange={changePersona} size="sm" />
-      </View>
+      </FrostedHeader>
 
-      <FlatList
+      <ScreenFlatList
         ref={scrollRef}
         data={messages}
         keyExtractor={(m) => m.id}

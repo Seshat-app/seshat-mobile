@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing, Clock } from 'lucide-react-native';
 import { CategoryIconByKey } from '../components/icons';
@@ -85,7 +86,7 @@ export default function RemindersScreen() {
       subtitle={lang === 'ar' ? 'الأنماط التي رصدتها سيشات' : 'Spending patterns Seshat noticed'}
       refreshing={refreshing}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -209,7 +210,7 @@ export default function RemindersScreen() {
             })}
           </RCard>
         )}
-      </ScrollView>
+      </ScreenScroll>
     </PlanScreen>
   );
 }

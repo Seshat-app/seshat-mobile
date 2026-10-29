@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
+import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -231,15 +233,15 @@ export default function ProfileScreen() {
 
   return (
     <ScreenScaffold>
-      <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 }}>
+      <FrostedHeader style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 8 }}>
         <Text style={{
           fontFamily: fontHead(lang),
           fontSize: 22, color: tok.bone, letterSpacing: -0.4,
           textAlign: lang === 'ar' ? 'right' : 'left',
         }}>{t('profile')}</Text>
-      </View>
+      </FrostedHeader>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
         {/* Identity card — gold-glow shield, matching the home hero. */}
         <RCard large glow>
           <View style={{
@@ -654,7 +656,7 @@ export default function ProfileScreen() {
             so the user can confirm which bundle is running. The update ID
             changes every OTA push. */}
         <BuildFooter />
-      </ScrollView>
+      </ScreenScroll>
 
       <SetSalarySheet
         visible={salaryOpen}

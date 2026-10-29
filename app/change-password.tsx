@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
+import { FrostedHeader } from '../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -75,7 +77,7 @@ export default function ChangePasswordScreen() {
   return (
     <ScreenScaffold>
       {/* Header */}
-      <View style={{
+      <FrostedHeader style={{
         paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 12,
@@ -106,9 +108,9 @@ export default function ChangePasswordScreen() {
             {lang === 'ar' ? 'حدّثي كلمة سر حسابك' : 'Update your account password'}
           </REyebrow>
         </View>
-      </View>
+      </FrostedHeader>
 
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 12,
@@ -196,7 +198,7 @@ export default function ChangePasswordScreen() {
               : (lang === 'ar' ? 'تحديث كلمة السر' : 'Update password')}
           </RButton>
         </View>
-      </ScrollView>
+      </ScreenScroll>
 
       <RToast visible={saved} bottomOffset={insets.bottom + 24}>
         {lang === 'ar' ? 'تم تحديث كلمة السر' : 'Password updated'}

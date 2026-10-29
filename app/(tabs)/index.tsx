@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, Text, RefreshControl, StyleSheet } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -117,7 +118,7 @@ export default function HomeScreen() {
           if (loading) return <DashboardSkeleton topPad={6} />;
           const isEmpty = !data || (data.current.income.count === 0 && data.current.expense.count === 0);
           return (
-            <ScrollView
+            <ScreenScroll
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingTop: 6, paddingBottom: insets.bottom + 24, flexGrow: 1 }}
               refreshControl={refreshCtl}
@@ -131,7 +132,7 @@ export default function HomeScreen() {
                   <DashboardBody data={data!} currency={currency} />
                 </>
               )}
-            </ScrollView>
+            </ScreenScroll>
           );
         })()}
       </View>
@@ -181,7 +182,7 @@ function DashboardSkeleton({ topPad = 0 }: { topPad?: number }) {
     </View>
   );
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <ScreenScroll showsVerticalScrollIndicator={false}>
       <View style={{ paddingHorizontal: 16, paddingTop: topPad, gap: 12, paddingBottom: 120 }}>
         <RCard large glow>
           <Skeleton width={96} height={10} />
@@ -209,6 +210,6 @@ function DashboardSkeleton({ topPad = 0 }: { topPad?: number }) {
           <SkelRow last />
         </RCard>
       </View>
-    </ScrollView>
+    </ScreenScroll>
   );
 }

@@ -3,6 +3,8 @@ import {
   View, Text, TextInput, ScrollView, Pressable, RefreshControl,
   ActivityIndicator, Alert, StyleSheet,
 } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
+import { FrostedHeader } from '../../components/FrostedHeader';
 import { ScreenScaffold } from '../../components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -222,7 +224,7 @@ export default function SeshatSessionsScreen() {
   return (
     <ScreenScaffold>
       {/* Header */}
-      <View style={{
+      <FrostedHeader style={{
         paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -244,7 +246,7 @@ export default function SeshatSessionsScreen() {
         >
           {lang === 'ar' ? 'محادثة جديدة' : 'New chat'}
         </RButton>
-      </View>
+      </FrostedHeader>
 
       {/* Search */}
       <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
@@ -283,7 +285,7 @@ export default function SeshatSessionsScreen() {
           <RCard padding={32}><ActivityIndicator color={tok.gold} /></RCard>
         </View>
       ) : (
-        <ScrollView
+        <ScreenScroll
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 90, paddingTop: 4 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -405,7 +407,7 @@ export default function SeshatSessionsScreen() {
               {lang === 'ar' ? 'اضغط مطولاً على محادثة للمزيد' : 'Long-press a chat for more'}
             </Text>
           )}
-        </ScrollView>
+        </ScreenScroll>
       )}
     </ScreenScaffold>
   );

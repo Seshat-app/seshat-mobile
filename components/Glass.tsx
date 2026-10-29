@@ -52,6 +52,7 @@ export function Glass({
   fallbackColor,
   variant = 'frost',
   tintColor,
+  material,
 }: {
   children?: ReactNode;
   style?: ViewStyle | ViewStyle[];
@@ -64,6 +65,9 @@ export function Glass({
   fallbackColor: string;
   variant?: 'liquid' | 'frost';
   tintColor?: string;
+  /** Override the iOS blur material (e.g. an ultra-thin one for a header
+   *  that should read as the page itself, just blurred). */
+  material?: string;
 }) {
   const useLiquid = variant === 'liquid' && liquidAvailable && GlassView;
   const useFrost = !useLiquid && !!BlurView;
@@ -86,7 +90,7 @@ export function Glass({
         <BlurView
           style={StyleSheet.absoluteFill}
           intensity={intensity}
-          tint={dark ? 'systemThinMaterialDark' : 'systemThinMaterialLight'}
+          tint={(material ?? (dark ? 'systemThinMaterialDark' : 'systemThinMaterialLight')) as any}
           experimentalBlurMethod={
             Platform.OS === 'android' ? 'dimezisBlurView' : undefined
           }

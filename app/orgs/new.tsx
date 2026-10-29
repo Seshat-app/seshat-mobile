@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlanScreen } from '../../components/PlanShell';
@@ -66,7 +67,7 @@ export default function NewOrgScreen() {
       title={lang === 'ar' ? 'منظمة جديدة' : 'New organization'}
       subtitle={lang === 'ar' ? 'مساحة مشتركة لفريقكِ' : 'A shared space for your team'}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 + kbHeight + insets.bottom }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -122,7 +123,7 @@ export default function NewOrgScreen() {
             ? 'تنشأ مع 11 تصنيفًا افتراضيًا · يمكنكِ التخصيص لاحقًا'
             : 'CREATED WITH 11 DEFAULT CATEGORIES · CUSTOMIZE LATER'}
         </Text>
-      </ScrollView>
+      </ScreenScroll>
     </PlanScreen>
   );
 }

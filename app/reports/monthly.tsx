@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TrendingUp, TrendingDown, Sparkles, Download, Hourglass } from 'lucide-react-native';
 import { CategoryIconByKey } from '../../components/icons';
@@ -100,7 +101,7 @@ export default function MonthlyReportScreen() {
       subtitle={lang === 'ar' ? 'مدعوم بماعت' : 'Powered by Maat'}
       refreshing={refreshing}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -463,7 +464,7 @@ export default function MonthlyReportScreen() {
             </RButton>
           </>
         )}
-      </ScrollView>
+      </ScreenScroll>
     </PlanScreen>
   );
 }

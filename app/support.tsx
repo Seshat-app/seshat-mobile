@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert, Linking } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
+import { FrostedHeader } from '../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, MessageCircle, Mail } from 'lucide-react-native';
@@ -65,7 +67,7 @@ export default function SupportScreen() {
   return (
     <ScreenScaffold>
       {/* Header */}
-      <View style={{
+      <FrostedHeader style={{
         paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 12,
@@ -94,9 +96,9 @@ export default function SupportScreen() {
             {lang === 'ar' ? 'أرسلي لنا مشكلتكِ' : 'Tell us what is wrong'}
           </REyebrow>
         </View>
-      </View>
+      </FrostedHeader>
 
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 12,
@@ -194,7 +196,7 @@ export default function SupportScreen() {
             ? 'يتم إرفاق معرف حسابكِ تلقائيًا لمساعدتنا في الرد بسرعة.'
             : 'Your account ID is attached automatically to help us reply faster.'}
         </Text>
-      </ScrollView>
+      </ScreenScroll>
     </ScreenScaffold>
   );
 }

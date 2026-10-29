@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, Pressable, Linking, Alert } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Copy, ExternalLink, Check } from 'lucide-react-native';
@@ -69,7 +70,7 @@ export default function CaptureSetupIosScreen() {
       title={lang === 'ar' ? 'إعداد رصد الإشعارات' : 'Notification capture setup'}
       subtitle={lang === 'ar' ? 'لـ iOS - مرة واحدة' : 'iOS - one-time setup'}
     >
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + S[6], paddingTop: 8 }}>
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + S[6], paddingTop: 8 }}>
         <RCard padding={16} style={{ marginBottom: 14 }}>
           <REyebrow style={{ marginBottom: 6, textAlign: lang === 'ar' ? 'right' : 'left' }}>
             {lang === 'ar' ? 'لماذا الإعداد؟' : 'Why this setup?'}
@@ -206,7 +207,7 @@ export default function CaptureSetupIosScreen() {
               : 'Each bank SMS gets parsed by Seshat and opens the Capture screen with the amount and category pre-filled. You confirm or edit and save. Full privacy. The SMS never goes anywhere else.'}
           </Text>
         </RCard>
-      </ScrollView>
+      </ScreenScroll>
     </PlanScreen>
   );
 }

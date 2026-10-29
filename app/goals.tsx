@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
@@ -65,7 +66,7 @@ export default function GoalsScreen() {
       onAdd={() => setEditing('new')}
       refreshing={refreshing}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -87,7 +88,7 @@ export default function GoalsScreen() {
             {items.map((g) => <GoalRow key={g._id} goal={g} onPress={() => setEditing(g)} />)}
           </View>
         )}
-      </ScrollView>
+      </ScreenScroll>
 
       {editing && (
         <EditGoalSheet

@@ -9,6 +9,7 @@ import { REyebrow } from './ui';
 import { RefreshSpinner } from './shell';
 import { ScreenScaffold } from './Screen';
 import { WorkspaceChip } from './WorkspaceSwitcher';
+import { FrostedHeader } from './FrostedHeader';
 
 // Shared top chrome for Budgets / Goals / Debts: back arrow, title, subtitle,
 // optional + action, and (when refreshing) a small refresh spinner. Sits on
@@ -28,7 +29,7 @@ export function PlanScreen({
   }, [enter]);
   return (
     <ScreenScaffold>
-      <View style={{
+      <FrostedHeader style={{
         paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 12,
@@ -71,7 +72,7 @@ export function PlanScreen({
             <Plus size={20} color={tok.void} strokeWidth={2.2} />
           </Pressable>
         )}
-      </View>
+      </FrostedHeader>
       <Animated.View style={{
         flex: 1,
         opacity: enter,

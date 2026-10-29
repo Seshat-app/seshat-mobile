@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Text, ScrollView, Alert } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PlanScreen } from '../../components/PlanShell';
@@ -66,7 +67,7 @@ export default function InviteScreen() {
       title={lang === 'ar' ? 'دعوة عضو' : 'Invite member'}
       subtitle={lang === 'ar' ? 'بالبريد الإلكتروني' : 'By email'}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 40 + kbHeight }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -111,7 +112,7 @@ export default function InviteScreen() {
             ? 'الدعوة صالحة لمدة 7 أيام · يمكنكِ سحبها قبل القبول'
             : 'INVITE VALID FOR 7 DAYS · YOU CAN REVOKE BEFORE ACCEPT'}
         </Text>
-      </ScrollView>
+      </ScreenScroll>
     </PlanScreen>
   );
 }

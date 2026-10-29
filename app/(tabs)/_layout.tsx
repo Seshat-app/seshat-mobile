@@ -91,7 +91,7 @@ export default function TabsLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: tok.void }}>
       {Platform.OS === 'ios' ? (
-        <NativeTabs tintColor={tok.gold} iconColor={tok.muted}>
+        <NativeTabs tintColor={tok.gold} iconColor={tok.muted} badgeBackgroundColor={tok.gold} badgeTextColor={tok.void}>
           <NativeTabs.Trigger name="index">
             <NativeTabs.Trigger.Icon sf="house" />
             <NativeTabs.Trigger.Label>{t('home')}</NativeTabs.Trigger.Label>
@@ -103,12 +103,12 @@ export default function TabsLayout() {
           <NativeTabs.Trigger name="seshat">
             <NativeTabs.Trigger.Icon sf="sparkles" />
             <NativeTabs.Trigger.Label>{t('maat')}</NativeTabs.Trigger.Label>
-            <NativeTabs.Trigger.Badge hidden={unreadMaatTotal <= 0}>{String(unreadMaatTotal)}</NativeTabs.Trigger.Badge>
+            {unreadMaatTotal > 0 ? <NativeTabs.Trigger.Badge>{String(unreadMaatTotal)}</NativeTabs.Trigger.Badge> : null}
           </NativeTabs.Trigger>
           <NativeTabs.Trigger name="notifications">
             <NativeTabs.Trigger.Icon sf="bell" />
             <NativeTabs.Trigger.Label>{lang === 'ar' ? 'الإشعارات' : 'Alerts'}</NativeTabs.Trigger.Label>
-            <NativeTabs.Trigger.Badge hidden={notifUnread <= 0}>{String(notifUnread)}</NativeTabs.Trigger.Badge>
+            {notifUnread > 0 ? <NativeTabs.Trigger.Badge>{String(notifUnread)}</NativeTabs.Trigger.Badge> : null}
           </NativeTabs.Trigger>
           <NativeTabs.Trigger name="profile">
             <NativeTabs.Trigger.Icon sf="person.crop.circle" />
@@ -128,6 +128,7 @@ export default function TabsLayout() {
               paddingBottom: 8,
             },
             tabBarActiveTintColor: tok.gold,
+            tabBarBadgeStyle: { backgroundColor: tok.gold, color: tok.void },
             tabBarInactiveTintColor: tok.muted,
           }}
         >

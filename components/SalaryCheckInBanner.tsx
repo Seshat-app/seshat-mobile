@@ -62,7 +62,7 @@ export function SalaryCheckInBanner({
       onPress={onPress}
       style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
     >
-      <RCard accent padding={14} style={{ marginHorizontal: 16, marginTop: 6 }}>
+      <RCard accent padding={14} style={{ marginHorizontal: 16, marginTop: 6, marginBottom: 12 }}>
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
           alignItems: 'center', gap: 12,

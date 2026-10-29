@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, Image, Linking, Platform } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Building2, ChevronRight, Layers, Mail, Plus, Send, Target, UserPlus, Users, X } from 'lucide-react-native';
@@ -166,7 +167,7 @@ export default function OrgDetailScreen() {
       subtitle={org ? `${lang === 'ar' ? (org.role === 'owner' ? 'مالك' : 'عضو') : (org.role === 'owner' ? 'Owner' : 'Member')}  ·  ${org.currency}` : undefined}
       refreshing={refreshing}
     >
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 32 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -472,7 +473,7 @@ export default function OrgDetailScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </ScreenScroll>
       <ImageViewer visible={viewerUri !== null} uri={viewerUri} onClose={() => setViewerUri(null)} />
     </PlanScreen>
   );

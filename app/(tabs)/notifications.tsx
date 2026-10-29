@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import {
   View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert,
 } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
+import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -95,7 +97,7 @@ export default function NotificationsScreen() {
     <ScreenScaffold>
       {/* Header — title + a mark-all-read action (only when there's something
           unread). This is a root tab now, so there's no back arrow. */}
-      <View style={{
+      <FrostedHeader style={{
         paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8,
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 12,
@@ -131,9 +133,9 @@ export default function NotificationsScreen() {
             }}>{lang === 'ar' ? 'الكل' : 'All'}</Text>
           </Pressable>
         )}
-      </View>
+      </FrostedHeader>
 
-      <ScrollView
+      <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -166,7 +168,7 @@ export default function NotificationsScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </ScreenScroll>
     </ScreenScaffold>
   );
 }

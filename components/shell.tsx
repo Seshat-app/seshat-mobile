@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing, ActivityIndicator } from 'react-native';
+import { FrostedHeader } from './FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { BarChart3, Bell, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
@@ -66,7 +67,7 @@ export function RHomeHeader({
 }: { userName: string; view: DashView; onViewChange: (v: DashView) => void; refreshing?: boolean }) {
   const { tok, lang, t } = useI18n();
   return (
-    <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 }}>
+    <FrostedHeader style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 }}>
       <View style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -97,7 +98,7 @@ export function RHomeHeader({
             view switcher used to be; the view now changes by swiping the hero. */}
         <WorkspaceChip />
       </View>
-    </View>
+    </FrostedHeader>
   );
 }
 

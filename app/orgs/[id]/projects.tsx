@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { ScrollView as ScreenScroll } from '../../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Archive, Layers, Plus } from 'lucide-react-native';
@@ -145,7 +146,7 @@ export default function OrgProjectsScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView
+        <ScreenScroll
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -300,7 +301,7 @@ export default function OrgProjectsScreen() {
               )}
             </>
           )}
-        </ScrollView>
+        </ScreenScroll>
       </KeyboardAvoidingView>
     </PlanScreen>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Platform, Alert } from 'react-native';
+import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ShieldCheck, Eye, Lock, Cpu } from 'lucide-react-native';
@@ -68,7 +69,7 @@ export default function CaptureSetupAndroidScreen() {
       title={lang === 'ar' ? 'رصد إشعارات البنوك' : 'Bank notification capture'}
       subtitle={lang === 'ar' ? 'لـ Android · موافقة مرّة واحدة' : 'Android · one-time consent'}
     >
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, paddingTop: 8 }}>
+      <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, paddingTop: 8 }}>
         <RCard padding={18} style={{ marginBottom: 14 }}>
           <View style={{
             flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -165,7 +166,7 @@ export default function CaptureSetupAndroidScreen() {
             ? 'يمكنك العودة وإلغاء التفعيل من نفس الشاشة في أي وقت.'
             : 'You can come back and turn this off here any time.'}
         </Text>
-      </ScrollView>
+      </ScreenScroll>
     </PlanScreen>
   );
 }
