@@ -1,7 +1,7 @@
 {
   "name": "seshat-mobile",
   "version": "1.1.0",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -17,6 +17,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@sentry/react-native": "~7.11.0",
     "expo": "~57.0.31",
+    "expo-application": "~57.0.3",
     "expo-asset": "~57.0.20",
     "expo-audio": "~57.0.5",
     "expo-auth-session": "~57.0.16",

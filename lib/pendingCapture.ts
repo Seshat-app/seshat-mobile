@@ -63,8 +63,9 @@ async function flushParked(): Promise<void> {
 
 export function usePendingCapture(): void {
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
-    const run = () => { void ensureDeviceToken().then(flushParked); };
+    // iOS: the Shortcuts action posts with this token and parks failures as files.
+    // Android: the notification-listener task posts with the same token.
+    const run = () => { void ensureDeviceToken().then(() => (Platform.OS === 'ios' ? flushParked() : undefined)); };
     run();
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') run(); });
     return () => sub.remove();

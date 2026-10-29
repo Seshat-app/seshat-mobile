@@ -3,7 +3,6 @@ import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { apiFetch, hasToken, setActiveLedger, getActiveLedger } from './api';
 import { registerForPushNotifications, subscribeToNotificationTaps } from './push';
-import { subscribeToBankNotifications, flattenEventText } from './androidNotificationListener';
 import { usePendingCapture } from './pendingCapture';
 import type { ApiCategory } from '../components/AddTransactionSheet';
 
@@ -225,22 +224,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  // iOS: pick up a message handed over by the "Log bank message" Shortcuts action.
+  // Keeps the capture-only device token fresh. iOS (Shortcuts action) and Android
+  // (notification-listener task, see index.js) both log bank messages with it.
   usePendingCapture();
-
-  // Android: subscribe to bank notifications (only when the user has granted
-  // Notification access via the consent screen). Every event from a known
-  // bank package flattens to text, then routes to /capture which calls the
-  // parser endpoint and opens the AddTransactionSheet pre-filled.
-  // No-op on iOS and in Expo Go (the native module is missing there).
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    return subscribeToBankNotifications((event) => {
-      const text = flattenEventText(event);
-      if (!text) return;
-      router.push({ pathname: '/capture', params: { text, source: 'push' } });
-    });
-  }, []);
 
   const bumpVersion = useCallback(() => setDataVersion((v) => v + 1), []);
 

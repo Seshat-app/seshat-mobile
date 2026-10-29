@@ -18,7 +18,7 @@
  * email, Signal, etc. - never burning a parse call on something that can't
  * possibly be a transaction.
  */
-import { Platform, DeviceEventEmitter, type EmitterSubscription } from 'react-native';
+import { Platform } from 'react-native';
 
 export type PermissionStatus = 'authorized' | 'denied' | 'unknown' | 'unavailable';
 
@@ -48,7 +48,7 @@ const FAST_ACCEPT_PACKAGES = new Set<string>([
 // configured currency is the most common but we include the common ones
 // so a notification in a foreign currency (USD travel charge, AED) still
 // triggers a parse.
-const CURRENCY_HINT = /\b(EGP|USD|EUR|GBP|SAR|AED|KWD|QAR|OMR|BHD|JPY|CHF|TRY)\b/i;
+const CURRENCY_HINT = /\b(EGP|USD|EUR|GBP|SAR|AED|KWD|QAR|OMR|BHD|JPY|CHF|TRY)\b|ج\.م|جنيه|ريال|درهم|دينار/i;
 
 // Universal financial-verb fingerprint. Matches across English + Arabic
 // across every Egyptian bank's notification format I've seen. Tuned to
@@ -68,8 +68,21 @@ const FINANCIAL_VERB = new RegExp(
     'sent\\s+to',
     'received\\s+from',
     'withdrawn',
+    'withdrawal',
+    'withdraw',
     'deposit',
     'spent',
+    'sent',
+    'credited',
+    'debited',
+    'charged',
+    'paid',
+    'payment',
+    'purchase',
+    'received',
+    'transfer',
+    'salary',
+    'atm',
     // Arabic financial verbs
     'تم\\s+خصم',               // was deducted
     'تم\\s+إيداع',             // was deposited
@@ -157,43 +170,59 @@ export type NotificationEvent = {
   app: string;
   title?: string;
   text?: string;
+  bigText?: string;
   subText?: string;
-  time: number;
+  time: number | string;
 };
 
-/**
- * Subscribe to incoming Android notifications. The handler fires for every
- * event whose content fingerprint matches a bank transaction - bank-
- * agnostic, no package whitelist required.
- *
- * Fast-path: notifications from the SMS apps are pre-accepted (they're
- * almost always banks anyway) but still gated by the content check, so a
- * stray Telegram-via-SMS message doesn't get logged as a "100 EGP" event.
- */
-export function subscribeToBankNotifications(
-  handler: (event: NotificationEvent) => void,
-): () => void {
-  if (Platform.OS !== 'android') return () => {};
-  const sub: EmitterSubscription = DeviceEventEmitter.addListener(
-    'onNotificationReceived',
-    (event: NotificationEvent) => {
-      if (!event) return;
-      const body = flattenEventText(event);
-      const fromMessagingApp = event.app ? FAST_ACCEPT_PACKAGES.has(event.app) : false;
-      // Even messaging-app events have to pass the content filter so a
-      // friend texting "owe you 50 EGP" doesn't trigger a phantom log.
-      if (!isBankTransactionCandidate(body)) return;
-      // Anything else: the content filter decides. App package is just
-      // metadata - we don't gate on it. This is the heart of the bank-
-      // agnostic redesign.
-      void fromMessagingApp; // intentionally unused; kept for future telemetry
-      try { handler(event); } catch (err) { console.warn('[notif-listener] handler threw:', err); }
-    },
-  );
-  return () => sub.remove();
+/** Combine the notification's text fields into one parseable blob for the LLM. */
+export function flattenEventText(event: NotificationEvent): string {
+  const parts = [event.title, event.subText, event.bigText || event.text].filter(Boolean) as string[];
+  return Array.from(new Set(parts)).join(' · ');
 }
 
-/** Combine title + text + subText into one parseable blob for the LLM. */
-export function flattenEventText(event: NotificationEvent): string {
-  return [event.title, event.subText, event.text].filter(Boolean).join(' · ');
+const OWN_PACKAGE = 'com.seshat.app';
+
+/**
+ * Called by Android (via a Headless JS task) for every notification on the phone,
+ * even when Seshat is closed. Candidates that look like a bank transaction are sent
+ * to /capture/auto with the capture-only device token the app stored on login;
+ * the server parses, categorises, assigns the card and logs it.
+ */
+export async function handleBackgroundNotification(raw: unknown): Promise<void> {
+  try {
+    const event: NotificationEvent = typeof raw === 'string' ? JSON.parse(raw) : (raw as NotificationEvent);
+    if (!event || event.app === OWN_PACKAGE) return; // never re-capture our own "Logged..." alerts
+    const body = flattenEventText(event);
+    if (!isBankTransactionCandidate(body)) return;
+
+    const SecureStore = require('expo-secure-store');
+    const stored = await SecureStore.getItemAsync('capture_config');
+    if (!stored) return; // not logged in yet / token not minted
+    const cfg = JSON.parse(stored) as { token: string; api: string };
+    await fetch(`${cfg.api}/capture/auto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.token}` },
+      body: JSON.stringify({ text: body, source: 'notification' }),
+    });
+  } catch (err) {
+    console.warn('[notif-listener] background capture failed:', err);
+  }
+}
+
+/** Register the Headless JS task. Must run at app entry (index.js), before React mounts. */
+export function registerBackgroundCapture(): void {
+  if (Platform.OS !== 'android') return;
+  try {
+    const { AppRegistry } = require('react-native');
+    const { RNAndroidNotificationListenerHeadlessJsName } = require('react-native-android-notification-listener');
+    AppRegistry.registerHeadlessTask(
+      RNAndroidNotificationListenerHeadlessJsName,
+      () => async ({ notification }: { notification?: string }) => {
+        if (notification) await handleBackgroundNotification(notification);
+      },
+    );
+  } catch (err) {
+    console.warn('[notif-listener] headless task not registered:', err);
+  }
 }

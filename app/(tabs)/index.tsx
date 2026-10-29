@@ -16,6 +16,7 @@ import {
   SalaryCheckInBanner, SalaryCheckInSheet, fetchSalaryCheckIn, type CheckInStatus,
 } from '../../components/SalaryCheckInBanner';
 import { CaptureShortcutBanner } from '../../components/CaptureShortcutBanner';
+import { UpdateBanner } from '../../components/UpdateBanner';
 import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
@@ -105,6 +106,7 @@ export default function HomeScreen() {
               {checkIn.needed && (
                 <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
               )}
+              <UpdateBanner />
               <CaptureShortcutBanner />
             </>
           );

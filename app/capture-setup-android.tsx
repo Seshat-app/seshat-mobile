@@ -83,8 +83,8 @@ export default function CaptureSetupAndroidScreen() {
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>
             {lang === 'ar'
-              ? 'فقط الإشعارات الصادرة من تطبيقات البنوك المعروفة (CIB · NBE · بنك مصر · QNB · InstaPay · Telda · …). كل إشعار من تطبيقات أخرى مثل WhatsApp أو الإيميل أو Twitter يتم تجاهله مباشرة قبل أي معالجة.'
-              : 'Only notifications coming from known bank apps (CIB · NBE · Banque Misr · QNB · InstaPay · Telda · …). Notifications from WhatsApp, email, Twitter, and everything else are filtered out immediately, before any processing.'}
+              ? 'فقط الإشعارات والرسائل التي تبدو كمعاملة بنكية (مبلغ بعملة + خصم/إيداع/تحويل…) من أي بنك أو تطبيق رسائل. أي إشعار آخر مثل WhatsApp أو الإيميل يتم تجاهله على الجهاز قبل أي معالجة.'
+              : 'Only notifications and SMS that look like a bank transaction (an amount in a currency plus a debit / credit / transfer wording), from any bank or messaging app. Everything else - chats, email, social - is dropped on your phone before anything is sent.'}
           </Text>
         </RCard>
 
@@ -137,8 +137,19 @@ export default function CaptureSetupAndroidScreen() {
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>
             {lang === 'ar'
-              ? 'عند موافقتك، Android يفتح صفحة "وصول الإشعارات" (Notification access). فعّل "Seshat". بعدها كل إشعار بنكي يصل لك يفتح صفحة "رصد" داخل التطبيق بالمبلغ والتصنيف. أنت تؤكد وتحفظ.'
-              : 'When you tap below, Android opens the "Notification access" settings page. Toggle Seshat on. After that, every bank notification you get auto-opens the Capture screen in this app, with the amount and category ready to confirm.'}
+              ? 'عند موافقتك، Android يفتح صفحة "وصول الإشعارات" (Notification access). فعّل "Seshat". بعدها كل رسالة أو إشعار بنكي يُسجَّل تلقائياً في الخلفية بالمبلغ والتصنيف والبطاقة، بدون فتح التطبيق، وتصلك رسالة تأكيد. تستطيع تعديله أو حذفه من السجل.'
+              : 'When you tap below, Android opens the "Notification access" settings page. Toggle Seshat on. After that, every bank SMS or notification is logged automatically in the background - amount, category and card - without opening the app. You can edit or delete it from Records.'}
+          </Text>
+        </RCard>
+
+        <RCard padding={18} style={{ marginBottom: 14 }}>
+          <Text style={{
+            fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted,
+            textAlign: lang === 'ar' ? 'right' : 'left',
+          }}>
+            {lang === 'ar'
+              ? 'ملاحظة: إذا ثبّتّ التطبيق من ملف APK وكان خيار Seshat رمادياً في صفحة وصول الإشعارات (Android 13+): افتح إعدادات الهاتف ← التطبيقات ← Seshat ← القائمة ⋮ ← "السماح بالإعدادات المقيّدة"، ثم ارجع وفعّله.'
+              : 'Note: if you installed from an APK and Seshat is greyed out on the Notification access page (Android 13+): open Settings → Apps → Seshat → ⋮ menu → "Allow restricted settings", then go back and turn it on.'}
           </Text>
         </RCard>
 
