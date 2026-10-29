@@ -94,7 +94,8 @@
           }
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "./plugins/withPodDeploymentTarget"
     ],
     "extra": {
       "router": {},
