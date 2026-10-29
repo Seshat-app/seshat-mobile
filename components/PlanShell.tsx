@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useRef } from 'react';
 import { View, Text, Pressable, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Plus } from 'lucide-react-native';
+import { LiquidBackdrop } from './LiquidBackdrop';
+import { isLiquid } from './Glass';
 import { useI18n } from '../lib/i18n';
 import { radius, T } from '../lib/theme';
 import { fontHead } from '../lib/fonts';
@@ -39,10 +41,11 @@ export function PlanScreen({
           hitSlop={10}
           style={({ pressed }) => ({
             width: 36, height: 36, borderRadius: radius.btn,
-            backgroundColor: pressed ? tok.elevated : tok.surface,
+            backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.elevated : tok.surface),
             alignItems: 'center', justifyContent: 'center',
           })}
         >
+          <LiquidBackdrop radius={radius.btn} fallback="transparent" />
           <ChevronLeft size={20} color={tok.bone} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -65,10 +68,11 @@ export function PlanScreen({
             hitSlop={10}
             style={({ pressed }) => ({
               width: 36, height: 36, borderRadius: radius.btn,
-              backgroundColor: pressed ? tok.goldLight : tok.gold,
+              backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.goldLight : tok.gold),
               alignItems: 'center', justifyContent: 'center',
             })}
           >
+            <LiquidBackdrop radius={radius.btn} tint={tok.gold} fallback="transparent" />
             <Plus size={20} color={tok.void} strokeWidth={2.2} />
           </Pressable>
         )}

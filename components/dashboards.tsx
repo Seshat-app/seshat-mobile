@@ -43,6 +43,8 @@ export type DashboardData = {
     net: number;
     budgetPct: number | null;
   }>;
+  // Net (income − expense) per day for the last 30 days, oldest → newest.
+  dailyNet?: Array<{ date: string; net: number }>;
   recentTransactions: TxRowData[];
 };
 
@@ -160,6 +162,38 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
 // ─────────────────────────────────────────────────────────────
 // Numbers-first (Dashboard A) — canonical numbers-as-hero layout
 // ─────────────────────────────────────────────────────────────
+
+// Real daily-net bars for the last 30 days: income days rise above a centre line,
+// spending days drop below it; today is gold. Quiet days are a thin tick.
+function DailyNetBars({ series, height }: { series?: Array<{ date: string; net: number }>; height: number }) {
+  const { tok } = useI18n();
+  const days = series && series.length ? series : Array.from({ length: 30 }, () => ({ date: '', net: 0 }));
+  const max = Math.max(1, ...days.map((d) => Math.abs(d.net)));
+  const half = height / 2;
+  return (
+    <View style={{ flexDirection: 'row', gap: 3, height, marginTop: 18 }}>
+      {days.map((d, i) => {
+        const isToday = i === days.length - 1;
+        const h = d.net === 0 ? 1.5 : Math.max(2.5, (Math.abs(d.net) / max) * half);
+        return (
+          <View key={i} style={{ flex: 1, height }}>
+            <View style={{ height: half, justifyContent: 'flex-end' }}>
+              {d.net >= 0 && (
+                <View style={{ height: h, borderRadius: 1, backgroundColor: isToday ? tok.gold : tok.borderHi, opacity: isToday ? 1 : 0.85 }} />
+              )}
+            </View>
+            <View style={{ height: half }}>
+              {d.net < 0 && (
+                <View style={{ height: h, borderRadius: 1, backgroundColor: isToday ? tok.gold : tok.alertText, opacity: isToday ? 1 : 0.55 }} />
+              )}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export function DashboardNumbers({ data, currency}: { data: DashboardData; currency: string }) {
   const { tok, lang, t } = useI18n();
   const router = useRouter();
@@ -474,24 +508,7 @@ export function DashboardBento({ data, currency}: { data: DashboardData; currenc
         <View style={{ marginTop: 14 }}>
           <RAmount value={data.current.balance} size={lang === 'ar' ? 38 : 42} currency={currency} decimals={0} />
         </View>
-        {/* Sparkbar — 30 days */}
-        <View style={{ flexDirection: 'row', gap: 3, alignItems: 'flex-end', height: 32, marginTop: 18 }}>
-          {Array.from({ length: 30 }).map((_, i) => {
-            const v = 0.3 + Math.abs(Math.sin(i * 0.7 + 1.4)) * 0.7;
-            const isToday = i === 27;
-            return (
-              <View
-                key={i}
-                style={{
-                  flex: 1, height: `${v * 100}%`,
-                  backgroundColor: isToday ? tok.gold : tok.borderHi,
-                  borderRadius: 1,
-                  opacity: isToday ? 1 : 0.5 + (i / 30) * 0.5,
-                }}
-              />
-            );
-          })}
-        </View>
+        <DailyNetBars series={data.dailyNet} height={40} />
         <REyebrow style={{ marginTop: 8 }}>30 {lang === 'ar' ? 'يوماً' : 'days'} · {lang === 'ar' ? 'الصافي اليومي' : 'daily net'}</REyebrow>
       </RCard>
 
@@ -636,15 +653,7 @@ function ChartSparkbar({ data, currency }: { data: DashboardData; currency: stri
         <View style={{ marginTop: 12 }}>
           <RAmount value={data.current.balance} size={lang === 'ar' ? 38 : 42} currency={currency} decimals={0} />
         </View>
-        <View style={{ flexDirection: 'row', gap: 3, alignItems: 'flex-end', height: 40, marginTop: 18 }}>
-          {Array.from({ length: 30 }).map((_, i) => {
-            const v = 0.3 + Math.abs(Math.sin(i * 0.7 + 1.4)) * 0.7;
-            const isToday = i === 27;
-            return (
-              <View key={i} style={{ flex: 1, height: `${v * 100}%`, backgroundColor: isToday ? tok.gold : tok.borderHi, borderRadius: 1, opacity: isToday ? 1 : 0.5 + (i / 30) * 0.5 }} />
-            );
-          })}
-        </View>
+        <DailyNetBars series={data.dailyNet} height={44} />
         <REyebrow style={{ marginTop: 10 }}>30 {lang === 'ar' ? 'يوماً' : 'days'} · {lang === 'ar' ? 'الصافي اليومي' : 'daily net'}</REyebrow>
       </View>
     </RCard>

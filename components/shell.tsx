@@ -1,4 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
+import { LiquidBackdrop } from './LiquidBackdrop';
+import { isLiquid } from './Glass';
 import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing, ActivityIndicator } from 'react-native';
 import { FrostedHeader } from './FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -388,7 +390,7 @@ export function RFAB({
       style={({ pressed }) => ({
         position: 'absolute', bottom: bottomOffset, ...side,
         width: 56, height: 56, borderRadius: 28,
-        backgroundColor: recording ? tok.alertText : tok.gold,
+        backgroundColor: recording ? tok.alertText : (isLiquid() ? 'transparent' : tok.gold),
         alignItems: 'center', justifyContent: 'center',
         transform: [{ scale: pressed || recording ? 0.95 : 1 }],
         shadowColor: recording ? tok.alertText : tok.gold,
@@ -401,6 +403,7 @@ export function RFAB({
       accessibilityLabel={recording ? 'Recording, release to send' : 'Add transaction'}
       accessibilityHint={onVoiceStart ? 'Tap to choose, long-press to speak to Seshat' : undefined}
     >
+      {!recording && <LiquidBackdrop radius={28} tint={tok.gold} fallback="transparent" />}
       {recording
         ? <Mic size={26} color={tok.void} strokeWidth={2.2} />
         : <Plus size={26} color={tok.void} strokeWidth={2.2} />}

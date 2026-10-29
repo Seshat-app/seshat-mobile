@@ -7,6 +7,8 @@ import { useI18n } from '../lib/i18n';
 import { useAppData, type WorkspaceSummary } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RCard, RButton } from './ui';
+import { LiquidBackdrop } from './LiquidBackdrop';
+import { isLiquid } from './Glass';
 
 /**
  * Tiny persistent pill showing the user's current workspace. Tap to summon
@@ -34,13 +36,14 @@ export function WorkspaceChip() {
         alignItems: 'center', gap: 7,
         paddingHorizontal: 12, paddingVertical: 7,
         borderRadius: 999,
-        backgroundColor: tok.glowShellBg,
-        borderWidth: 1,
+        backgroundColor: isLiquid() ? 'transparent' : tok.glowShellBg,
+        borderWidth: isLiquid() ? 0 : 1,
         borderColor: tok.glowShellBorder,
         opacity: pressed ? 0.85 : 1,
         alignSelf: 'flex-start',
       })}
     >
+      <LiquidBackdrop radius={999} tint="rgba(201,168,76,0.22)" fallback="transparent" />
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tok.gold }} />
       <Text
         numberOfLines={1}

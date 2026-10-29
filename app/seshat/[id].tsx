@@ -3,7 +3,9 @@ import {
   View, Text, FlatList, TextInput, Pressable, KeyboardAvoidingView, Platform, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
 import { FlatList as ScreenFlatList } from '../../components/Scroll';
-import { FrostedHeader } from '../../components/FrostedHeader';
+import { FrostedHeader, FrostedFooter } from '../../components/FrostedHeader';
+import { LiquidBackdrop } from '../../components/LiquidBackdrop';
+import { isLiquid } from '../../components/Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowUp, ChevronLeft, ImagePlus, Square } from 'lucide-react-native';
@@ -492,11 +494,12 @@ export default function ChatViewScreen() {
           hitSlop={10}
           style={({ pressed }) => ({
             width: 34, height: 34, borderRadius: radius.btn,
-            backgroundColor: pressed ? tok.elevated : tok.shellBg,
-            borderWidth: 1, borderColor: tok.shellBorder,
+            backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.elevated : tok.shellBg),
+            borderWidth: isLiquid() ? 0 : 1, borderColor: tok.shellBorder,
             alignItems: 'center', justifyContent: 'center',
           })}
         >
+          <LiquidBackdrop radius={radius.btn} fallback="transparent" />
           <ChevronLeft size={18} color={tok.bone} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -593,7 +596,7 @@ export default function ChatViewScreen() {
         </View>
       )}
 
-      <View style={{
+      <FrostedFooter style={{
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         paddingHorizontal: 16, paddingTop: 10, paddingBottom: Math.max(insets.bottom, 12),
         alignItems: 'flex-end', gap: 8,
@@ -686,7 +689,7 @@ export default function ChatViewScreen() {
             <ArrowUp size={18} color={input.trim() ? tok.void : tok.muted} />
           </Pressable>
         )}
-      </View>
+      </FrostedFooter>
       </KeyboardAvoidingView>
       <ImageViewer visible={viewerUri !== null} uri={viewerUri} onClose={() => setViewerUri(null)} />
     </ScreenScaffold>

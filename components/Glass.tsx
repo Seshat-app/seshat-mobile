@@ -39,6 +39,11 @@ try {
   liquidAvailable = false;
 }
 
+/** True when real iOS Liquid Glass is available (iOS 26+ with the native module). */
+export function isLiquid() {
+  return liquidAvailable && !!GlassView;
+}
+
 export function isGlassActive() {
   return liquidAvailable || !!BlurView;
 }
@@ -75,7 +80,7 @@ export function Glass({
   return (
     <View
       style={[
-        { borderRadius: radius, overflow: 'hidden', backgroundColor: fallbackColor },
+        { borderRadius: radius, overflow: 'hidden', backgroundColor: useLiquid ? 'transparent' : fallbackColor },
         style,
       ]}
     >
