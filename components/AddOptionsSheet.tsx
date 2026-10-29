@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Modal, Animated, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Modal, Animated, Easing, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Receipt, Sparkles, X } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
+import { DURATION, EASE } from '../lib/motion';
 import { RCard } from './ui';
 
 /**
@@ -34,8 +35,8 @@ export function AddOptionsSheet({ visible, onClose, onPickManual, onPickReceipt 
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(slide, { toValue: visible ? 1 : 0, duration: 240, useNativeDriver: true }),
-      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slide, { toValue: visible ? 1 : 0, duration: DURATION.base, easing: Easing.bezier(...EASE.out), useNativeDriver: true }),
+      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: DURATION.fast, useNativeDriver: true }),
     ]).start();
   }, [visible]);
 

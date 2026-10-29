@@ -15,6 +15,7 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { router } from 'expo-router';
 import { Platform } from 'react-native';
 import { apiFetch } from './api';
 
@@ -141,15 +142,33 @@ export async function registerForPushNotifications(): Promise<string | null> {
  *
  * `onMaatTap` (optional) is called when the user taps a `maat_message` push (Seshat proactive message).
  * It receives the sessionId so the caller can open the relevant chat thread.
+ *
+ * A budget-threshold push (`data.type === 'budget_threshold'` or a nested
+ * `data.meta.kind === 'budget_threshold'`) deep-links straight to /budgets.
+ * `onBudgetTap` (optional) overrides that default routing if provided.
  */
 export function subscribeToNotificationTaps(
   onHabitTap: (data: { categoryId?: string; ledgerId?: string }) => void,
   onMaatTap?: (data: { sessionId: string }) => void,
+  onBudgetTap?: () => void,
 ): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response?.notification?.request?.content?.data as
-      | { type?: string; categoryId?: string; ledgerId?: string; sessionId?: string }
+      | {
+          type?: string;
+          categoryId?: string;
+          ledgerId?: string;
+          sessionId?: string;
+          meta?: { kind?: string };
+        }
       | undefined;
+    // Budget threshold — the push may flag it at the top level (type) or inside
+    // meta.kind, mirroring the in-app notification shape.
+    if (data?.type === 'budget_threshold' || data?.meta?.kind === 'budget_threshold') {
+      if (onBudgetTap) onBudgetTap();
+      else router.push('/budgets');
+      return;
+    }
     if (data?.type === 'maat_message' && data?.sessionId) {
       onMaatTap?.({ sessionId: data.sessionId });
       return;

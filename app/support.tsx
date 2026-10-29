@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, MessageCircle, Mail } from 'lucide-react-native';
 import { apiFetch } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
+import { BRAND, WHATSAPP_URL, WHATSAPP_DISPLAY } from '../lib/brand';
 import { RButton, REyebrow, RField } from '../components/ui';
 import { ScreenScaffold } from '../components/Screen';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
@@ -115,6 +116,34 @@ export default function SupportScreen() {
             ? `هل تواجهين مشكلة؟ صفي ما حدث ومتى. سنرد على ${profile?.email ?? 'بريدكِ'} خلال 24-48 ساعة.`
             : `Hit a snag? Describe what happened and when. The team will reply to ${profile?.email ?? 'your email'} within 24-48h.`}
         </Text>
+
+        {/* Direct channels: faster than the form for quick questions */}
+        <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 10, marginBottom: 22 }}>
+          {[
+            { Icon: MessageCircle, label: lang === 'ar' ? 'واتساب' : 'WhatsApp', value: WHATSAPP_DISPLAY, url: WHATSAPP_URL, ltr: true },
+            { Icon: Mail, label: lang === 'ar' ? 'البريد' : 'Email', value: BRAND.supportEmail, url: `mailto:${BRAND.supportEmail}`, ltr: true },
+          ].map(({ Icon, label, value, url, ltr }) => (
+            <Pressable
+              key={label}
+              onPress={() => Linking.openURL(url).catch(() => {})}
+              accessibilityRole="link"
+              accessibilityLabel={`${label}: ${value}`}
+              style={({ pressed }) => ({
+                flex: 1, borderRadius: radius.btn, padding: 14, gap: 8,
+                backgroundColor: pressed ? tok.elevated : tok.shellBg,
+                borderWidth: 1, borderColor: tok.shellBorder,
+              })}
+            >
+              <Icon size={18} color={tok.gold} />
+              <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.4, textAlign: lang === 'ar' ? 'right' : 'left', textTransform: lang === 'ar' ? 'none' : 'uppercase' }}>
+                {label}
+              </Text>
+              <Text numberOfLines={1} style={{ color: tok.bone, fontFamily: fontBody(lang), fontSize: 13, writingDirection: ltr ? 'ltr' : undefined, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                {value}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
         {/* Subject */}
         <RField

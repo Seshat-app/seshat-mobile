@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 // changing (hotspot, WiFi switch, etc). Order of precedence:
 //   1. EXPO_PUBLIC_API_BASE env var (full URL, no trailing slash)
 //   2. Expo's debugger host (the IP Metro is serving from) + port 4000
-//   3. Hard-coded fallback for production / non-dev builds
+//   3. Fallback: localhost in dev, the production API in release builds
 function resolveApiBase(): string {
   const fromEnv = process.env.EXPO_PUBLIC_API_BASE;
   if (fromEnv) return fromEnv.replace(/\/$/, '') + '/api/v1';
@@ -19,7 +19,8 @@ function resolveApiBase(): string {
     const host = String(hostUri).split(':')[0];
     if (host) return `http://${host}:4000/api/v1`;
   }
-  return 'http://localhost:4000/api/v1';
+  // Release builds must never point at localhost if the env var is ever missing.
+  return __DEV__ ? 'http://localhost:4000/api/v1' : 'https://api.seshat.site/api/v1';
 }
 
 const API_BASE = resolveApiBase();

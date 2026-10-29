@@ -32,6 +32,8 @@ export type BrandConfig = {
   taglineAr: string;
   domain: string;
   supportEmail: string;
+  /** WhatsApp Business number, E.164. */
+  whatsapp: string;
   legalName: string;
   founderName: string;
   social: {
@@ -60,6 +62,7 @@ export const BRAND: BrandConfig = {
   taglineAr: '',
   domain: 'seshat.site',
   supportEmail: 'hello@seshat.site',
+  whatsapp: '+201501083695',
   legalName: 'Seshat',
   founderName: "Mo'men Khaled",
   social: {
@@ -86,3 +89,11 @@ export function brandName(lang: 'en' | 'ar'): string {
 export function brandTagline(lang: 'en' | 'ar'): string {
   return lang === 'ar' ? BRAND.taglineAr : BRAND.tagline;
 }
+
+/** wa.me deep link for the WhatsApp Business number. */
+export const WHATSAPP_URL = `https://wa.me/${BRAND.whatsapp.replace(/\D/g, '')}`;
+/** Display form: +20 150 108 3695. */
+export const WHATSAPP_DISPLAY = BRAND.whatsapp.replace(/^\+20(\d{3})(\d{3})(\d{4})$/, '+20 $1 $2 $3');
+
+/** The public site, for the About / Privacy / Terms pages. */
+export const SITE_URL = `https://${BRAND.domain}`;

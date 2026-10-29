@@ -1,8 +1,10 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BarChart3, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { BarChart3, Bell, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../lib/i18n';
+import { useNotifications } from '../lib/notifications';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { SeshatMark } from './SeshatMark';
 import { REyebrow, RAmount } from './ui';
@@ -88,11 +90,60 @@ export function RHomeHeader({
             {monthYear(lang)}
           </REyebrow>
         </View>
+        {/* Notifications now live in the tab bar (with the unread badge), so the
+            header no longer carries a bell. NotificationBell is still exported
+            for any surface that wants an inline entry point. */}
         {/* Workspace / org switcher — tap to switch ledgers. Lives where the
             view switcher used to be; the view now changes by swiping the hero. */}
         <WorkspaceChip />
       </View>
     </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// NotificationBell — header bell with a live unread badge. Taps
+// through to the /notifications screen. The badge count is derived
+// from useNotifications() so it stays in sync with reads/deletes.
+// ─────────────────────────────────────────────────────────────
+export function NotificationBell() {
+  const { tok, lang } = useI18n();
+  const router = useRouter();
+  const { unreadCount } = useNotifications();
+  const badge = unreadCount > 99 ? '99+' : String(unreadCount);
+  return (
+    <Pressable
+      onPress={() => router.push('/notifications')}
+      hitSlop={8}
+      accessibilityLabel={
+        unreadCount > 0
+          ? (lang === 'ar' ? `الإشعارات، ${unreadCount} غير مقروء` : `Notifications, ${unreadCount} unread`)
+          : (lang === 'ar' ? 'الإشعارات' : 'Notifications')
+      }
+      style={({ pressed }) => ({
+        width: 36, height: 36, borderRadius: 999,
+        alignItems: 'center', justifyContent: 'center',
+        backgroundColor: pressed ? tok.elevated : tok.shellBg,
+        borderWidth: 1, borderColor: tok.shellBorder,
+      })}
+    >
+      <Bell size={17} color={tok.bone} strokeWidth={1.7} />
+      {unreadCount > 0 && (
+        <View style={{
+          position: 'absolute', top: -3,
+          ...(lang === 'ar' ? { left: -3 } : { right: -3 }),
+          minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,
+          backgroundColor: tok.gold,
+          borderWidth: 1.5, borderColor: tok.void,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Text style={{
+            fontFamily: fontMono('medium'), fontSize: 9, lineHeight: 11,
+            color: tok.void, writingDirection: 'ltr',
+          }}>{badge}</Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 

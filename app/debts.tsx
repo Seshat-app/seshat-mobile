@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, Animated, Easing, Platform, StyleSheet, RefreshControl } from 'react-native';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trash2, X } from 'lucide-react-native';
@@ -9,6 +9,7 @@ import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
+import { DURATION, EASE } from '../lib/motion';
 import { RCard, REyebrow, RButton, RProgress, RField } from '../components/ui';
 import { PlanScreen } from '../components/PlanShell';
 import { SkeletonRow } from '../components/Skeleton';
@@ -21,6 +22,14 @@ type Debt = {
   currency: string;
   dueDate?: string;
   notes?: string;
+};
+
+type DebtPayment = {
+  _id: string;
+  amount: number;
+  currency: string;
+  note?: string;
+  date: string;
 };
 
 export default function DebtsScreen() {
@@ -97,6 +106,7 @@ export default function DebtsScreen() {
           defaultCurrency={profile?.currency ?? 'EGP'}
           onSave={onSave}
           onDelete={editing !== 'new' ? () => onDelete(editing._id) : undefined}
+          onPaymentsChanged={load}
         />
       )}
     </PlanScreen>
@@ -158,7 +168,7 @@ function DebtRow({ debt, onPress }: { debt: Debt; onPress: () => void }) {
 }
 
 function EditDebtSheet({
-  visible, onClose, onSave, onDelete, initial, defaultCurrency,
+  visible, onClose, onSave, onDelete, initial, defaultCurrency, onPaymentsChanged,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -166,12 +176,57 @@ function EditDebtSheet({
   onDelete?: () => Promise<void>;
   initial: Debt | null;
   defaultCurrency: string;
+  onPaymentsChanged: () => void;
 }) {
   const { tok, lang, t } = useI18n();
   const [creditor, setCreditor] = useState(initial?.creditor ?? '');
   const [total, setTotal] = useState(initial ? String(initial.totalAmount) : '');
   const [paid, setPaid] = useState(initial ? String(initial.paidAmount) : '');
   const [busy, setBusy] = useState(false);
+
+  // Payment history — only meaningful once the debt already exists.
+  const [payments, setPayments] = useState<DebtPayment[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payBusy, setPayBusy] = useState(false);
+
+  useEffect(() => {
+    if (!visible || !initial) { setPayments([]); return; }
+    let alive = true;
+    setPaymentsLoading(true);
+    apiFetch<{ data: DebtPayment[] }>(`/debts/${initial._id}/payments`)
+      .then((r) => { if (alive) setPayments(r.data); })
+      .catch(() => { /* keep silent — this is secondary info */ })
+      .finally(() => { if (alive) setPaymentsLoading(false); });
+    return () => { alive = false; };
+  }, [visible, initial]);
+
+  const addPayment = async () => {
+    const amount = parseFloat(payAmount);
+    if (!initial || !amount || amount <= 0 || payBusy) return;
+    setPayBusy(true);
+    try {
+      const res = await apiFetch<{ data: { payment: DebtPayment; debt: Debt } }>(`/debts/${initial._id}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({ amount }),
+        idempotencyKey: newIdempotencyKey(),
+      });
+      setPayments((cur) => [res.data.payment, ...cur]);
+      setPaid(String(res.data.debt.paidAmount));
+      setPayAmount('');
+      onPaymentsChanged();
+    } finally {
+      setPayBusy(false);
+    }
+  };
+
+  const deletePayment = async (paymentId: string) => {
+    if (!initial) return;
+    const res = await apiFetch<{ data: { debt: Debt } }>(`/debts/${initial._id}/payments/${paymentId}`, { method: 'DELETE' });
+    setPayments((cur) => cur.filter((p) => p._id !== paymentId));
+    setPaid(String(res.data.debt.paidAmount));
+    onPaymentsChanged();
+  };
 
   useEffect(() => {
     if (visible) {
@@ -185,8 +240,8 @@ function EditDebtSheet({
   const overlay = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(translate, { toValue: visible ? 0 : 800, duration: 320, useNativeDriver: true }),
-      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(translate, { toValue: visible ? 0 : 800, duration: DURATION.base, easing: Easing.bezier(...EASE.out), useNativeDriver: true }),
+      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: DURATION.fast, useNativeDriver: true }),
     ]).start();
   }, [visible]);
 
@@ -243,6 +298,60 @@ function EditDebtSheet({
             <RField label={lang === 'ar' ? 'إجمالي الدين' : 'Total amount'} value={total} onChange={(v) => setTotal(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
             <RField label={lang === 'ar' ? 'المسدَّد' : 'Paid so far'} value={paid} onChange={(v) => setPaid(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
           </View>
+
+          {initial && (
+            <View style={{ paddingHorizontal: 22, paddingTop: 18, gap: 10 }}>
+              <REyebrow>{lang === 'ar' ? 'سجل الدفعات' : 'Payment history'}</REyebrow>
+              <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <RField
+                    value={payAmount}
+                    onChange={(v) => setPayAmount(v.replace(/[^0-9.]/g, ''))}
+                    placeholder={lang === 'ar' ? 'مبلغ الدفعة' : 'Payment amount'}
+                    keyboardType="decimal-pad"
+                    mono
+                  />
+                </View>
+                <RButton onPress={addPayment} disabled={!payAmount || parseFloat(payAmount) <= 0 || payBusy} loading={payBusy}>
+                  {lang === 'ar' ? 'سجّل' : 'Record'}
+                </RButton>
+              </View>
+
+              {paymentsLoading ? (
+                <SkeletonRow />
+              ) : payments.length === 0 ? (
+                <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 12 }}>
+                  {lang === 'ar' ? 'لا توجد دفعات مسجَّلة بعد.' : 'No payments recorded yet.'}
+                </Text>
+              ) : (
+                <View style={{ gap: 2 }}>
+                  {payments.map((p) => (
+                    <View
+                      key={p._id}
+                      style={{
+                        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
+                        justifyContent: 'space-between', alignItems: 'center',
+                        paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                      }}
+                    >
+                      <View>
+                        <Text style={{ color: tok.bone, fontFamily: fontBody(lang, 'medium'), fontSize: 13.5, writingDirection: 'ltr' }}>
+                          {formatAmount(p.amount, { decimals: 0 })} {currencyLabel(p.currency, lang)}
+                        </Text>
+                        <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, marginTop: 2 }}>
+                          {new Date(p.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </Text>
+                      </View>
+                      <Pressable onPress={() => deletePayment(p._id)} hitSlop={8}>
+                        <Trash2 size={15} color={tok.alertText} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
           <View style={{ paddingHorizontal: 18, paddingTop: 18, gap: 10 }}>
             <RButton full onPress={submit} disabled={!canSave} loading={busy}>
               {busy ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : t('save')}

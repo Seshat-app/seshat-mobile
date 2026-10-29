@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Building2, ChevronRight, Layers, Mail, Plus, Send, Target, UserPlus, Users, X } from 'lucide-react-native';
 import { PlanScreen } from '../../components/PlanShell';
+import { ImageViewer } from '../../components/ImageViewer';
 import { RCard, REyebrow, RButton, RPill } from '../../components/ui';
 import { SkeletonRow } from '../../components/Skeleton';
 import { useI18n } from '../../lib/i18n';
@@ -41,6 +42,8 @@ export default function OrgDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [linking, setLinking] = useState(false);
+  // Full-screen preview for a tapped member avatar.
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (!id) return;
@@ -208,11 +211,17 @@ export default function OrgDetailScreen() {
                     borderBottomColor: tok.border,
                   }}
                 >
-                  <View style={{
-                    width: 36, height: 36, borderRadius: 18,
-                    backgroundColor: tok.elevated, overflow: 'hidden',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
+                  <Pressable
+                    onPress={m.avatarUrl ? () => setViewerUri(m.avatarUrl!) : undefined}
+                    disabled={!m.avatarUrl}
+                    accessibilityLabel={m.avatarUrl ? (lang === 'ar' ? 'عرض الصورة' : 'View photo') : undefined}
+                    style={({ pressed }) => ({
+                      width: 36, height: 36, borderRadius: 18,
+                      backgroundColor: tok.elevated, overflow: 'hidden',
+                      alignItems: 'center', justifyContent: 'center',
+                      opacity: pressed && m.avatarUrl ? 0.7 : 1,
+                    })}
+                  >
                     {m.avatarUrl ? (
                       <Image source={{ uri: m.avatarUrl }} style={{ width: 36, height: 36 }} />
                     ) : (
@@ -222,7 +231,7 @@ export default function OrgDetailScreen() {
                         {(m.displayName ?? m.email ?? '?')[0]?.toUpperCase()}
                       </Text>
                     )}
-                  </View>
+                  </Pressable>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text
                       numberOfLines={1}
@@ -464,6 +473,7 @@ export default function OrgDetailScreen() {
           </>
         )}
       </ScrollView>
+      <ImageViewer visible={viewerUri !== null} uri={viewerUri} onClose={() => setViewerUri(null)} />
     </PlanScreen>
   );
 }

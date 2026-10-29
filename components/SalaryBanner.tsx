@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, Modal, Animated, TextInput, Platform, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Modal, Animated, Easing, TextInput, Platform, StyleSheet } from 'react-native';
 import { Sparkles, X } from 'lucide-react-native';
 import { useI18n, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { T } from '../lib/theme';
+import { DURATION, EASE } from '../lib/motion';
 import { REyebrow, RButton, RCard } from './ui';
 import { useKeyboardHeight } from './useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,8 +80,8 @@ export function SetSalarySheet({
   const overlay = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(translate, { toValue: visible ? 0 : 800, duration: 320, useNativeDriver: true }),
-      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(translate, { toValue: visible ? 0 : 800, duration: DURATION.base, easing: Easing.bezier(...EASE.out), useNativeDriver: true }),
+      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: DURATION.fast, useNativeDriver: true }),
     ]).start();
   }, [visible]);
 

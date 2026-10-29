@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Tabs, useSegments, withLayoutContext, router } from 'expo-router';
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
-import { Home as HomeIcon, List, Sparkles, User } from 'lucide-react-native';
+import { Home as HomeIcon, List, Sparkles, User, Bell } from 'lucide-react-native';
+import { useNotifications } from '../../lib/notifications';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { apiFetch, newIdempotencyKey } from '../../lib/api';
@@ -84,6 +85,10 @@ export default function TabsLayout() {
     }
   };
 
+  // Unread count for the notifications tab badge. The hook polls + refreshes,
+  // so the badge stays live as notifications land and get read.
+  const { unreadCount: notifUnread } = useNotifications();
+
   return (
     <View style={{ flex: 1, backgroundColor: tok.void }}>
       {Platform.OS === 'ios' ? (
@@ -112,6 +117,14 @@ export default function TabsLayout() {
               title: t('maat'),
               tabBarIcon: () => ({ sfSymbol: 'sparkles' }),
               tabBarBadge: unreadMaatTotal > 0 ? String(unreadMaatTotal) : undefined,
+            }}
+          />
+          <NativeTabsNavigator.Screen
+            name="notifications"
+            options={{
+              title: lang === 'ar' ? 'الإشعارات' : 'Alerts',
+              tabBarIcon: () => ({ sfSymbol: 'bell' }),
+              tabBarBadge: notifUnread > 0 ? String(notifUnread) : undefined,
             }}
           />
           <NativeTabsNavigator.Screen
@@ -161,6 +174,17 @@ export default function TabsLayout() {
               tabBarIcon: ({ color }) => <Sparkles size={22} color={color} strokeWidth={1.5} />,
               tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('maat')}</TabLabel>,
               tabBarBadge: unreadMaatTotal > 0 ? unreadMaatTotal : undefined,
+            }}
+          />
+          <Tabs.Screen
+            name="notifications"
+            options={{
+              title: lang === 'ar' ? 'الإشعارات' : 'Alerts',
+              tabBarIcon: ({ color }) => <Bell size={22} color={color} strokeWidth={1.5} />,
+              tabBarLabel: ({ focused, color }) => (
+                <TabLabel focused={focused} color={color}>{lang === 'ar' ? 'الإشعارات' : 'Alerts'}</TabLabel>
+              ),
+              tabBarBadge: notifUnread > 0 ? notifUnread : undefined,
             }}
           />
           <Tabs.Screen

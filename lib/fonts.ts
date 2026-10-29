@@ -12,6 +12,13 @@ export const FF = {
   monoRegular: 'DMMono_400Regular',
   monoMedium: 'DMMono_500Medium',
 
+  // Body — Outfit. Syne is a display face; using it for 13-17px body copy
+  // and currency numbers (the old behavior) hurt legibility. Mirrors web's
+  // --font-body so the two surfaces read as one product.
+  outfitRegular: 'Outfit_400Regular',
+  outfitMedium: 'Outfit_500Medium',
+  outfitSemiBold: 'Outfit_600SemiBold',
+
   // Arabic — Cairo for headings AND body. Single family keeps the system
   // simple and matches what most modern Arab fintech apps (Tabby, Tamara,
   // Vodafone Cash) use. Swap by editing fontHead/fontBody if needed.
@@ -33,9 +40,9 @@ export function fontBody(lang: 'en' | 'ar', weight: 'regular' | 'medium' | 'semi
     if (weight === 'medium') return FF.cairoMedium;
     return FF.cairoRegular;
   }
-  if (weight === 'semibold') return FF.syneSemiBold;
-  if (weight === 'medium') return FF.syneMedium;
-  return FF.syneRegular;
+  if (weight === 'semibold') return FF.outfitSemiBold;
+  if (weight === 'medium') return FF.outfitMedium;
+  return FF.outfitRegular;
 }
 
 export const fontMono = (weight: 'light' | 'regular' | 'medium' = 'regular') =>

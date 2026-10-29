@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, Animated,
+  View, Text, Pressable, ScrollView, StyleSheet, Animated, Easing,
   Modal, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { useI18n, currencyLabel, localDateStr } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RSegmented, RButton, REyebrow, RField, RPill, RCard } from './ui';
 import { radius } from '../lib/theme';
+import { DURATION, EASE } from '../lib/motion';
 import { CategoryIcon, CatIconAlias } from './icons';
 import { catIdFromName, catLabel, type CatId } from '../lib/categoryMap';
 import { parseNL, parseNLMany } from '../lib/parseNL';
@@ -344,8 +345,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
       // Spring up on open (the "Telda" rise); quick clean slide on close.
       visible
         ? Animated.spring(translate, { toValue: 0, damping: 20, stiffness: 190, mass: 0.9, useNativeDriver: true })
-        : Animated.timing(translate, { toValue: 800, duration: 240, useNativeDriver: true }),
-      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: 220, useNativeDriver: true }),
+        : Animated.timing(translate, { toValue: 800, duration: DURATION.base, easing: Easing.bezier(...EASE.out), useNativeDriver: true }),
+      Animated.timing(overlay, { toValue: visible ? 1 : 0, duration: DURATION.fast, useNativeDriver: true }),
     ]).start();
   }, [visible]);
 

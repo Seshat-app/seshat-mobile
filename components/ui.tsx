@@ -1,12 +1,13 @@
 import { ReactNode, memo, useEffect, useId, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, ScrollView, ActivityIndicator, TextInput,
+  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, Easing, ScrollView, ActivityIndicator, TextInput,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { X } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
+import { DURATION, EASE } from '../lib/motion';
 import { Glass } from './Glass';
 import { pressFeel, hapticLight, hapticSelection } from './press';
 
@@ -547,8 +548,8 @@ export function RToast({ visible, children, bottomOffset = 110 }: { visible: boo
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(translate, { toValue: visible ? 0 : 140, duration: 260, useNativeDriver: true }),
-      Animated.timing(opacity, { toValue: visible ? 1 : 0, duration: 260, useNativeDriver: true }),
+      Animated.timing(translate, { toValue: visible ? 0 : 140, duration: DURATION.base, easing: Easing.bezier(...EASE.out), useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: visible ? 1 : 0, duration: DURATION.fast, useNativeDriver: true }),
     ]).start();
   }, [visible]);
 

@@ -4,8 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock,
+  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound,
+  MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check,
 } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
 import { signOut } from '../../lib/auth';
@@ -14,13 +16,14 @@ import { useAppData } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RButton, RField, RPill } from '../../components/ui';
 import { ScreenScaffold } from '../../components/Screen';
+import { ImageViewer } from '../../components/ImageViewer';
 import { Skeleton } from '../../components/Skeleton';
 import { SetSalarySheet } from '../../components/SalaryBanner';
 import { SetMonthStartSheet } from '../../components/MonthStartSheet';
 import { WorkspaceCard } from '../../components/WorkspaceSwitcher';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
-import { BRAND } from '../../lib/brand';
+import { BRAND, WHATSAPP_URL, WHATSAPP_DISPLAY, SITE_URL } from '../../lib/brand';
 import { pressFeel, hapticLight } from '../../components/press';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
@@ -34,6 +37,10 @@ type Profile = {
   currency: string;
   monthlySalary?: number | null;
   monthStartDay?: number;
+  plan?: string;
+  planSource?: string;
+  createdAt?: string;
+  referralCode?: string;
 };
 
 export default function ProfileScreen() {
@@ -61,6 +68,8 @@ export default function ProfileScreen() {
   const [salaryOpen, setSalaryOpen] = useState(false);
   const [monthStartOpen, setMonthStartOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  // Full-screen preview when the user taps their existing avatar.
+  const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
   // Workspace switcher modal state lives in AppData context (see opener
   // destructured above) so any screen can summon it.
   // Danger zone is collapsed by default so users don't tap delete by reflex
@@ -247,27 +256,28 @@ export default function ProfileScreen() {
               </>
             ) : (
               <>
-                <Pressable
-                  onPress={handleChangePhoto}
-                  disabled={uploadingAvatar}
-                  style={({ pressed }) => ({
-                    width: 56, height: 56,
-                    // No overflow clip here - the badge sits at bottom-right
-                    // extending past the avatar circle and would get cut off
-                    // if the parent clipped its children.
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  {/* Inner circle wraps the image and clips to a round shape.
-                      Keeping the clip on this child instead of the parent
-                      lets the badge below extend outside the circle bounds. */}
-                  <View style={{
-                    width: 56, height: 56, borderRadius: 28,
-                    backgroundColor: tok.elevated,
-                    borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                    alignItems: 'center', justifyContent: 'center',
-                    overflow: 'hidden',
-                  }}>
+                {/* Outer container isn't pressable itself - it has no overflow
+                    clip so the camera badge can extend past the avatar circle
+                    without being cut off. The circle and the badge are their
+                    own pressables: tap the photo to preview it full-screen, tap
+                    the badge to change it (when there's no photo yet, tapping
+                    the circle opens the picker straight away). */}
+                <View style={{ width: 56, height: 56 }}>
+                  <Pressable
+                    onPress={profile.avatarUrl ? () => setAvatarViewerOpen(true) : handleChangePhoto}
+                    disabled={uploadingAvatar}
+                    accessibilityLabel={profile.avatarUrl
+                      ? (lang === 'ar' ? 'عرض الصورة' : 'View photo')
+                      : (lang === 'ar' ? 'إضافة صورة' : 'Add photo')}
+                    style={({ pressed }) => ({
+                      width: 56, height: 56, borderRadius: 28,
+                      backgroundColor: tok.elevated,
+                      borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                      alignItems: 'center', justifyContent: 'center',
+                      overflow: 'hidden',
+                      opacity: pressed ? 0.7 : 1,
+                    })}
+                  >
                     {profile.avatarUrl ? (
                       <Image
                         source={{ uri: profile.avatarUrl }}
@@ -279,22 +289,29 @@ export default function ProfileScreen() {
                         fontSize: 20, letterSpacing: -0.4,
                       }}>{initial}</Text>
                     )}
-                  </View>
+                  </Pressable>
                   {/* Camera badge - sits over the bottom-right edge of the
-                      circle as a tap hint. Border matches the card surface so
-                      the badge reads as separate from the avatar disc. */}
-                  <View style={{
-                    position: 'absolute', bottom: -2, right: -2,
-                    width: 22, height: 22, borderRadius: 11,
-                    backgroundColor: tok.gold,
-                    borderWidth: 2, borderColor: tok.surface,
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
+                      circle. Border matches the card surface so the badge reads
+                      as separate from the avatar disc. Its own tap target so it
+                      still changes the photo even when the circle previews it. */}
+                  <Pressable
+                    onPress={handleChangePhoto}
+                    disabled={uploadingAvatar}
+                    hitSlop={8}
+                    accessibilityLabel={lang === 'ar' ? 'تغيير الصورة' : 'Change photo'}
+                    style={{
+                      position: 'absolute', bottom: -2, right: -2,
+                      width: 22, height: 22, borderRadius: 11,
+                      backgroundColor: tok.gold,
+                      borderWidth: 2, borderColor: tok.surface,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
                     {uploadingAvatar
                       ? <ActivityIndicator size="small" color={tok.void} />
                       : <Camera size={11} color={tok.void} strokeWidth={2.2} />}
-                  </View>
-                </Pressable>
+                  </Pressable>
+                </View>
                 <View style={{ flex: 1 }}>
                   <TextInput
                     value={displayName}
@@ -446,10 +463,13 @@ export default function ProfileScreen() {
           </RCard>
         </View>
 
-        {/* Help — support contact + future help articles */}
+        {/* Account — plan, join date, referral code (same as the web Settings) */}
+        {profile && <AccountCard profile={profile} />}
+
+        {/* Help & about — support, direct contact, and the public pages */}
         <View style={{ marginTop: 18 }}>
           <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-            {lang === 'ar' ? 'المساعدة' : 'Help'}
+            {lang === 'ar' ? 'المساعدة والمعلومات' : 'Help & about'}
           </REyebrow>
           <RCard padding={0} style={{ paddingHorizontal: 16 }}>
             <PlanRow
@@ -457,6 +477,52 @@ export default function ProfileScreen() {
               title={lang === 'ar' ? 'الدعم' : 'Support'}
               hint={lang === 'ar' ? 'أبلغي عن مشكلة أو اطلبي مساعدة' : 'Report a problem or ask for help'}
               onPress={() => router.push('/support')}
+            />
+            <PlanRow
+              icon={MessageCircle}
+              title={lang === 'ar' ? 'واتساب' : 'WhatsApp'}
+              hint={WHATSAPP_DISPLAY}
+              onPress={() => Linking.openURL(WHATSAPP_URL).catch(() => {})}
+            />
+            <PlanRow
+              icon={Mail}
+              title={lang === 'ar' ? 'البريد الإلكتروني' : 'Email us'}
+              hint={BRAND.supportEmail}
+              onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}`).catch(() => {})}
+            />
+            <PlanRow
+              icon={Info}
+              title={lang === 'ar' ? 'عن سيشات' : 'About Seshat'}
+              hint={lang === 'ar' ? 'قصتنا وكيف يعمل' : 'Our story and how it works'}
+              onPress={() => Linking.openURL(`${SITE_URL}/about`).catch(() => {})}
+            />
+            <PlanRow
+              icon={ShieldCheck}
+              title={lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
+              hint={lang === 'ar' ? 'ما نجمعه ولماذا' : 'What we collect and why'}
+              onPress={() => Linking.openURL(`${SITE_URL}/privacy`).catch(() => {})}
+            />
+            <PlanRow
+              icon={ScrollText}
+              title={lang === 'ar' ? 'شروط الخدمة' : 'Terms of Service'}
+              hint={lang === 'ar' ? 'قواعد استخدام سيشات' : 'The rules of using Seshat'}
+              onPress={() => Linking.openURL(`${SITE_URL}/terms`).catch(() => {})}
+              last
+            />
+          </RCard>
+        </View>
+
+        {/* Security — account credentials */}
+        <View style={{ marginTop: 18 }}>
+          <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'الأمان' : 'Security'}
+          </REyebrow>
+          <RCard padding={0} style={{ paddingHorizontal: 16 }}>
+            <PlanRow
+              icon={KeyRound}
+              title={lang === 'ar' ? 'تغيير كلمة السر' : 'Change password'}
+              hint={lang === 'ar' ? 'حدّثي كلمة سر حسابك' : 'Update your account password'}
+              onPress={() => router.push('/change-password')}
               last
             />
           </RCard>
@@ -605,9 +671,89 @@ export default function ProfileScreen() {
         initialDay={profile?.monthStartDay ?? 1}
       />
 
+      <ImageViewer
+        visible={avatarViewerOpen}
+        uri={profile?.avatarUrl ?? null}
+        onClose={() => setAvatarViewerOpen(false)}
+      />
+
       {/* WorkspaceSheet is mounted globally at the tabs layout level so
           it can be summoned from any screen via openWorkspaceSheet(). */}
     </ScreenScaffold>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// AccountCard: read-only account facts (plan, joined, referral code)
+// ─────────────────────────────────────────────────────────────
+function AccountCard({ profile }: { profile: Profile }) {
+  const { tok, lang } = useI18n();
+  const [copied, setCopied] = useState(false);
+  const ar = lang === 'ar';
+  const cap = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
+  const joined = profile.createdAt && !Number.isNaN(new Date(profile.createdAt).getTime())
+    ? new Date(profile.createdAt).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '—';
+
+  const copy = async () => {
+    if (!profile.referralCode) return;
+    try {
+      await Clipboard.setStringAsync(profile.referralCode);
+      hapticLight();
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard unavailable: the code is still on screen */ }
+  };
+
+  const rows: { label: string; value: string }[] = [
+    { label: ar ? 'الخطة' : 'Plan', value: cap(profile.plan) },
+    { label: ar ? 'مصدر الخطة' : 'Plan source', value: cap(profile.planSource) },
+    { label: ar ? 'تاريخ الانضمام' : 'Joined', value: joined },
+  ];
+
+  return (
+    <View style={{ marginTop: 18 }}>
+      <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>
+        {ar ? 'الحساب' : 'Account'}
+      </REyebrow>
+      <RCard padding={0} style={{ paddingHorizontal: 16 }}>
+        {rows.map((r, i) => (
+          <View
+            key={r.label}
+            style={{
+              flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center',
+              paddingVertical: 14,
+              borderBottomWidth: i === rows.length - 1 && !profile.referralCode ? 0 : 1,
+              borderBottomColor: tok.shellBorder,
+            }}
+          >
+            <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.2, textTransform: ar ? 'none' : 'uppercase' }}>
+              {r.label}
+            </Text>
+            <Text style={{ color: tok.bone, fontFamily: fontBody(lang), fontSize: 14 }}>{r.value}</Text>
+          </View>
+        ))}
+        {profile.referralCode ? (
+          <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14 }}>
+            <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.2, textTransform: ar ? 'none' : 'uppercase' }}>
+              {ar ? 'رمز الإحالة' : 'Referral code'}
+            </Text>
+            <Pressable
+              onPress={copy}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={ar ? 'نسخ رمز الإحالة' : 'Copy referral code'}
+              style={({ pressed }) => ({ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, opacity: pressed ? 0.6 : 1 })}
+            >
+              <Text style={{ color: tok.gold, fontFamily: fontMono('medium'), fontSize: 14, letterSpacing: 2.4 }}>
+                {profile.referralCode}
+              </Text>
+              {copied ? <Check size={15} color={tok.gold} /> : <Copy size={15} color={tok.muted} />}
+            </Pressable>
+          </View>
+        ) : null}
+      </RCard>
+    </View>
   );
 }
 
