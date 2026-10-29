@@ -125,6 +125,17 @@ function ChatBubbleInner({
   const hasTxBlock = !!message.blocks?.some((b) => b.type === 'transactions');
   const showBlocks = hasBlocks && !stillTyping;
 
+  // Waiting on the model with nothing to show yet: no empty bubble with a blinking
+  // cursor. Just the live activity line ("Working…", "Checking your budgets"); the
+  // bubble appears once the reply actually has text.
+  if (isAssistant && message.pending && !message.content) {
+    return (
+      <View style={{ alignSelf: anchor, marginBottom: 14, paddingHorizontal: 4, maxWidth: '84%' }}>
+        <ActivityTrace steps={message.activity} active />
+      </View>
+    );
+  }
+
   return (
     // While a turn streams, the bubble holds a fixed width (and the inner
     // bubble stretches to fill it) so the trace can't squeeze into a narrow box
