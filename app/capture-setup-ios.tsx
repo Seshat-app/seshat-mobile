@@ -26,9 +26,10 @@ import { S } from '../lib/theme';
  *  6. Repeat for each bank / payment app.
  */
 
-// Hosted iCloud Shortcuts share URL. Replace with the real link once the
-// Shortcut is published. Until then, the button shows "Coming soon".
-const SHORTCUT_URL = 'https://www.icloud.com/shortcuts/SESHAT_CAPTURE_PLACEHOLDER';
+// Signed Shortcut hosted on the website (seshat-web/public/seshat-capture.shortcut).
+// The shortcuts:// link makes the Shortcuts app import it directly.
+const SHORTCUT_URL =
+  'shortcuts://import-shortcut?url=' + encodeURIComponent('https://seshat.site/seshat-capture.shortcut') + '&name=' + encodeURIComponent('Seshat Capture');
 
 const BANK_KEYWORDS: { label: string; keywords: string[] }[] = [
   { label: 'CIB', keywords: ['CIB', 'Commercial International'] },
@@ -53,16 +54,14 @@ export default function CaptureSetupIosScreen() {
   };
 
   const openShortcut = () => {
-    if (SHORTCUT_URL.includes('PLACEHOLDER')) {
+    Linking.openURL(SHORTCUT_URL).catch(() =>
       Alert.alert(
-        lang === 'ar' ? 'قريباً' : 'Coming soon',
+        lang === 'ar' ? 'تعذّر فتح الاختصارات' : 'Could not open Shortcuts',
         lang === 'ar'
-          ? 'سنُتيح اختصار سيشات قريباً. حتى ذلك الحين تابع باقي الخطوات يدوياً.'
-          : 'The Seshat Shortcut will be published shortly. Follow the rest of the steps for now.',
-      );
-      return;
-    }
-    Linking.openURL(SHORTCUT_URL);
+          ? 'تأكد من وجود تطبيق الاختصارات على جهازك ثم أعد المحاولة.'
+          : 'Make sure the Shortcuts app is installed on your iPhone, then try again.',
+      ),
+    );
   };
 
   return (

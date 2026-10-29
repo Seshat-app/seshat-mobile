@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   View, Text, Pressable, TextInput, Animated, Easing,
-  ScrollView, KeyboardAvoidingView, Platform,
+  ScrollView, KeyboardAvoidingView, Platform, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight, Check } from 'lucide-react-native';
@@ -22,11 +22,17 @@ import { ScreenAtmosphere } from './ScreenAtmosphere';
 // name, salary, month-start day) and calls onDone. Anything skipped is simply
 // omitted so it stays editable later from Profile.
 // ─────────────────────────────────────────────────────────────
-const SCENES = ['gate', 'name', 'salary', 'month', 'threshold'] as const;
+// iPhones get one extra scene: installing the bank-SMS capture Shortcut (Apple does not
+// let apps read other apps' notifications, so the Shortcuts app does the capturing).
+const SCENES = (Platform.OS === 'ios'
+  ? ['gate', 'name', 'salary', 'month', 'capture', 'threshold']
+  : ['gate', 'name', 'salary', 'month', 'threshold']) as readonly ('gate' | 'name' | 'salary' | 'month' | 'capture' | 'threshold')[];
+const SHORTCUT_URL =
+  'shortcuts://import-shortcut?url=' + encodeURIComponent('https://seshat.site/seshat-capture.shortcut') + '&name=' + encodeURIComponent('Seshat Capture');
 // The stepper shows for the four numbered scenes (Gate..Month); the threshold
 // is the finale and drops it.
-const RAIL_COUNT = 4;
-const ROMAN = ['I', 'II', 'III', 'IV'];
+const RAIL_COUNT = Platform.OS === 'ios' ? 5 : 4;
+const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
 
 export function OnboardingTour({
   initialName, currency = 'EGP', onDone,
@@ -117,7 +123,7 @@ export function OnboardingTour({
                 <Headline l1={ar ? 'تفضّل' : 'Step'} l2={ar ? 'بالدخول' : 'inside'} />
                 <Spacer />
                 <CTA label={ar ? 'لنبدأ' : 'Begin'} onPress={goNext} />
-                <BeginHint label={ar ? 'أربع لحظات قصيرة' : '4 quick scenes'} />
+                <BeginHint label={ar ? `${RAIL_COUNT} لحظات قصيرة` : `${RAIL_COUNT} quick scenes`} />
               </Centered>
             )}
 
@@ -188,6 +194,31 @@ export function OnboardingTour({
                 </Text>
                 <Spacer />
                 <CTA label={ar ? 'متابعة' : 'Continue'} onPress={goNext} />
+              </SceneBody>
+            )}
+
+            {scene === 'capture' && (
+              <SceneBody
+                narration={ar
+                  ? 'ليسجّل سيشات معاملات بنكك تلقائياً: ثبّت اختصار "Seshat Capture"، ثم اضبط الأتمتة مرة واحدة.'
+                  : 'Let Seshat log your bank messages automatically: add the "Seshat Capture" shortcut, then set up the automation once.'}
+                l1={ar ? 'الرصد' : 'Auto'} l2={ar ? 'التلقائي' : 'capture'}
+              >
+                <Text style={{
+                  marginTop: 22, textAlign: 'center', fontFamily: fontBody(lang), fontSize: 13.5,
+                  lineHeight: 20, color: tok.muted,
+                }}>
+                  {ar
+                    ? 'بعد إضافة الاختصار افتح تطبيق الاختصارات ← الأتمتة ← أتمتة شخصية ← رسالة، واختر اسم بنكك. الخطوات الكاملة في الملف الشخصي ← الرصد التلقائي.'
+                    : 'After adding it, open Shortcuts → Automation → New Personal Automation → Message, and pick your bank. Full steps are always in Profile → Auto-capture.'}
+                </Text>
+                <Spacer />
+                <CTA label={ar ? 'إضافة الاختصار' : 'Get the Shortcut'} onPress={() => { void Linking.openURL(SHORTCUT_URL).catch(() => {}); }} />
+                <Pressable onPress={goNext} hitSlop={8} style={{ alignSelf: 'center', marginTop: 14 }}>
+                  <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 12.5 }}>
+                    {ar ? 'لاحقاً' : 'Maybe later'}
+                  </Text>
+                </Pressable>
               </SceneBody>
             )}
 
