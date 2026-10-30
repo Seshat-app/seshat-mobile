@@ -72,10 +72,13 @@ struct MonthViewContent: View {
             if s.monthIncome > 0 { stat(L.t("Income", "الدخل"), "\(L.full(s.monthIncome))") }
           }
           if let last = s.last {
-            Text("\(last.emoji) \(last.counterparty.isEmpty ? last.category : last.counterparty) · \(last.type == "income" ? "+" : "−")\(L.full(last.amount))")
-              .font(.system(size: 11, weight: .medium))
-              .foregroundStyle(Theme.dim)
-              .lineLimit(1)
+            HStack(spacing: 5) {
+              CategoryGlyph(icon: last.icon, size: 11, color: Theme.dim)
+              Text("\(last.counterparty.isEmpty ? last.category : last.counterparty) · \(last.type == "income" ? "+" : "−")\(L.full(last.amount))")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.dim)
+                .lineLimit(1)
+            }
           }
         }
         Spacer(minLength: 0)

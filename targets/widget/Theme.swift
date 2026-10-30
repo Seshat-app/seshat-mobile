@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// The Seshat look: near-black void, gold accent, warm off-white text.
 enum Theme {
@@ -79,5 +80,26 @@ struct Eyebrow: View {
       .font(.system(size: 9, weight: .medium, design: .monospaced))
       .tracking(1.6)
       .foregroundStyle(Theme.gold)
+  }
+}
+
+/// A category's mark: the same lucide glyph the app and website use, bundled as a template
+/// image named `cat-<icon key>` (unknown or empty keys fall back to the "other" box).
+struct CategoryGlyph: View {
+  /// The bundle holding the icon assets (the widget extension itself; a test harness can point elsewhere).
+  static var bundle: Bundle = .main
+
+  var icon: String
+  var size: CGFloat = 14
+  var color: Color = Theme.gold
+
+  var body: some View {
+    let name = UIImage(named: "cat-\(icon)", in: Self.bundle, compatibleWith: nil) != nil ? "cat-\(icon)" : "cat-other"
+    Image(name, bundle: Self.bundle)
+      .renderingMode(.template)
+      .resizable()
+      .scaledToFit()
+      .frame(width: size, height: size)
+      .foregroundStyle(color)
   }
 }

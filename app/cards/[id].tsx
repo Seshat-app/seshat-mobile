@@ -13,6 +13,8 @@ import { apiFetch, hasToken } from '../../lib/api';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { S } from '../../lib/theme';
 import type { CardDetail } from '../../lib/cards';
+import { CategoryIconByKey } from '../../components/icons';
+import { iconKeyForCategory } from '../../lib/categoryMap';
 
 /** /cards/[id] - one card: this month and all-time income/expense, top categories, every operation. */
 export default function CardDetailScreen() {
@@ -112,9 +114,12 @@ export default function CardDetailScreen() {
                   return (
                     <View key={c.categoryId} style={{ marginBottom: 10 }}>
                       <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={{ fontFamily: fontBody(lang), fontSize: 13.5, color: tok.bone }}>
-                          {c.emoji ? `${c.emoji} ` : ''}{ar && c.nameAr ? c.nameAr : c.nameEn}
-                        </Text>
+                        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+                          <CategoryIconByKey iconKey={iconKeyForCategory(c)} size={15} color={tok.gold} />
+                          <Text style={{ fontFamily: fontBody(lang), fontSize: 13.5, color: tok.bone }}>
+                            {ar && c.nameAr ? c.nameAr : c.nameEn}
+                          </Text>
+                        </View>
                         <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: tok.muted }}>
                           {Math.round(c.total).toLocaleString()} {currency} · {pct}%
                         </Text>

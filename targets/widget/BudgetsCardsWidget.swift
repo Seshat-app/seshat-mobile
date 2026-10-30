@@ -33,7 +33,10 @@ struct BudgetsCardsViewContent: View {
         ForEach(s.budgets.prefix(budgetCount)) { b in
           VStack(spacing: 4) {
             HStack {
-              Text("\(b.emoji) \(b.name)").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.text).lineLimit(1)
+              HStack(spacing: 6) {
+                CategoryGlyph(icon: b.icon, size: 13)
+                Text(b.name).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.text).lineLimit(1)
+              }
               Spacer()
               Text("\(b.percent)%").font(.system(size: 11, weight: .bold, design: .rounded)).foregroundStyle(Theme.tone(b.percent))
             }

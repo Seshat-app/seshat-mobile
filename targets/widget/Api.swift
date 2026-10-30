@@ -20,7 +20,7 @@ struct WidgetSummary: Codable {
   struct BudgetRow: Codable, Identifiable {
     var nameEn: String
     var nameAr: String
-    var emoji: String
+    var icon: String
     var limit: Double
     var spent: Double
     var percent: Int
@@ -41,7 +41,7 @@ struct WidgetSummary: Codable {
     var amount: Double
     var categoryEn: String
     var categoryAr: String
-    var emoji: String
+    var icon: String
     var date: String
     var category: String { L.isArabic && !categoryAr.isEmpty ? categoryAr : categoryEn }
   }
@@ -51,10 +51,10 @@ struct WidgetSummary: Codable {
     currency: "EGP", monthSpent: 4280, monthIncome: 18000, monthCount: 62,
     todaySpent: 215, todayCount: 3, budgetLimit: 7500, budgetPercent: 57,
     budgets: [
-      .init(nameEn: "Food & Dining", nameAr: "الطعام", emoji: "🍽", limit: 2200, spent: 1840, percent: 84),
-      .init(nameEn: "Transport", nameAr: "المواصلات", emoji: "🚗", limit: 1200, spent: 640, percent: 53),
-      .init(nameEn: "Shopping", nameAr: "التسوق", emoji: "🛍", limit: 1500, spent: 1620, percent: 108),
-      .init(nameEn: "Bills", nameAr: "الفواتير", emoji: "💡", limit: 2600, spent: 900, percent: 35),
+      .init(nameEn: "Food & Dining", nameAr: "الطعام", icon: "food", limit: 2200, spent: 1840, percent: 84),
+      .init(nameEn: "Transport", nameAr: "المواصلات", icon: "transport", limit: 1200, spent: 640, percent: 53),
+      .init(nameEn: "Shopping", nameAr: "التسوق", icon: "shopping", limit: 1500, spent: 1620, percent: 108),
+      .init(nameEn: "Bills", nameAr: "الفواتير", icon: "bill", limit: 2600, spent: 900, percent: 35),
     ],
     cards: [
       .init(label: "CIB ••4821", spent: 2310, count: 31),
@@ -62,7 +62,7 @@ struct WidgetSummary: Codable {
       .init(label: "Telda ••3321", spent: 730, count: 13),
     ],
     last: .init(counterparty: "Cilantro Zamalek", type: "expense", amount: 60, categoryEn: "Food & Dining",
-                categoryAr: "الطعام", emoji: "🍽", date: "2026-10-30T10:12:00.000Z"),
+                categoryAr: "الطعام", icon: "food", date: "2026-10-30T10:12:00.000Z"),
     updatedAt: "2026-10-30T10:30:00.000Z"
   )
 }

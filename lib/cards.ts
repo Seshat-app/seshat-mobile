@@ -14,7 +14,7 @@ export type CardSummary = {
 };
 
 export type CardDetail = Omit<CardSummary, 'lastUsedAt'> & {
-  topCategories: Array<{ categoryId: string; nameEn: string; nameAr?: string; emoji?: string; total: number; count: number }>;
+  topCategories: Array<{ categoryId: string; nameEn: string; nameAr?: string; icon?: string; total: number; count: number }>;
 };
 
 /** Short name for a populated card reference on a transaction row. */
