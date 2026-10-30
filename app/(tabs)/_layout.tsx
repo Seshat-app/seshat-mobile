@@ -15,6 +15,7 @@ import { AddOptionsSheet } from '../../components/AddOptionsSheet';
 import { RToast } from '../../components/ui';
 import { Tour, hasTourBeenSeen } from '../../components/Tour';
 import { useRecorder } from '../../components/useRecorder';
+import { onPendingAdd, takePendingAdd } from '../../lib/pendingAdd';
 
 // On iOS we use Expo Router's NativeTabs: the real UITabBar (Liquid Glass on
 // iOS 26+, regular blur on 17/18). On Android we keep the JS Tabs from
@@ -35,6 +36,17 @@ export default function TabsLayout() {
   const [sheetPrefill, setSheetPrefill] = useState<AddTxPrefill | undefined>(undefined);
   const [toast, setToast] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+
+  // Widget buttons (seshat://add?mode=...) land here via app/add.tsx.
+  useEffect(() => {
+    const apply = () => {
+      const mode = takePendingAdd();
+      if (mode === 'manual') { setSheetPrefill(undefined); setSheetOpen(true); }
+      else if (mode === 'receipt') { setSheetPrefill({ autoTriggerScan: true, source: 'receipt-ocr' }); setSheetOpen(true); }
+    };
+    apply();
+    return onPendingAdd(apply);
+  }, []);
 
   // FAB long-press → voice flow: recorder lives at the layout level so the
   // mic stays alive across navigation (the user can hold the FAB, release on
