@@ -76,9 +76,10 @@ struct Bar: View {
 struct Eyebrow: View {
   var text: String
   var body: some View {
-    Text(text.uppercased())
-      .font(.system(size: 9, weight: .medium, design: .monospaced))
-      .tracking(1.6)
+    // Letter-spacing breaks Arabic's connected letters, so it is English only.
+    Text(L.isArabic ? text : text.uppercased())
+      .font(.system(size: L.isArabic ? 11 : 9, weight: .medium, design: L.isArabic ? .default : .monospaced))
+      .tracking(L.isArabic ? 0 : 1.6)
       .foregroundStyle(Theme.gold)
   }
 }
