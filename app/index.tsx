@@ -21,6 +21,9 @@ import { OnboardingTour } from '../components/OnboardingTour';
 // the OAuth provider redirects back to the app. Safe to call at module scope.
 WebBrowser.maybeCompleteAuthSession();
 
+// Flip to true once the Android signing key's SHA-1 is registered in Google Cloud / Firebase.
+const GOOGLE_SIGN_IN = false;
+
 // Native OAuth clients (one per platform), registered in Google Cloud
 // Console project 1051327904371. We dropped the Web client + Expo auth
 // proxy because:
@@ -264,8 +267,9 @@ export default function AuthRouter() {
             <RButton full onPress={submitLogin} disabled={busy} loading={busy}>{busy ? t('pleaseWait') : t('signIn')}</RButton>
             {/* Google sign-in is Android-only for now. iOS requires a
                 separate review-friendly path (we'll wire Sign-In-with-Apple
-                + a re-thought Google flow there later). */}
-            {Platform.OS === 'android' && (
+                + a re-thought Google flow there later). Hidden until the Android
+                signing fingerprint is registered with Google (GOOGLE_SIGN_IN). */}
+            {GOOGLE_SIGN_IN && Platform.OS === 'android' && (
               <>
                 <AuthOr />
                 <SSOButton

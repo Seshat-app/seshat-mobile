@@ -1,6 +1,6 @@
 import { ReactNode, memo, useEffect, useId, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, Easing, ScrollView, ActivityIndicator, TextInput,
+  View, Text, Pressable, StyleSheet, ViewStyle, TextStyle, Animated, Easing, ScrollView, ActivityIndicator, TextInput, Platform,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { X } from 'lucide-react-native';
@@ -106,13 +106,14 @@ export function RCard({
           borderWidth: 1,
           borderColor: glow ? tok.glowShellBorder : tok.shellBorder,
         },
-        // Gold glow lifts focal cards off the void — kept soft and faint.
-        glow && {
+        // Gold glow lifts focal cards off the void — kept soft and faint. iOS only: Android
+        // draws `elevation` shadows through a see-through surface, which shows up as a dark
+        // inset box inside the card (the shell is only ~7% opaque).
+        glow && Platform.OS === 'ios' && {
           shadowColor: tok.glowShadow,
           shadowOpacity: 0.12,
           shadowRadius: 16,
           shadowOffset: { width: 0, height: 8 },
-          elevation: 3,
         },
         shell,
       ]}

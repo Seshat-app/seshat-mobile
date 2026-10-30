@@ -52,15 +52,20 @@ function resolveProjectId(): string | undefined {
  * (simulator, permission denied, no projectId, network error).
  */
 export async function registerForPushNotifications(): Promise<string | null> {
-  // Expo push tokens only work on real devices, not the simulator.
-  if (!Device.isDevice) {
-    console.log('[push] skipping - not a physical device');
-    return null;
-  }
-
   if (cachedToken) return cachedToken;
 
   try {
+    // Android 13+ only shows the permission prompt once a notification channel exists,
+    // so create it before asking.
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Reminders',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#0C0C0E',
+      });
+    }
+
     const { status: existing } = await Notifications.getPermissionsAsync();
     let status = existing;
     if (existing !== 'granted') {
@@ -73,14 +78,10 @@ export async function registerForPushNotifications(): Promise<string | null> {
       return null;
     }
 
-    // Android requires a notification channel to deliver heads-up alerts.
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Reminders',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#0C0C0E',
-      });
+    // Expo push tokens only work on real devices, not the simulator or emulator.
+    if (!Device.isDevice) {
+      console.log('[push] skipping token - not a physical device');
+      return null;
     }
 
     const projectId = resolveProjectId();
