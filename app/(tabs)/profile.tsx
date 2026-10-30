@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
   Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound,
-  MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check,
+  MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare,
 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
@@ -27,6 +27,7 @@ import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { BRAND, WHATSAPP_URL, WHATSAPP_DISPLAY, SITE_URL } from '../../lib/brand';
 import { pressFeel, hapticLight } from '../../components/press';
+import { bubbleSupported, isBubbleEnabled, setBubbleEnabled } from '../../lib/bubble';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
 
@@ -437,8 +438,9 @@ export default function ProfileScreen() {
                 ? (lang === 'ar' ? 'إعداد اختصار الرسائل البنكية' : 'Set up the bank-SMS Shortcut')
                 : (lang === 'ar' ? 'تفعيل قراءة إشعارات البنوك' : 'Enable bank notification reading')}
               onPress={() => router.push(Platform.OS === 'ios' ? '/capture-setup-ios' : '/capture-setup-android')}
-              last
+              last={!bubbleSupported()}
             />
+            {bubbleSupported() && <BubbleRow />}
           </RCard>
         </View>
 
@@ -810,8 +812,8 @@ function BuildFooter() {
 // PlanRow — single navigation row inside the Plan card
 // ─────────────────────────────────────────────────────────────
 function PlanRow({
-  icon: Icon, title, hint, onPress, last,
-}: { icon: any; title: string; hint: string; onPress: () => void; last?: boolean }) {
+  icon: Icon, title, hint, onPress, last, trailing,
+}: { icon: any; title: string; hint: string; onPress: () => void; last?: boolean; trailing?: React.ReactNode }) {
   const { tok, lang } = useI18n();
   return (
     <Pressable
@@ -851,8 +853,33 @@ function PlanRow({
           }}
         >{hint}</Text>
       </View>
-      <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
+      {trailing ?? <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />}
     </Pressable>
+  );
+}
+
+// Floating chat bubble on/off (Android 11+). Android draws the bubble itself; this only posts it.
+function BubbleRow() {
+  const { tok, lang } = useI18n();
+  const [on, setOn] = useState(false);
+  useEffect(() => { isBubbleEnabled().then(setOn); }, []);
+  const toggle = async (next: boolean) => setOn(await setBubbleEnabled(next, lang));
+  return (
+    <PlanRow
+      icon={MessagesSquare}
+      title={lang === 'ar' ? 'فقاعة سيشات العائمة' : 'Floating Seshat bubble'}
+      hint={lang === 'ar' ? 'تحدّث مع سيشات أو ماعت من فوق أي تطبيق' : 'Chat with Seshat or Maat over any app'}
+      onPress={() => toggle(!on)}
+      trailing={
+        <Switch
+          value={on}
+          onValueChange={toggle}
+          trackColor={{ false: tok.elevated, true: tok.gold }}
+          thumbColor={on ? tok.bone : tok.muted}
+        />
+      }
+      last
+    />
   );
 }
 

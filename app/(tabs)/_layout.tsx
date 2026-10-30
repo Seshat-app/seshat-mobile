@@ -5,6 +5,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Home as HomeIcon, List, Sparkles, User, Bell } from 'lucide-react-native';
 import { useNotifications } from '../../lib/notifications';
 import { useI18n } from '../../lib/i18n';
+import { restoreBubble } from '../../lib/bubble';
 import { useAppData } from '../../lib/appData';
 import { apiFetch, newIdempotencyKey } from '../../lib/api';
 import { fontMono } from '../../lib/fonts';
@@ -27,6 +28,8 @@ export default function TabsLayout() {
   const { categories, projects, profile, bumpVersion, refresh, unreadMaatTotal } = useAppData();
 
   useEffect(() => { refresh(); }, [refresh]);
+  // Bring the floating chat bubble back if it was on (reboot, or the user cleared it).
+  useEffect(() => { restoreBubble(lang).catch(() => {}); }, [lang]);
   const segments = useSegments();
   const currentTab = segments[segments.length - 1];
   const hideFab = currentTab === 'seshat';

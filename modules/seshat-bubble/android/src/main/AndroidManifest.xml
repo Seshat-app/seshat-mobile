@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- The chat panel the system shows inside the floating bubble (Android 11+). It must be
+       embeddable, resizable and open as its own document so every bubble gets a fresh task. -->
+  <application>
+    <activity
+      android:name="expo.modules.seshatbubble.BubbleActivity"
+      android:theme="@style/SeshatBubbleTheme"
+      android:exported="false"
+      android:allowEmbedded="true"
+      android:resizeableActivity="true"
+      android:documentLaunchMode="always"
+      android:windowSoftInputMode="adjustResize"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density" />
+  </application>
+</manifest>
