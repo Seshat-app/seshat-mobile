@@ -96,41 +96,19 @@ private struct DeviceConfig: Decodable {
 }
 
 private enum DeviceKeychain {
-  /// The app's keychain access group: this extension's own default group minus ".widget"
-  /// (TEAMID.com.seshat.mobile.widget -> TEAMID.com.seshat.mobile).
-  static func appGroup() -> String? {
-    let probe: [String: Any] = [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: "seshat.widget.probe",
-      kSecAttrAccount as String: "probe",
-      kSecReturnAttributes as String: true,
-    ]
-    var out: CFTypeRef?
-    var status = SecItemCopyMatching(probe as CFDictionary, &out)
-    if status == errSecItemNotFound {
-      var add = probe
-      add[kSecReturnAttributes as String] = nil
-      add[kSecValueData as String] = Data("1".utf8)
-      SecItemAdd(add as CFDictionary, nil)
-      status = SecItemCopyMatching(probe as CFDictionary, &out)
-    }
-    guard status == errSecSuccess,
-          let attrs = out as? [String: Any],
-          let group = attrs[kSecAttrAccessGroup as String] as? String,
-          group.hasSuffix(".widget") else { return nil }
-    return String(group.dropLast(".widget".count))
-  }
-
   /// Written by the app with expo-secure-store (service "app:no-auth", key "capture_config").
+  ///
+  /// No access group is named on purpose. The app has no explicit keychain-access-groups
+  /// entitlement, so it saves into the group named after its app ID (TEAM.com.seshat.mobile),
+  /// and this extension is signed with that same group. A query without a group searches every
+  /// group this process may read, so it finds the item whichever default group each side has.
   static func config() -> DeviceConfig? {
-    guard let group = appGroup() else { return nil }
     let key = Data("capture_config".utf8)
     let query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: "app:no-auth",
       kSecAttrAccount as String: key,
       kSecAttrGeneric as String: key,
-      kSecAttrAccessGroup as String: group,
       kSecMatchLimit as String: kSecMatchLimitOne,
       kSecReturnData as String: true,
     ]
