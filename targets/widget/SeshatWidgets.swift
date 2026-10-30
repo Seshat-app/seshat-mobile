@@ -7,6 +7,7 @@ struct SeshatWidgets: WidgetBundle {
     QuickAddWidget()
     MonthWidget()
     BudgetsCardsWidget()
+    MaatWidget()
     LockScreenWidget()
   }
 }

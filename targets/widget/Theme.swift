@@ -103,3 +103,19 @@ struct CategoryGlyph: View {
       .foregroundStyle(color)
   }
 }
+
+/// One of the bundled brand marks (`mark-scale`, `mark-feather`), tinted like a glyph.
+struct MarkGlyph: View {
+  var name: String
+  var size: CGFloat = 16
+  var color: Color = Theme.gold
+
+  var body: some View {
+    Image(name, bundle: CategoryGlyph.bundle)
+      .renderingMode(.template)
+      .resizable()
+      .scaledToFit()
+      .frame(width: size, height: size)
+      .foregroundStyle(color)
+  }
+}

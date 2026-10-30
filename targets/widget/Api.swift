@@ -14,6 +14,7 @@ struct WidgetSummary: Codable {
   var budgetPercent: Int?
   var budgets: [BudgetRow]
   var cards: [CardRow]
+  var verdict: Verdict?
   var last: LastRow?
   var updatedAt: String
 
@@ -33,6 +34,24 @@ struct WidgetSummary: Codable {
     var spent: Double
     var count: Int
     var id: String { label }
+  }
+
+  /// Maat's weighing of the month: where the pace lands against the budgets (or the income).
+  struct Verdict: Codable {
+    var state: String            // balanced | leaning | over | none
+    var basis: String?           // budget | income
+    var projected: Double
+    var limit: Double
+    var daysLeft: Int
+    var watch: Watch?
+
+    struct Watch: Codable {
+      var nameEn: String
+      var nameAr: String
+      var icon: String
+      var percent: Int
+      var name: String { L.isArabic && !nameAr.isEmpty ? nameAr : nameEn }
+    }
   }
 
   struct LastRow: Codable {
@@ -61,6 +80,8 @@ struct WidgetSummary: Codable {
       .init(label: "QNB ••7710", spent: 1240, count: 18),
       .init(label: "Telda ••3321", spent: 730, count: 13),
     ],
+    verdict: .init(state: "leaning", basis: "budget", projected: 7100, limit: 7500, daysLeft: 11,
+                   watch: .init(nameEn: "Food & Dining", nameAr: "الطعام", icon: "food", percent: 84)),
     last: .init(counterparty: "Cilantro Zamalek", type: "expense", amount: 60, categoryEn: "Food & Dining",
                 categoryAr: "الطعام", icon: "food", date: "2026-10-30T10:12:00.000Z"),
     updatedAt: "2026-10-30T10:30:00.000Z"
