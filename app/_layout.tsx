@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider, useI18n } from '../lib/i18n';
 import { AppDataProvider, useAppData } from '../lib/appData';
 import { setUnauthorizedHandler } from '../lib/api';
 import { WorkspaceSheet } from '../components/WorkspaceSwitcher';
-import { AnimatedSplash } from '../components/AnimatedSplash';
+import { AnimatedSplash, SPLASH_VOID } from '../components/AnimatedSplash';
 import { initSentry, Sentry } from '../lib/sentry';
 import { useAppFonts } from '../lib/useAppFonts';
 
@@ -16,17 +17,20 @@ import { useAppFonts } from '../lib/useAppFonts';
 // No-op when expoConfig.extra.sentryDsn is unset.
 initSentry();
 
+// Keep the native splash (a plain void) up until the animated one has painted, so the
+// handoff is one continuous screen. The timeout is a safety net if the app never mounts.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+setTimeout(() => { SplashScreen.hideAsync().catch(() => {}); }, 8000);
+
 function RootStack() {
   const { tok, mode } = useI18n();
   // Workspace switcher sheet lives here at the root so any screen (tabs,
   // root-level sub-screens like /budgets, /orgs/:id, /reports, /reminders,
   // etc.) can open it via openWorkspaceSheet() from AppData context.
   const { workspaceSheetOpen, closeWorkspaceSheet } = useAppData();
-  // Animated splash gate. Plays a one-shot mark animation on top of
-  // the app on first launch, then fades to reveal the routed content
-  // underneath. The native static splash (from app.json) covers the very
-  // first 200-400 ms before this component is mounted; this picks up from
-  // there for a smooth handoff.
+  // Animated splash gate. Plays a one-shot mark animation on top of the app, then fades to
+  // reveal the routed content underneath. The native splash is a plain void held until this
+  // has painted (see SplashScreen.preventAutoHideAsync above), so the two read as one.
   const [splashDone, setSplashDone] = useState(false);
 
   // When any API call gets a 401, the session is cleared and we route back to
@@ -53,7 +57,12 @@ function RootStack() {
         }}
       />
       <WorkspaceSheet visible={workspaceSheetOpen} onClose={closeWorkspaceSheet} />
-      {!splashDone && <AnimatedSplash onDone={() => setSplashDone(true)} />}
+      {!splashDone && (
+        <AnimatedSplash
+          onReady={() => { SplashScreen.hideAsync().catch(() => {}); }}
+          onDone={() => setSplashDone(true)}
+        />
+      )}
     </>
   );
 }
@@ -62,7 +71,7 @@ function RootLayoutInner() {
   const fontsLoaded = useAppFonts();
 
   if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: '#0D0D0D' }} />;
+    return <View style={{ flex: 1, backgroundColor: SPLASH_VOID }} />;
   }
 
   return (
