@@ -94,6 +94,7 @@
       "@sentry/react-native",
       "./plugins/withPodDeploymentTarget",
       "./plugins/withSeshatAppIntent",
+      "./plugins/withNoBootReceiver",
       "expo-font",
       "expo-sharing",
       "expo-status-bar",
@@ -106,8 +107,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/brand/splash.png",
-          "resizeMode": "cover",
+          "image": "./assets/brand/splash-blank.png",
+          "resizeMode": "contain",
           "backgroundColor": "#0D0D0D"
         }
       ]
