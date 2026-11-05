@@ -17,11 +17,14 @@ export type SessionSummary = {
   messageCount: number;
   unreadCount: number;
   pinned?: boolean;
+  /** Which persona owns the thread (fixed for its life). */
+  persona?: Persona;
 };
 
-/** GET /chat/sessions?persona=&q= — server-side filters + orders. */
-export async function listSessions(persona: Persona, q?: string): Promise<SessionSummary[]> {
-  const params = new URLSearchParams({ persona });
+/** GET /chat/sessions?persona=&q= — server-side filters + orders. No persona = both personas' threads. */
+export async function listSessions(persona?: Persona, q?: string): Promise<SessionSummary[]> {
+  const params = new URLSearchParams();
+  if (persona) params.set('persona', persona);
   const query = q?.trim();
   if (query) params.set('q', query);
   const r = await apiFetch<{ data: SessionSummary[] }>(`/chat/sessions?${params.toString()}`);

@@ -23,7 +23,7 @@ import { ChatBubble, TypingDots, RecordingMicIcon, type Message } from './ChatBu
 import { type VisualBlock } from './ChatVisuals';
 import { ImageViewer } from './ImageViewer';
 import PersonaSwitch from './PersonaSwitch';
-import { getPersona, loadPersona, setActivePersona, type Persona } from '../lib/persona';
+import { getPersona, loadPersona, setActivePersona, PERSONAS, type Persona } from '../lib/persona';
 
 export type ChatThreadProps = {
   /** An existing session to open; null/undefined starts a new chat. */
@@ -581,8 +581,21 @@ export function ChatThread({ sessionId: sessionIdProp, text, persona: personaPro
             {title}
           </Text>
         </View>
-        {/* Persona switch — reflects/sets which persona answers this thread. */}
-        <PersonaSwitch value={persona} onChange={changePersona} size="sm" />
+        {/* Persona: chosen only while the chat is empty. A thread's persona is fixed on the server for its
+            life, so once there are messages a switch would change the label but not who answers — show a
+            plain badge instead. */}
+        {messages.some((m) => m.role === 'user') ? (
+          <View style={{
+            paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999,
+            backgroundColor: 'rgba(201,168,76,0.08)', borderWidth: 1, borderColor: 'rgba(201,168,76,0.18)',
+          }}>
+            <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.2, color: tok.gold, textTransform: 'uppercase' }}>
+              {PERSONAS[persona].name[lang]}
+            </Text>
+          </View>
+        ) : (
+          <PersonaSwitch value={persona} onChange={changePersona} size="sm" />
+        )}
       </FrostedHeader>
 
       <ScreenFlatList

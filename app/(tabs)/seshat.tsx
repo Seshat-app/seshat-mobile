@@ -9,13 +9,13 @@ import { FrostedHeader } from '../../components/FrostedHeader';
 import { ScreenScaffold } from '../../components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Plus, Sparkles, ChevronRight, Search, X, Pin, PinOff, Check } from 'lucide-react-native';
+import { Plus, Sparkles, Scale, ChevronRight, Search, X, Pin, PinOff, Check } from 'lucide-react-native';
 import { hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
 import { useAppData } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { REyebrow, RCard, RButton } from '../../components/ui';
-import { usePersona, PERSONAS } from '../../lib/persona';
+import { PERSONAS, type Persona } from '../../lib/persona';
 import {
   listSessions, renameSession, setSessionPinned, deleteSession,
   groupSessions, type SessionSummary, type SessionGroupKey,
@@ -33,10 +33,10 @@ export default function SeshatSessionsScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
   const { activeLedgerId, setUnreadMaatTotal } = useAppData();
-  // The active persona scopes the whole screen: threads are listed per persona
-  // and a new chat inherits it. Persisted + set from the chat header's switcher
-  // (this list has no switcher of its own — it just follows the active persona).
-  const [persona] = usePersona();
+  // One list for both personas (each row is marked with who owns it) instead of a list that flips with a
+  // global persona toggle, which made the chats appear to change. The chips only filter the view; a new chat
+  // asks who you want to talk to.
+  const [filter, setFilter] = useState<'all' | Persona>('all');
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,7 +60,7 @@ export default function SeshatSessionsScreen() {
     if (!(await hasToken())) return;
     if (mode === 'initial') setLoading(true); else setRefreshing(true);
     try {
-      const data = await listSessions(persona, query);
+      const data = await listSessions(filter === 'all' ? undefined : filter, query);
       setSessions(data);
       // Propagate the total unread count to the tab bar badge. Only meaningful
       // for the unfiltered list, but a filtered count is still a lower bound.
@@ -71,7 +71,7 @@ export default function SeshatSessionsScreen() {
     } finally {
       if (mode === 'initial') setLoading(false); else setRefreshing(false);
     }
-  }, [setUnreadMaatTotal, persona, query]);
+  }, [setUnreadMaatTotal, filter, query]);
 
   // Refresh whenever the tab regains focus (e.g. after returning from a
   // chat view that may have changed lastMessageAt or created a session).
@@ -81,7 +81,7 @@ export default function SeshatSessionsScreen() {
     return () => {};
   }, [load, activeLedgerId]));
 
-  // Re-scope the list when the persona toggles (skip the mount run — the focus
+  // Re-scope the list when the filter chip changes (skip the mount run — the focus
   // effect above already loaded once).
   const firstPersonaRun = useRef(true);
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function SeshatSessionsScreen() {
     setSessions([]);
     load('initial');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persona]);
+  }, [filter]);
 
   // Re-query when the debounced search term changes (skip the mount run).
   const firstQueryRun = useRef(true);
@@ -99,11 +99,26 @@ export default function SeshatSessionsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  const startNew = () => {
+  const openNew = (persona: Persona) => {
     // Use the literal "new" segment - the chat view treats it as "no
-    // session yet" and the first send creates one server-side. The new chat
-    // inherits the active persona so the backend applies the right capability.
+    // session yet" and the first send creates one server-side. The chosen persona
+    // is fixed for the life of the thread (the backend applies the right capability).
     router.push({ pathname: '/seshat/[id]', params: { id: 'new', persona } });
+  };
+
+  // Ask who the chat is with, instead of silently inheriting whichever persona was last active.
+  const startNew = () => {
+    Alert.alert(
+      lang === 'ar' ? 'محادثة جديدة مع من؟' : 'New chat with…',
+      lang === 'ar'
+        ? 'سيشات تسجّل وتدير دفاترك. ماعت تقرأ وتحلّل وتحكم على شهرك.'
+        : 'Seshat records and manages your books. Maat reads and weighs your month.',
+      [
+        { text: lang === 'ar' ? 'سيشات - تسجيل وإدارة' : 'Seshat - record & manage', onPress: () => openNew('seshat') },
+        { text: lang === 'ar' ? 'ماعت - تحليل وحكم' : 'Maat - weigh & advise', onPress: () => openNew('maat') },
+        { text: lang === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
+      ],
+    );
   };
 
   const openSession = (id: string) => {
@@ -235,7 +250,7 @@ export default function SeshatSessionsScreen() {
             fontFamily: fontHead(lang), fontSize: 24, color: tok.bone, letterSpacing: -0.4,
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>
-            {PERSONAS[persona].name[lang]}
+            {lang === 'ar' ? 'المحادثات' : 'Chats'}
           </Text>
           <REyebrow style={{ marginTop: 4, textAlign: lang === 'ar' ? 'right' : 'left' }}>
             {lang === 'ar' ? 'محادثاتك' : 'Your conversations'}
@@ -279,6 +294,29 @@ export default function SeshatSessionsScreen() {
             </Pressable>
           )}
         </View>
+      </View>
+
+      {/* Filter chips: view only. Which persona owns a chat is fixed when it is created. */}
+      <View style={{ paddingHorizontal: 20, paddingBottom: 10, flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8 }}>
+        {(['all', 'seshat', 'maat'] as const).map((f) => {
+          const on = filter === f;
+          const label = f === 'all' ? (lang === 'ar' ? 'الكل' : 'All') : PERSONAS[f].name[lang];
+          return (
+            <Pressable
+              key={f}
+              onPress={() => setFilter(f)}
+              style={{
+                paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1,
+                borderColor: on ? tok.gold : tok.border,
+                backgroundColor: on ? 'rgba(201,168,76,0.14)' : 'transparent',
+              }}
+            >
+              <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.1, color: on ? tok.gold : tok.muted, textTransform: 'uppercase' }}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {loading ? (
@@ -347,7 +385,7 @@ export default function SeshatSessionsScreen() {
                     fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.muted,
                     textAlign: 'center', paddingHorizontal: 6,
                   }}>
-                    {persona === 'maat'
+                    {filter === 'maat'
                       ? (lang === 'ar'
                           ? 'ابدأ محادثة جديدة — اسأل ماعت عن تقرير أو تحليل لشهرك.'
                           : 'Start a new chat. Ask Maat for a report, a breakdown or a verdict on your month.')
@@ -465,7 +503,7 @@ function SessionRow({
         }}>
           {s.pinned
             ? <Pin size={15} color={tok.gold} fill={tok.gold} />
-            : <Sparkles size={16} color={tok.gold} />}
+            : (s.persona === 'maat' ? <Scale size={16} color={tok.gold} /> : <Sparkles size={16} color={tok.gold} />)}
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           {renaming ? (
