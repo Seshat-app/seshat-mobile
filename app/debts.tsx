@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, Animated, Easing, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, Animated, Easing, Platform, StyleSheet, RefreshControl, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Trash2, X } from 'lucide-react-native';
+import { Archive, ArchiveRestore, Trash2, X } from 'lucide-react-native';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { useFetchList } from '../lib/hooks/useFetchList';
 import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
@@ -23,6 +23,7 @@ type Debt = {
   currency: string;
   dueDate?: string;
   notes?: string;
+  archivedAt?: string | null;
 };
 
 type DebtPayment = {
@@ -31,20 +32,36 @@ type DebtPayment = {
   currency: string;
   note?: string;
   date: string;
+  /** 'payment' reduces what is owed; 'increase' means more was borrowed. */
+  kind?: 'payment' | 'increase';
 };
 
 export default function DebtsScreen() {
   const { tok, lang, t } = useI18n();
   const { profile } = useAppData();
   const insets = useSafeAreaInsets();
+  const [showArchived, setShowArchived] = useState(false);
   const { items, setItems, loading, refreshing, load } = useFetchList<Debt>(
-    () => apiFetch<{ data: Debt[] }>('/debts').then((r) => r.data),
+    () => apiFetch<{ data: Debt[] }>(showArchived ? '/debts?archived=1' : '/debts').then((r) => r.data),
   );
   const [editing, setEditing] = useState<Debt | 'new' | null>(null);
 
+  // Switching between active and archived debts reloads the list.
+  const firstView = useRef(true);
+  useEffect(() => {
+    if (firstView.current) { firstView.current = false; return; }
+    void load('initial');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showArchived]);
+
   const onSave = async (d: Partial<Debt>) => {
     if (editing && editing !== 'new') {
-      await apiFetch(`/debts/${editing._id}`, { method: 'PATCH', body: JSON.stringify(d) });
+      // Amounts are not editable: they change through payments / "add to debt" entries so every change has a
+      // record. Only the descriptive fields are saved here.
+      await apiFetch(`/debts/${editing._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ creditor: d.creditor, currency: d.currency, notes: d.notes }),
+      });
     } else {
       await apiFetch('/debts', {
         method: 'POST',
@@ -62,8 +79,9 @@ export default function DebtsScreen() {
     setEditing(null);
   };
 
-  const onDelete = async (id: string) => {
-    await apiFetch(`/debts/${id}`, { method: 'DELETE' });
+  // Archive (or restore) instead of deleting: the debt and its history are kept, it just leaves the list.
+  const onArchive = async (d: Debt) => {
+    await apiFetch(`/debts/${d._id}/${d.archivedAt ? 'restore' : 'archive'}`, { method: 'POST' });
     await load();
     setEditing(null);
   };
@@ -91,12 +109,18 @@ export default function DebtsScreen() {
         {loading ? (
           <RCard padding={18}>{Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}</RCard>
         ) : items.length === 0 ? (
-          <Empty text={lang === 'ar' ? 'لا توجد ديون.' : 'No debts. Stay that way.'} sub={lang === 'ar' ? 'إذا ظهر دين، سجّله هنا.' : 'If one shows up, log it here.'} />
+          <Empty text={showArchived ? (lang === 'ar' ? 'لا توجد ديون مؤرشفة.' : 'No archived debts.') : (lang === 'ar' ? 'لا توجد ديون.' : 'No debts. Stay that way.')} sub={showArchived ? '' : (lang === 'ar' ? 'إذا ظهر دين، سجّله هنا.' : 'If one shows up, log it here.')} />
         ) : (
           <View style={{ gap: 10 }}>
             {items.map((d) => <DebtRow key={d._id} debt={d} onPress={() => setEditing(d)} />)}
           </View>
         )}
+        <Pressable onPress={() => setShowArchived((v) => !v)} hitSlop={8} style={{ alignSelf: 'center', marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Archive size={14} color={tok.muted} />
+          <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1 }}>
+            {showArchived ? (lang === 'ar' ? 'عرض الديون الحالية' : 'SHOW ACTIVE DEBTS') : (lang === 'ar' ? 'عرض المؤرشفة' : 'SHOW ARCHIVED')}
+          </Text>
+        </Pressable>
       </ScreenScroll>
 
       {editing && (
@@ -106,7 +130,7 @@ export default function DebtsScreen() {
           initial={editing === 'new' ? null : editing}
           defaultCurrency={profile?.currency ?? 'EGP'}
           onSave={onSave}
-          onDelete={editing !== 'new' ? () => onDelete(editing._id) : undefined}
+          onArchive={editing !== 'new' ? () => onArchive(editing) : undefined}
           onPaymentsChanged={load}
         />
       )}
@@ -169,12 +193,12 @@ function DebtRow({ debt, onPress }: { debt: Debt; onPress: () => void }) {
 }
 
 function EditDebtSheet({
-  visible, onClose, onSave, onDelete, initial, defaultCurrency, onPaymentsChanged,
+  visible, onClose, onSave, onArchive, initial, defaultCurrency, onPaymentsChanged,
 }: {
   visible: boolean;
   onClose: () => void;
   onSave: (d: Partial<Debt>) => Promise<void>;
-  onDelete?: () => Promise<void>;
+  onArchive?: () => Promise<void>;
   initial: Debt | null;
   defaultCurrency: string;
   onPaymentsChanged: () => void;
@@ -190,6 +214,9 @@ function EditDebtSheet({
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [payAmount, setPayAmount] = useState('');
   const [payBusy, setPayBusy] = useState(false);
+  // What the entry is: a payment (owe less) or an increase (borrowed more), and whether to also log it as a transaction.
+  const [entryKind, setEntryKind] = useState<'payment' | 'increase'>('payment');
+  const [alsoTransaction, setAlsoTransaction] = useState(false);
 
   useEffect(() => {
     if (!visible || !initial) { setPayments([]); return; }
@@ -209,11 +236,12 @@ function EditDebtSheet({
     try {
       const res = await apiFetch<{ data: { payment: DebtPayment; debt: Debt } }>(`/debts/${initial._id}/payments`, {
         method: 'POST',
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, kind: entryKind, asTransaction: alsoTransaction }),
         idempotencyKey: newIdempotencyKey(),
       });
       setPayments((cur) => [res.data.payment, ...cur]);
       setPaid(String(res.data.debt.paidAmount));
+      setTotal(String(res.data.debt.totalAmount));
       setPayAmount('');
       onPaymentsChanged();
     } finally {
@@ -226,6 +254,7 @@ function EditDebtSheet({
     const res = await apiFetch<{ data: { debt: Debt } }>(`/debts/${initial._id}/payments/${paymentId}`, { method: 'DELETE' });
     setPayments((cur) => cur.filter((p) => p._id !== paymentId));
     setPaid(String(res.data.debt.paidAmount));
+    setTotal(String(res.data.debt.totalAmount));
     onPaymentsChanged();
   };
 
@@ -296,19 +325,56 @@ function EditDebtSheet({
           </View>
           <View style={{ paddingHorizontal: 22, paddingTop: 6, gap: 14 }}>
             <RField label={lang === 'ar' ? 'الدائن' : 'Creditor'} value={creditor} onChange={setCreditor} placeholder={lang === 'ar' ? 'مثلاً: البنك' : 'e.g. The Bank'} autoFocus />
-            <RField label={lang === 'ar' ? 'إجمالي الدين' : 'Total amount'} value={total} onChange={(v) => setTotal(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
-            <RField label={lang === 'ar' ? 'المسدَّد' : 'Paid so far'} value={paid} onChange={(v) => setPaid(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
+            {initial ? (
+              // Existing debt: the amounts are read-only. Change them with a payment or "Add to debt" below, so every change has a record.
+              <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 12 }}>
+                {[
+                  { label: lang === 'ar' ? 'إجمالي الدين' : 'Total owed', v: totalNum },
+                  { label: lang === 'ar' ? 'المسدَّد' : 'Paid so far', v: paidNum },
+                  { label: lang === 'ar' ? 'المتبقي' : 'Remaining', v: Math.max(0, totalNum - paidNum) },
+                ].map((x) => (
+                  <View key={x.label} style={{ flex: 1 }}>
+                    <REyebrow>{x.label}</REyebrow>
+                    <Text style={{ marginTop: 4, color: tok.bone, fontFamily: fontMono('regular'), fontSize: 16, writingDirection: 'ltr' }}>
+                      {formatAmount(x.v, { decimals: 0 })}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <>
+                <RField label={lang === 'ar' ? 'إجمالي الدين' : 'Total amount'} value={total} onChange={(v) => setTotal(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
+                <RField label={lang === 'ar' ? 'المسدَّد' : 'Paid so far'} value={paid} onChange={(v) => setPaid(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" mono />
+              </>
+            )}
           </View>
 
           {initial && (
             <View style={{ paddingHorizontal: 22, paddingTop: 18, gap: 10 }}>
-              <REyebrow>{lang === 'ar' ? 'سجل الدفعات' : 'Payment history'}</REyebrow>
+              <REyebrow>{lang === 'ar' ? 'سجل الدفعات والزيادات' : 'Payments & additions'}</REyebrow>
+              <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8 }}>
+                {(['payment', 'increase'] as const).map((k) => (
+                  <Pressable
+                    key={k}
+                    onPress={() => setEntryKind(k)}
+                    style={{
+                      paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1,
+                      borderColor: entryKind === k ? tok.gold : tok.border,
+                      backgroundColor: entryKind === k ? 'rgba(201,168,76,0.14)' : 'transparent',
+                    }}
+                  >
+                    <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1, color: entryKind === k ? tok.gold : tok.muted, textTransform: 'uppercase' }}>
+                      {k === 'payment' ? (lang === 'ar' ? 'دفعة' : 'Payment') : (lang === 'ar' ? 'إضافة للدين' : 'Add to debt')}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
               <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
                   <RField
                     value={payAmount}
                     onChange={(v) => setPayAmount(v.replace(/[^0-9.]/g, ''))}
-                    placeholder={lang === 'ar' ? 'مبلغ الدفعة' : 'Payment amount'}
+                    placeholder={entryKind === 'payment' ? (lang === 'ar' ? 'مبلغ الدفعة' : 'Payment amount') : (lang === 'ar' ? 'المبلغ المضاف' : 'Amount added')}
                     keyboardType="decimal-pad"
                     mono
                   />
@@ -316,6 +382,14 @@ function EditDebtSheet({
                 <RButton onPress={addPayment} disabled={!payAmount || parseFloat(payAmount) <= 0 || payBusy} loading={payBusy}>
                   {lang === 'ar' ? 'سجّل' : 'Record'}
                 </RButton>
+              </View>
+              <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <Text style={{ flex: 1, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12.5, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                  {entryKind === 'payment'
+                    ? (lang === 'ar' ? 'سجّلها أيضاً كمصروف' : 'Also record as an expense')
+                    : (lang === 'ar' ? 'سجّلها أيضاً كدخل (مبلغ استلمته)' : 'Also record as income (money received)')}
+                </Text>
+                <Switch value={alsoTransaction} onValueChange={setAlsoTransaction} trackColor={{ true: tok.gold, false: tok.border }} />
               </View>
 
               {paymentsLoading ? (
@@ -337,7 +411,10 @@ function EditDebtSheet({
                     >
                       <View>
                         <Text style={{ color: tok.bone, fontFamily: fontBody(lang, 'medium'), fontSize: 13.5, writingDirection: 'ltr' }}>
-                          {formatAmount(p.amount, { decimals: 0 })} {currencyLabel(p.currency, lang)}
+                          {p.kind === 'increase' ? '+ ' : ''}{formatAmount(p.amount, { decimals: 0 })} {currencyLabel(p.currency, lang)}
+                          <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11 }}>
+                            {'  '}{p.kind === 'increase' ? (lang === 'ar' ? 'إضافة' : 'added') : (lang === 'ar' ? 'دفعة' : 'payment')}
+                          </Text>
                         </Text>
                         <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, marginTop: 2 }}>
                           {new Date(p.date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -357,9 +434,14 @@ function EditDebtSheet({
             <RButton full onPress={submit} disabled={!canSave} loading={busy}>
               {busy ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : t('save')}
             </RButton>
-            {onDelete && (
-              <RButton full variant="destructive" onPress={async () => { setBusy(true); try { await onDelete(); } finally { setBusy(false); } }} icon={<Trash2 size={16} color={tok.alertText} />}>
-                {lang === 'ar' ? 'حذف الدين' : 'Delete debt'}
+            {onArchive && (
+              <RButton
+                full
+                variant="secondary"
+                onPress={async () => { setBusy(true); try { await onArchive(); } finally { setBusy(false); } }}
+                icon={initial?.archivedAt ? <ArchiveRestore size={16} color={tok.bone} /> : <Archive size={16} color={tok.bone} />}
+              >
+                {initial?.archivedAt ? (lang === 'ar' ? 'استعادة الدين' : 'Restore debt') : (lang === 'ar' ? 'أرشفة الدين' : 'Archive debt')}
               </RButton>
             )}
           </View>
