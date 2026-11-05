@@ -11,6 +11,7 @@ import { ArrowUp, ChevronLeft, ImagePlus, Square } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch, hasToken } from '../lib/api';
 import { streamChat, friendlyChatError } from '../lib/chatStream';
+import { emitDataChanged } from '../lib/dataEvents';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
@@ -178,7 +179,7 @@ export function ChatThread({ sessionId: sessionIdProp, text, persona: personaPro
   // Non-stream JSON send — used for image/receipt turns (the streaming contract
   // is message-based) and as the fallback when streaming can't start.
   const sendViaJson = async (text: string, pendingId: string, imageUrl?: string) => {
-    const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[]; quickReplies?: string[]; activity?: Message['activity'] } }>('/chat', {
+    const res = await apiFetch<{ data: { reply: string; sessionId: string; createdTransactionIds?: string[]; mutated?: boolean; visualBlocks?: VisualBlock[]; quickReplies?: string[]; activity?: Message['activity'] } }>('/chat', {
       method: 'POST',
       body: JSON.stringify({
         message: text || undefined,
@@ -188,6 +189,7 @@ export function ChatThread({ sessionId: sessionIdProp, text, persona: personaPro
       }),
     });
     if (!sessionId) setSessionId(res.data.sessionId);
+    if (res.data.mutated) emitDataChanged(); // the chat changed data: refresh the screens behind it
     setMessages((prev) => prev.map((m) => (m.id === pendingId ? {
       ...m,
       content: res.data.reply,
@@ -222,6 +224,7 @@ export function ChatThread({ sessionId: sessionIdProp, text, persona: personaPro
             ? { ...m, activity: [...(m.activity ?? []), frame.step] } : m)));
         } else if (frame.t === 'done') {
           if (!sessionId) setSessionId(frame.sessionId);
+          if (frame.mutated) emitDataChanged();
           // Keep the live-streamed steps if the terminal frame omits `activity`.
           setMessages((prev) => prev.map((m) => (m.id === pendingId ? {
             ...m,
@@ -444,7 +447,7 @@ export function ChatThread({ sessionId: sessionIdProp, text, persona: personaPro
     }
     setSending(true);
     try {
-      const r = await apiFetch<{ data: { transcript: string; reply: string; sessionId: string; createdTransactionIds?: string[]; visualBlocks?: VisualBlock[] } }>('/voice/chat', {
+      const r = await apiFetch<{ data: { transcript: string; reply: string; sessionId: string; createdTransactionIds?: string[]; mutated?: boolean; visualBlocks?: VisualBlock[] } }>('/voice/chat', {
         method: 'POST',
         body: JSON.stringify({
           audio_base64: res.base64, format: res.format, language: lang,
@@ -453,6 +456,7 @@ export function ChatThread({ sessionId: sessionIdProp, text, persona: personaPro
         }),
       });
       if (!sessionId) setSessionId(r.data.sessionId);
+      if (r.data.mutated) emitDataChanged();
       const ts = Date.now();
       setMessages((prev) => [
         ...prev,

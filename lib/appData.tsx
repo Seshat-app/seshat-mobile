@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { apiFetch, hasToken, setActiveLedger, getActiveLedger } from './api';
 import { registerForPushNotifications, subscribeToNotificationTaps } from './push';
 import { usePendingCapture } from './pendingCapture';
+import { onDataChanged } from './dataEvents';
 import type { ApiCategory } from '../components/AddTransactionSheet';
 
 type Profile = {
@@ -229,6 +230,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   usePendingCapture();
 
   const bumpVersion = useCallback(() => setDataVersion((v) => v + 1), []);
+
+  // Writes made outside a screen (chat, voice, background capture) announce themselves here.
+  useEffect(() => onDataChanged(bumpVersion), [bumpVersion]);
 
   const openWorkspaceSheet = useCallback(() => setWorkspaceSheetOpen(true), []);
   const closeWorkspaceSheet = useCallback(() => setWorkspaceSheetOpen(false), []);

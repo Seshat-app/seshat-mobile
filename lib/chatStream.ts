@@ -59,6 +59,8 @@ export type ChatStreamFrame =
       reply: string;
       sessionId: string;
       createdTransactionIds?: string[];
+      /** The reply changed data (a write tool landed): screens should refresh. */
+      mutated?: boolean;
       visualBlocks?: unknown[];
       quickReplies?: string[];
       activity?: ActivityStep[];
