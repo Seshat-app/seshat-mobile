@@ -66,6 +66,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      ["expo-local-authentication", { "faceIDPermission": "Seshat uses Face ID to keep your finances private when the app lock is on." }],
       "expo-web-browser",
       [
         "expo-notifications",

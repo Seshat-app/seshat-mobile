@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useHideNumbers, setHideNumbers } from '../../lib/privacy';
+import { useAppLock, setAppLockEnabled, lockSupport } from '../../lib/appLock';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, EyeOff } from 'lucide-react-native';
+import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, EyeOff, ScanFace, Fingerprint } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -428,6 +429,7 @@ export default function ProfileScreen() {
             {lang === 'ar' ? 'الخصوصية' : 'Privacy'}
           </REyebrow>
           <RCard padding={0} style={{ paddingHorizontal: 16 }}>
+            <AppLockRow />
             <HideNumbersRow />
           </RCard>
         </View>
@@ -867,6 +869,48 @@ function PlanRow({
 }
 
 // Floating chat bubble on/off (Android 11+). Android draws the bubble itself; this only posts it.
+function AppLockRow() {
+  const { tok, lang } = useI18n();
+  const { enabled } = useAppLock();
+  const ar = lang === 'ar';
+  const ios = Platform.OS === 'ios';
+  const toggle = async (next: boolean) => {
+    if (next) {
+      const sup = await lockSupport();
+      if (!sup.ok) {
+        Alert.alert(
+          ar ? 'غير متاح' : 'Not available',
+          sup.reason === 'not_enrolled'
+            ? (ios
+                ? (ar ? 'فعّل Face ID أو رمز الهاتف من إعدادات الآيفون أولاً.' : 'Set up Face ID or a passcode in your iPhone settings first.')
+                : (ar ? 'فعّل البصمة أو قفل الشاشة من إعدادات الهاتف أولاً.' : 'Set up a fingerprint or a screen lock in your phone settings first.'))
+            : (ar ? 'هذا الهاتف لا يدعم القفل بالبصمة.' : 'This phone does not support biometric unlock.'),
+        );
+        return;
+      }
+    }
+    await setAppLockEnabled(next, ar ? 'تأكيد أنك أنت' : 'Confirm it is you', ar ? 'إلغاء' : 'Cancel');
+  };
+  return (
+    <PlanRow
+      icon={ios ? ScanFace : Fingerprint}
+      title={ios ? (ar ? 'قفل بـ Face ID' : 'Face ID lock') : (ar ? 'قفل بالبصمة' : 'Biometric lock')}
+      hint={ios
+        ? (ar ? 'اطلب Face ID أو رمز الهاتف عند فتح سيشات' : 'Ask for Face ID or your passcode to open Seshat')
+        : (ar ? 'اطلب البصمة أو رمز الهاتف عند فتح سيشات' : 'Ask for your fingerprint or PIN to open Seshat')}
+      onPress={() => toggle(!enabled)}
+      trailing={
+        <Switch
+          value={enabled}
+          onValueChange={toggle}
+          trackColor={{ false: tok.elevated, true: tok.gold }}
+          thumbColor={enabled ? tok.bone : tok.muted}
+        />
+      }
+    />
+  );
+}
+
 function HideNumbersRow() {
   const { tok, lang } = useI18n();
   const hidden = useHideNumbers();

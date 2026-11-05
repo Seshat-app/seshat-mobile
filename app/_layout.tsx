@@ -10,6 +10,7 @@ import { AppDataProvider, useAppData } from '../lib/appData';
 import { setUnauthorizedHandler } from '../lib/api';
 import { WorkspaceSheet } from '../components/WorkspaceSwitcher';
 import { AnimatedSplash, SPLASH_VOID } from '../components/AnimatedSplash';
+import { AppLockGate } from '../components/AppLockGate';
 import { initSentry, Sentry } from '../lib/sentry';
 import { useAppFonts } from '../lib/useAppFonts';
 
@@ -57,6 +58,7 @@ function RootStack() {
         }}
       />
       <WorkspaceSheet visible={workspaceSheetOpen} onClose={closeWorkspaceSheet} />
+      <AppLockGate />
       {!splashDone && (
         <AnimatedSplash
           onReady={() => { SplashScreen.hideAsync().catch(() => {}); }}
