@@ -73,6 +73,10 @@ export default function NotificationsScreen() {
       });
       return;
     }
+    if (kind === 'review') {
+      router.push('/review');
+      return;
+    }
     if (kind === 'budget_threshold' || n.type === 'budget') {
       router.push('/budgets');
     }

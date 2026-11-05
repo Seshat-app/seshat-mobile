@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing, Clock } from 'lucide-react-native';
 import { CategoryIconByKey } from '../components/icons';
 import { iconKeyForCategory } from '../lib/categoryMap';
 import { PlanScreen } from '../components/PlanShell';
-import { RCard, REyebrow, RStatus, RButton } from '../components/ui';
+import { RCard, REyebrow, RStatus } from '../components/ui';
 import { useI18n } from '../lib/i18n';
 import { hasToken, apiFetch } from '../lib/api';
 import { listHabits, muteHabit, unmuteHabit, type Habit } from '../lib/habits';
@@ -31,29 +31,22 @@ export default function RemindersScreen() {
     () => listHabits(),
   );
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
 
-  // Fire a push to this device right now. Lets the user confirm notifications
-  // work end-to-end without waiting for a habit to be detected + scheduled.
-  const sendTest = async () => {
-    if (testing) return;
-    if (!(await hasToken())) return;
-    setTesting(true);
+  // The twice-daily "anything to log?" reminder (1 PM and 8 PM). On unless the user switches it off.
+  const [dailyOn, setDailyOn] = useState(true);
+  useEffect(() => {
+    hasToken().then((ok) => {
+      if (!ok) return;
+      apiFetch<{ data: { logReminders?: boolean } }>('/me').then((r) => setDailyOn(r.data.logReminders !== false)).catch(() => {});
+    });
+  }, []);
+  const toggleDaily = async (next: boolean) => {
+    setDailyOn(next);
     try {
-      await apiFetch('/me/test-push', { method: 'POST' });
-      Alert.alert(
-        lang === 'ar' ? 'تم الإرسال' : 'Sent',
-        lang === 'ar'
-          ? 'تحقّق من إشعاراتك خلال لحظات.'
-          : 'Check your notifications in a moment.',
-      );
-    } catch (err) {
-      Alert.alert(
-        lang === 'ar' ? 'تعذّر الإرسال' : "Couldn't send",
-        err instanceof Error ? err.message : String(err),
-      );
-    } finally {
-      setTesting(false);
+      await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ logReminders: next }) });
+    } catch {
+      setDailyOn(!next);
+      Alert.alert(lang === 'ar' ? 'تعذّر الحفظ' : "Couldn't save");
     }
   };
 
@@ -112,10 +105,21 @@ export default function RemindersScreen() {
               ? 'عند تسجيل المعاملات بانتظام في وقت محدد، تتعلم سيشات هذا النمط وترسل لك تذكيراً لتسجيل المعاملة. يمكنك إيقاف أي تذكير في أي وقت.'
               : 'When you log transactions at the same time consistently, Seshat learns the pattern and reminds you so nothing slips through. You can mute any reminder for 7 days at any time.'}
           </Text>
-          <View style={{ marginTop: 14 }}>
-            <RButton variant="secondary" full onPress={sendTest} loading={testing} disabled={testing}>
-              {lang === 'ar' ? 'إرسال إشعار تجريبي' : 'Send a test notification'}
-            </RButton>
+          <View style={{ marginTop: 14, flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                {lang === 'ar' ? 'تذكير يومي بالتسجيل' : 'Daily logging reminder'}
+              </Text>
+              <Text style={{ marginTop: 2, fontFamily: fontBody(lang), fontSize: 12, color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                {lang === 'ar' ? 'مرتان يومياً (١ ظهراً و٨ مساءً) إن لم تسجّل شيئاً.' : 'Twice a day (1 PM and 8 PM) if you have not logged anything.'}
+              </Text>
+            </View>
+            <Switch
+              value={dailyOn}
+              onValueChange={toggleDaily}
+              trackColor={{ false: tok.elevated, true: tok.gold }}
+              thumbColor={dailyOn ? tok.bone : tok.muted}
+            />
           </View>
         </RCard>
 

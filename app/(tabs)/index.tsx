@@ -18,6 +18,7 @@ import {
 import { CaptureShortcutBanner } from '../../components/CaptureShortcutBanner';
 import { UpdateBanner } from '../../components/UpdateBanner';
 import { WidgetsAnnouncement } from '../../components/WidgetsAnnouncement';
+import { ReviewBanner } from '../../components/ReviewBanner';
 import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
@@ -108,6 +109,7 @@ export default function HomeScreen() {
                 <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
               )}
               <UpdateBanner />
+              <ReviewBanner />
               <WidgetsAnnouncement />
               <CaptureShortcutBanner />
             </>

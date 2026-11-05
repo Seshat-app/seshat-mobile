@@ -66,6 +66,12 @@ export async function registerForPushNotifications(): Promise<string | null> {
       });
     }
 
+    // Buttons under the "was this an ATM withdrawal?" notification. They open the app on the answer screen.
+    await Notifications.setNotificationCategoryAsync('review_atm', [
+      { identifier: 'atm', buttonTitle: 'Yes, ATM', options: { opensAppToForeground: true } },
+      { identifier: 'spending', buttonTitle: 'No, spending', options: { opensAppToForeground: true } },
+    ]).catch(() => {});
+
     const { status: existing } = await Notifications.getPermissionsAsync();
     let status = existing;
     if (existing !== 'granted') {
@@ -160,7 +166,8 @@ export function subscribeToNotificationTaps(
           categoryId?: string;
           ledgerId?: string;
           sessionId?: string;
-          meta?: { kind?: string };
+          transactionId?: string;
+          meta?: { kind?: string; transactionId?: string };
         }
       | undefined;
     // Budget threshold — the push may flag it at the top level (type) or inside
@@ -172,6 +179,18 @@ export function subscribeToNotificationTaps(
     }
     if (data?.type === 'maat_message' && data?.sessionId) {
       onMaatTap?.({ sessionId: data.sessionId });
+      return;
+    }
+    // Seshat is unsure about a captured transaction: open the question (the button pressed pre-answers it).
+    if (data?.type === 'review_tx' || data?.meta?.kind === 'review') {
+      const id = data?.transactionId ?? data?.meta?.transactionId;
+      const action = response.actionIdentifier === 'atm' || response.actionIdentifier === 'spending' ? response.actionIdentifier : undefined;
+      router.push({ pathname: '/review', params: { ...(id ? { id } : {}), ...(action ? { action } : {}) } });
+      return;
+    }
+    // Periodic "anything to log?" reminder: straight to the add sheet.
+    if (data?.type === 'log_reminder') {
+      router.push({ pathname: '/add', params: { mode: 'manual' } });
       return;
     }
     if (data?.type === 'habit_reminder') {
