@@ -48,7 +48,8 @@ const FAST_ACCEPT_PACKAGES = new Set<string>([
 // configured currency is the most common but we include the common ones
 // so a notification in a foreign currency (USD travel charge, AED) still
 // triggers a parse.
-const CURRENCY_HINT = /\b(EGP|USD|EUR|GBP|SAR|AED|KWD|QAR|OMR|BHD|JPY|CHF|TRY)\b|ج\.م|جنيه|ريال|درهم|دينار/i;
+// Egyptian banks also write "جم" for EGP; it is a bare two-letter word, so it must not sit inside a longer Arabic word.
+const CURRENCY_HINT = /\b(EGP|USD|EUR|GBP|SAR|AED|KWD|QAR|OMR|BHD|JPY|CHF|TRY)\b|ج\.م|(?:^|[^\u0600-\u06FF])جم(?![\u0600-\u06FF])|جنيه|ريال|درهم|دينار/i;
 
 // Universal financial-verb fingerprint. Matches across English + Arabic
 // across every Egyptian bank's notification format I've seen. Tuned to
@@ -203,7 +204,8 @@ export async function handleBackgroundNotification(raw: unknown): Promise<void> 
     await fetch(`${cfg.api}/capture/auto`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.token}` },
-      body: JSON.stringify({ text: body, source: 'notification' }),
+      // The channel lets the server tell the bank's SMS and the bank app's push for one event apart.
+      body: JSON.stringify({ text: body, source: 'notification', channel: FAST_ACCEPT_PACKAGES.has(event.app) ? 'sms' : 'push' }),
     });
   } catch (err) {
     console.warn('[notif-listener] background capture failed:', err);
