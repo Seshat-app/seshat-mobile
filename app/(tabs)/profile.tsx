@@ -409,8 +409,8 @@ export default function ProfileScreen() {
             />
             <PlanRow
               icon={CreditCard}
-              title={lang === 'ar' ? 'البطاقات' : 'Cards'}
-              hint={lang === 'ar' ? 'مصروف ودخل كل بطاقة على حدة' : 'Spending and income per card'}
+              title={lang === 'ar' ? 'حساباتي' : 'Accounts'}
+              hint={lang === 'ar' ? 'بنك، محفظة، كاش: الأرصدة والتحويل بينها' : 'Bank, wallet, cash: balances and moving money'}
               onPress={() => router.push('/cards')}
             />
             <PlanRow
