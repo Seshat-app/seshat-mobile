@@ -55,6 +55,26 @@ private enum Capture {
     return d?["reason"] as? String ?? "Not a transaction"
   }
 
+  /// Quick add: an amount and a few words, logged in the background. Returns a short summary, or nil when offline.
+  static func sendQuick(amount: Double, note: String, income: Bool) async -> String? {
+    guard let cfg = config(), let url = URL(string: cfg.api + "/capture/quick") else { return nil }
+    var req = URLRequest(url: url, timeoutInterval: 20)
+    req.httpMethod = "POST"
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.setValue("Bearer " + cfg.token, forHTTPHeaderField: "Authorization")
+    var body: [String: Any] = ["amount": amount, "kind": income ? "income" : "expense"]
+    if !note.isEmpty { body["note"] = note }
+    req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+    guard let (data, resp) = try? await URLSession.shared.data(for: req),
+          let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return nil }
+    let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    let tx = (obj?["data"] as? [String: Any])?["transaction"] as? [String: Any]
+    let cur = tx?["currency"] as? String ?? ""
+    let cat = tx?["category"] as? String
+    let shown = amount == amount.rounded() ? String(Int(amount)) : String(amount)
+    return "Logged \(shown) \(cur)" + (cat.map { " · \($0)" } ?? "")
+  }
+
   /// Park the text so the app can deliver it later.
   static func park(_ text: String) {
     guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
@@ -89,6 +109,36 @@ struct LogBankMessageIntent: AppIntent {
 }
 
 @available(iOS 16.0, *)
+struct QuickAddIntent: AppIntent {
+  static var title: LocalizedStringResource = "Quick add"
+  static var description = IntentDescription(
+    "Logs an expense or income in Seshat in the background from an amount and a few words, like 45 coffee."
+  )
+  static var openAppWhenRun: Bool = false
+
+  @Parameter(title: "Amount")
+  var amount: Double
+
+  @Parameter(title: "What for", default: "")
+  var note: String
+
+  @Parameter(title: "Income", default: false)
+  var income: Bool
+
+  static var parameterSummary: some ParameterSummary {
+    Summary("Add \(\.$amount) \(\.$note) to Seshat")
+  }
+
+  func perform() async throws -> some IntentResult & ProvidesDialog {
+    guard amount > 0 else { return .result(dialog: "Enter an amount above zero") }
+    if let summary = await Capture.sendQuick(amount: amount, note: note, income: income) {
+      return .result(dialog: IntentDialog(stringLiteral: summary))
+    }
+    return .result(dialog: "Could not reach Seshat. Check your connection and try again")
+  }
+}
+
+@available(iOS 16.0, *)
 struct SeshatShortcutsProvider: AppShortcutsProvider {
   static var appShortcuts: [AppShortcut] {
     AppShortcut(
@@ -96,6 +146,12 @@ struct SeshatShortcutsProvider: AppShortcutsProvider {
       phrases: ["Log a bank message in \(.applicationName)"],
       shortTitle: "Log bank message",
       systemImageName: "wallet.pass"
+    )
+    AppShortcut(
+      intent: QuickAddIntent(),
+      phrases: ["Add an expense in \(.applicationName)", "Quick add in \(.applicationName)"],
+      shortTitle: "Quick add",
+      systemImageName: "plus.circle"
     )
   }
 }
