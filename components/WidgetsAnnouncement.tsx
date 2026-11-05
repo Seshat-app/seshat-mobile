@@ -11,6 +11,7 @@ import { RCard, RButton } from './ui';
 // the app can only explain it). Gone for good once seen or dismissed. Bump the key's suffix to announce
 // a future batch of widgets the same way.
 const KEY = 'whatsnew_widgets_v1';
+const ANDROID = Platform.OS === 'android';
 
 export function WidgetsAnnouncement() {
   const { tok, lang } = useI18n();
@@ -19,15 +20,24 @@ export function WidgetsAnnouncement() {
   const ar = lang === 'ar';
 
   useEffect(() => {
-    if (Platform.OS !== 'ios') return; // widgets exist on iPhone only for now
     SecureStore.getItemAsync(KEY).then((v) => { if (!v) setShow(true); }).catch(() => {});
   }, []);
 
-  if (Platform.OS !== 'ios') return null;
-
   const seen = () => { setShow(false); SecureStore.setItemAsync(KEY, 'done').catch(() => {}); };
 
-  const steps = ar
+  const steps = ANDROID
+    ? (ar
+      ? [
+          'اضغط مطولاً على مكان فارغ في الشاشة الرئيسية.',
+          'اختر الودجتس ثم ابحث عن "سيشات".',
+          'اسحب ودجت "إضافة سريعة" إلى الشاشة: أضف، إيصال، أو اسأل سيشات بلمسة.',
+        ]
+      : [
+          'Long-press an empty spot on your Home screen.',
+          'Tap Widgets and look for “Seshat”.',
+          'Drag the Quick add widget onto your screen: Add, Receipt, or Ask Seshat in one tap.',
+        ])
+    : ar
     ? [
         'اضغط مطولاً على مكان فارغ في الشاشة الرئيسية.',
         'اضغط على زر + ثم ابحث عن "سيشات".',
@@ -60,7 +70,9 @@ export function WidgetsAnnouncement() {
                   {ar ? 'جديد: ودجت سيشات' : 'New: Seshat widgets'}
                 </Text>
                 <Text style={{ marginTop: 3, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12, textAlign: ar ? 'right' : 'left' }}>
-                  {ar ? 'شهرك وميزانياتك وحكم ماعت على شاشتك الرئيسية وشاشة القفل.' : 'Your month, budgets and Maat’s verdict on your Home and Lock Screen.'}
+                  {ANDROID
+                    ? (ar ? 'أضف وصولاً سريعاً للتسجيل على شاشتك الرئيسية.' : 'Add a one-tap way to log from your Home screen.')
+                    : (ar ? 'شهرك وميزانياتك وحكم ماعت على شاشتك الرئيسية وشاشة القفل.' : 'Your month, budgets and Maat’s verdict on your Home and Lock Screen.')}
                 </Text>
               </View>
               <Pressable onPress={seen} hitSlop={10} accessibilityLabel={ar ? 'إغلاق' : 'Dismiss'}>
