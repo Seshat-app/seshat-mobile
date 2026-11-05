@@ -4,9 +4,10 @@ import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CreditCard, Landmark, Wallet, ChevronRight } from 'lucide-react-native';
+import { CreditCard, Landmark, Wallet, Banknote, ChevronRight, ArrowLeftRight, Plus } from 'lucide-react-native';
 import { PlanScreen } from '../components/PlanShell';
-import { RCard, REyebrow, RAmount } from '../components/ui';
+import { RCard, REyebrow, RAmount, RButton } from '../components/ui';
+import { MoveMoneySheet, AddSourceSheet } from '../components/MoneySheets';
 import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { apiFetch, hasToken } from '../lib/api';
@@ -18,7 +19,7 @@ import type { CardSummary } from '../lib/cards';
  * /cards - every card / account Seshat has seen in captured bank messages (or that
  * was added by hand), with what went out and came in this month and overall.
  */
-const ICON = { card: CreditCard, account: Landmark, wallet: Wallet } as const;
+const ICON = { card: CreditCard, account: Landmark, wallet: Wallet, cash: Banknote } as const;
 
 export default function CardsScreen() {
   const { tok, lang } = useI18n();
@@ -29,6 +30,8 @@ export default function CardsScreen() {
   const currency = profile?.currency ?? 'EGP';
   const [cards, setCards] = useState<CardSummary[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     if (!(await hasToken())) return;
@@ -42,13 +45,14 @@ export default function CardsScreen() {
   }, []);
   useEffect(() => { void load(); }, [load, dataVersion]);
 
+  const totalBalance = (cards ?? []).reduce((a, c) => a + (c.balance ?? 0), 0);
   const monthSpent = (cards ?? []).reduce((a, c) => a + c.month.expense, 0);
   const monthIncome = (cards ?? []).reduce((a, c) => a + c.month.income, 0);
 
   return (
     <PlanScreen
-      title={ar ? 'البطاقات' : 'Cards'}
-      subtitle={ar ? 'كل بطاقة وحساب على حدة' : 'Each card and account on its own'}
+      title={ar ? 'حساباتي' : 'Accounts'}
+      subtitle={ar ? 'أين تعيش أموالك: بنك، محفظة، كاش' : 'Where your money lives: bank, wallet, cash'}
       refreshing={refreshing}
     >
       <ScreenScroll
@@ -61,6 +65,23 @@ export default function CardsScreen() {
           />
         }
       >
+        {cards && cards.length > 0 && (
+          <RCard accent padding={16} style={{ marginBottom: 14 }}>
+            <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>
+              {ar ? 'إجمالي ما تملكه' : 'Total you hold'}
+            </REyebrow>
+            <RAmount value={totalBalance} currency={currency} size={30} decimals={0} />
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginTop: 14 }}>
+              <RButton variant="secondary" icon={<ArrowLeftRight size={15} color={tok.bone} />} onPress={() => setMoving(true)}>
+                {ar ? 'تحويل بين حساباتي' : 'Move money'}
+              </RButton>
+              <RButton variant="ghost" icon={<Plus size={15} color={tok.gold} />} onPress={() => setAdding(true)}>
+                {ar ? 'إضافة' : 'Add'}
+              </RButton>
+            </View>
+          </RCard>
+        )}
+
         {cards && cards.length > 0 && (
           <RCard padding={16} style={{ marginBottom: 14 }}>
             <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>
@@ -113,6 +134,9 @@ export default function CardsScreen() {
                   <ChevronRight size={18} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
                 </View>
                 <View style={{ height: 14 }} />
+                <REyebrow style={{ marginBottom: 4, textAlign: ar ? 'right' : 'left' }}>{ar ? 'الرصيد' : 'Balance'}</REyebrow>
+                <RAmount value={c.balance ?? 0} currency={currency} size={24} decimals={0} />
+                <View style={{ height: 14 }} />
                 <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
                   <Stat label={ar ? 'مصروف هذا الشهر' : 'Spent this month'} value={-c.month.expense} currency={currency} />
                   <Stat label={ar ? 'دخل هذا الشهر' : 'In this month'} value={c.month.income} currency={currency} sign />
@@ -126,6 +150,8 @@ export default function CardsScreen() {
           );
         })}
       </ScreenScroll>
+      <MoveMoneySheet visible={moving} onClose={() => setMoving(false)} sources={cards ?? []} onDone={() => void load()} />
+      <AddSourceSheet visible={adding} onClose={() => setAdding(false)} onDone={() => void load()} />
     </PlanScreen>
   );
 }

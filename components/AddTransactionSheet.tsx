@@ -33,6 +33,8 @@ export type AddTxPayload = {
   categoryId: string;
   // Optional project tag. Org-only; never set on a personal ledger.
   projectId?: string;
+  /** The money source it was paid from / received into (a card, account, wallet or cash). */
+  cardId?: string;
   description?: string;
   notes?: string;
   date: string; // YYYY-MM-DD
@@ -98,6 +100,15 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   const [isMonthlyBaseline, setIsMonthlyBaseline] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Where the money comes from / goes to. null = not said (the entry is just not tied to a source).
+  const [cardId, setCardId] = useState<string | null>(null);
+  const [sources, setSources] = useState<Array<{ id: string; name: string }>>([]);
+  useEffect(() => {
+    if (!visible) return;
+    apiFetch<{ data: Array<{ id: string; name: string }> }>('/cards')
+      .then((r) => setSources(r.data.map((c) => ({ id: c.id, name: c.name }))))
+      .catch(() => {});
+  }, [visible]);
 
   // Filter categories to those usable for the current type.
   const filteredCats = useMemo(() => {
@@ -116,7 +127,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   useEffect(() => {
     if (!visible) {
       setAmount('0'); setType('expense'); setSeshatMode(false); setSeshatText('');
-      setCatId(null); setProjectId(null); setSaving(false);
+      setCatId(null); setProjectId(null); setCardId(null); setSaving(false);
       setNotes(''); setIsMonthlyBaseline(false); setShowNotes(false);
     }
   }, [visible]);
@@ -194,6 +205,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
         currency: defaultCurrency,
         categoryId: catId!,
         projectId: projectId ?? undefined,
+        cardId: cardId ?? undefined,
         description: seshatMode && seshatText.trim() ? seshatText.trim() : undefined,
         notes: notes.trim() ? notes.trim() : undefined,
         date: localDateStr(),
@@ -616,6 +628,23 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   </RPill>
                 );
               })}
+            </ScrollView>
+          ) : null}
+
+          {/* Paid from / received into: one of the user's money sources (cash, a card, a wallet). */}
+          {sources.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ flexGrow: 0, flexShrink: 0, height: 38, marginBottom: 4 }}
+              contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 20, alignItems: 'center' }}
+            >
+              <RPill active={cardId === null} onPress={() => setCardId(null)}>
+                {type === 'income' ? (lang === 'ar' ? 'استلمتُ في…' : 'Received in…') : (lang === 'ar' ? 'دفعتُ من…' : 'Paid from…')}
+              </RPill>
+              {sources.map((c) => (
+                <RPill key={c.id} active={cardId === c.id} onPress={() => setCardId(c.id)}>{c.name}</RPill>
+              ))}
             </ScrollView>
           ) : null}
 

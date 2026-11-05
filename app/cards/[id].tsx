@@ -3,7 +3,7 @@ import { View, Text, Pressable, Alert, RefreshControl } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pencil } from 'lucide-react-native';
+import { Pencil, ArrowLeftRight } from 'lucide-react-native';
 import { PlanScreen } from '../../components/PlanShell';
 import { RCard, REyebrow, RAmount, RField, RButton } from '../../components/ui';
 import { RTxRow, type TxRowData } from '../../components/shell';
@@ -12,7 +12,8 @@ import { useAppData } from '../../lib/appData';
 import { apiFetch, hasToken } from '../../lib/api';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { S } from '../../lib/theme';
-import type { CardDetail } from '../../lib/cards';
+import type { CardDetail, CardSummary } from '../../lib/cards';
+import { MoveMoneySheet } from '../../components/MoneySheets';
 import { CategoryIconByKey } from '../../components/icons';
 import { iconKeyForCategory } from '../../lib/categoryMap';
 
@@ -30,14 +31,19 @@ export default function CardDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [label, setLabel] = useState('');
+  const [opening, setOpening] = useState('');
+  const [sources, setSources] = useState<CardSummary[]>([]);
+  const [moving, setMoving] = useState(false);
 
   const load = useCallback(async () => {
     if (!id || !(await hasToken())) return;
     try {
-      const [c, t] = await Promise.all([
+      const [c, t, all] = await Promise.all([
         apiFetch<{ data: CardDetail }>(`/cards/${id}`),
         apiFetch<{ data: TxRowData[] }>(`/transactions?cardId=${id}&limit=100`),
+        apiFetch<{ data: CardSummary[] }>('/cards'),
       ]);
+      setSources(all.data);
       setCard(c.data);
       setTxs(t.data);
     } catch (err) {
@@ -57,7 +63,11 @@ export default function CardDetailScreen() {
 
   const saveLabel = async () => {
     try {
-      await apiFetch(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify({ label: label.trim() }) });
+      const ob = parseFloat(opening.replace(/,/g, ''));
+      await apiFetch(`/cards/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ label: label.trim(), ...(Number.isFinite(ob) ? { openingBalance: ob } : {}) }),
+      });
       setRenaming(false);
       bumpVersion();
       void load();
@@ -90,6 +100,16 @@ export default function CardDetailScreen() {
       >
         {card && (
           <>
+            <RCard accent padding={16} style={{ marginBottom: 12 }}>
+              <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'الرصيد الحالي' : 'Balance now'}</REyebrow>
+              <RAmount value={card.balance ?? 0} currency={currency} size={30} decimals={0} />
+              <View style={{ marginTop: 12 }}>
+                <RButton variant="secondary" icon={<ArrowLeftRight size={15} color={tok.bone} />} onPress={() => setMoving(true)}>
+                  {ar ? 'تحويل من هذا الحساب' : 'Move money from here'}
+                </RButton>
+              </View>
+            </RCard>
+
             <RCard padding={16} style={{ marginBottom: 12 }}>
               <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'هذا الشهر' : 'This month'}</REyebrow>
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
@@ -136,13 +156,14 @@ export default function CardDetailScreen() {
             <RCard padding={16} style={{ marginBottom: 12 }}>
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={{ fontFamily: fontHead(lang), fontSize: 15, color: tok.bone }}>{ar ? 'العمليات' : 'Operations'}</Text>
-                <Pressable onPress={() => { setLabel(card.label ?? ''); setRenaming((r) => !r); }} hitSlop={10} accessibilityLabel={ar ? 'إعادة تسمية' : 'Rename'}>
+                <Pressable onPress={() => { setLabel(card.label ?? ''); setOpening(String(card.openingBalance ?? 0)); setRenaming((r) => !r); }} hitSlop={10} accessibilityLabel={ar ? 'إعادة تسمية' : 'Rename'}>
                   <Pencil size={16} color={tok.muted} />
                 </Pressable>
               </View>
               {renaming && (
                 <View style={{ marginTop: 12, gap: 10 }}>
                   <RField label={ar ? 'اسم البطاقة' : 'Card name'} value={label} onChange={setLabel} placeholder={card.name} />
+                  <RField label={ar ? 'الرصيد عند البدء' : 'Balance when you started tracking'} value={opening} onChange={setOpening} keyboardType="decimal-pad" mono />
                   <RButton full onPress={saveLabel}>{ar ? 'حفظ' : 'Save'}</RButton>
                 </View>
               )}
@@ -161,6 +182,7 @@ export default function CardDetailScreen() {
           </>
         )}
       </ScreenScroll>
+      <MoveMoneySheet visible={moving} onClose={() => setMoving(false)} sources={sources} initialFrom={id} onDone={() => void load()} />
     </PlanScreen>
   );
 }

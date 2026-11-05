@@ -5,12 +5,15 @@ export type CardSummary = {
   bank: string | null;
   last4: string;
   label: string | null;
-  kind: 'card' | 'account' | 'wallet';
+  kind: 'card' | 'account' | 'wallet' | 'cash';
   /** Display name: the user's label, else "CIB ••4821". */
   name: string;
   total: Totals;
   month: Totals;
   lastUsedAt: string | null;
+  /** What the source holds now: opening balance + income - expense + transfers in - transfers out. */
+  balance: number;
+  openingBalance: number;
 };
 
 export type CardDetail = Omit<CardSummary, 'lastUsedAt'> & {
