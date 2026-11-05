@@ -230,8 +230,9 @@ export default function TabsLayout() {
               });
             } catch (err) {
               console.warn('[fab voice] transcribe failed', err);
-              setToast(lang === 'ar' ? 'تعذر الإرسال' : 'Could not send');
-              setTimeout(() => setToast(null), 2400);
+              // Say what went wrong (too short, service busy...) instead of a generic failure.
+              setToast(err instanceof Error && err.message ? err.message : (lang === 'ar' ? 'تعذر الإرسال' : 'Could not send'));
+              setTimeout(() => setToast(null), 3600);
             }
           }}
           onVoiceCancel={() => {
