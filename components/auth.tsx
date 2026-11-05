@@ -1,7 +1,7 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   View, Text, Pressable, TextInput, KeyboardAvoidingView, Platform,
-  ScrollView, StyleSheet,
+  ScrollView, StyleSheet, Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
@@ -21,6 +21,17 @@ export function AuthChrome({
 }: { children: ReactNode; footer?: ReactNode; headerCta?: ReactNode }) {
   const { tok, lang, setLang } = useI18n();
   const insets = useSafeAreaInsets();
+  // With the keyboard open the scroll area shrinks to the space above the pinned footer, so the form's last
+  // field (the password) sat clipped behind it, and Android (edge-to-edge) does not scroll the focused field
+  // into view by itself. Scroll to the end when the keyboard appears so the fields stay visible.
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    const evt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(evt, () => {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
+    });
+    return () => sub.remove();
+  }, []);
   return (
     <KeyboardAvoidingView
       behavior="padding"
@@ -70,6 +81,7 @@ export function AuthChrome({
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: 30 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

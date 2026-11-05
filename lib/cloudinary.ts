@@ -27,11 +27,27 @@ export type CloudinaryUploadResult = {
  * Generic upload of a local file:// image URI to Cloudinary using an
  * unsigned preset. Throws on network or validation errors.
  */
+/** The file extension a Cloudinary upload should carry for a picker mime type (default jpg). */
+function extensionFor(mime?: string | null): string {
+  switch ((mime ?? '').toLowerCase()) {
+    case 'image/png': return 'png';
+    case 'image/webp': return 'webp';
+    case 'image/heic': return 'heic';
+    case 'image/heif': return 'heif';
+    default: return 'jpg';
+  }
+}
+
 async function uploadImage(
   localUri: string,
   preset: string,
-  filename: string,
+  baseName: string,
+  mime?: string | null,
 ): Promise<CloudinaryUploadResult> {
+  // Tell Cloudinary what the file really is. It used to be labelled JPEG no matter what the picker
+  // returned, so a PNG/WebP/HEIC pick failed the preset's format check.
+  const type = (mime && mime.startsWith('image/')) ? mime : 'image/jpeg';
+  const filename = `${baseName}.${extensionFor(type)}`;
   // Cloudinary's REST API accepts multipart/form-data with `file` and
   // `upload_preset` fields. React Native's FormData polyfills the upload
   // shape transparently for fetch.
@@ -40,7 +56,7 @@ async function uploadImage(
   // FormData type definition was written for the browser and expects Blob.
   form.append('file', {
     uri: localUri,
-    type: 'image/jpeg',
+    type,
     name: filename,
   } as any);
   form.append('upload_preset', preset);
@@ -52,7 +68,7 @@ async function uploadImage(
   if (!res.ok) {
     let detail = '';
     try { detail = (await res.json())?.error?.message ?? ''; } catch { /* swallow */ }
-    throw new Error(`Cloudinary upload failed (${res.status})${detail ? `: ${detail}` : ''}`);
+    throw new Error(friendlyUploadError(res.status, detail));
   }
   const json = await res.json();
   if (!json.secure_url || !json.public_id) {
@@ -61,10 +77,19 @@ async function uploadImage(
   return { secureUrl: json.secure_url, publicId: json.public_id };
 }
 
-export function uploadAvatar(localUri: string): Promise<CloudinaryUploadResult> {
-  return uploadImage(localUri, AVATAR_PRESET, 'avatar.jpg');
+/** A message a person can act on, not Cloudinary's raw error. The raw detail is kept in parentheses. */
+function friendlyUploadError(status: number, detail: string): string {
+  const d = detail.toLowerCase();
+  let why = 'The upload failed. Please try again.';
+  if (d.includes('too large') || d.includes('file size') || status === 413) why = 'That photo is too large. Pick a smaller one.';
+  else if (d.includes('format') || d.includes('invalid image') || d.includes('not allowed')) why = 'That image type is not supported. Pick a JPG or PNG photo.';
+  return detail ? `${why} (${detail})` : `${why} (${status})`;
 }
 
-export function uploadReceipt(localUri: string): Promise<CloudinaryUploadResult> {
-  return uploadImage(localUri, RECEIPT_PRESET, 'receipt.jpg');
+export function uploadAvatar(localUri: string, mime?: string | null): Promise<CloudinaryUploadResult> {
+  return uploadImage(localUri, AVATAR_PRESET, 'avatar', mime);
+}
+
+export function uploadReceipt(localUri: string, mime?: string | null): Promise<CloudinaryUploadResult> {
+  return uploadImage(localUri, RECEIPT_PRESET, 'receipt', mime);
 }

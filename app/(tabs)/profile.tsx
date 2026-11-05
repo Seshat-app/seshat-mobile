@@ -129,13 +129,14 @@ export default function ProfileScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.85,
+      // A 512px avatar does not need a full-resolution photo; a lower quality keeps the upload small.
+      quality: 0.6,
     });
     if (picked.canceled || !picked.assets?.[0]) return;
 
     setUploadingAvatar(true);
     try {
-      const { secureUrl } = await uploadAvatar(picked.assets[0].uri);
+      const { secureUrl } = await uploadAvatar(picked.assets[0].uri, picked.assets[0].mimeType);
       await apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ avatarUrl: secureUrl }) });
       setProfile((p) => p ? { ...p, avatarUrl: secureUrl } : p);
       refresh();

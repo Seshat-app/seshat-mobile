@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Pressable, ScrollView, StyleSheet, Animated, Easing,
-  Modal, Alert,
+  Modal, Alert, Platform, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers } from 'lucide-react-native';
@@ -208,8 +208,15 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   // Animation for slide-up
   const translate = useRef(new Animated.Value(800)).current;
   const overlay = useRef(new Animated.Value(0)).current;
-  const kbHeight = useKeyboardHeight();
   const insets = useSafeAreaInsets();
+  // The note field opens the system keyboard. The sheet is lifted above it (marginBottom), but its content
+  // (with the 300px custom keypad) is taller than the space left and `overflow: hidden` cropped the bottom,
+  // i.e. the note field and Save. So cap the height to the space left and fold the keypad away while it is up.
+  const kbHeight = useKeyboardHeight();
+  const { height: winHeight } = useWindowDimensions();
+  // On Android (edge-to-edge) the reported keyboard height leaves out the gesture/nav bar, so the sheet's
+  // bottom edge (Save) tucked under the keyboard by that much. Lift by it too.
+  const kbLift = kbHeight > 0 ? kbHeight + (Platform.OS === 'android' ? insets.bottom : 0) : 0;
   const recorder = useRecorder();
   const [transcribing, setTranscribing] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -393,15 +400,15 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             // around a rounded corner with a visible mismatch; a full border is clean.
             borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
             overflow: 'hidden',
-            paddingBottom: 26 + insets.bottom,
+            paddingBottom: kbHeight > 0 ? 12 : 26 + insets.bottom,
             // Cap height to whatever's between the status bar and the keyboard.
             // Without this, when the keyboard pushes the sheet up the top edge
             // (with the × + back chevron) slides into the unsafe area and
             // becomes untappable.
             paddingTop: kbHeight > 0 ? insets.top : 0,
-            marginBottom: kbHeight,
+            marginBottom: kbLift,
             transform: [{ translateY: translate }],
-            maxHeight: '90%',
+            maxHeight: kbHeight > 0 ? winHeight - kbLift : '90%',
           }}
         >
           {/* Handle */}
@@ -616,7 +623,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               mode uses natural height so the input sits above the system
               keyboard without being clipped. */}
           {!seshatMode ? (
-            <View style={{ height: 300, paddingHorizontal: 16, paddingTop: 8 }}>
+            <View style={{ height: kbHeight > 0 ? 0 : 300, overflow: 'hidden', paddingHorizontal: 16, paddingTop: kbHeight > 0 ? 0 : 8 }}>
               <View style={{ flex: 1, gap: 8 }}>
                 {keyRows.map((row, i) => (
                   <View key={i} style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
