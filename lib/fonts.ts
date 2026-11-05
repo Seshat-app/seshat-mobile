@@ -18,6 +18,7 @@ export const FF = {
   outfitRegular: 'Outfit_400Regular',
   outfitMedium: 'Outfit_500Medium',
   outfitSemiBold: 'Outfit_600SemiBold',
+  outfitBold: 'Outfit_700Bold',
 
   // Arabic — Cairo for headings AND body. Single family keeps the system
   // simple and matches what most modern Arab fintech apps (Tabby, Tamara,
@@ -34,15 +35,18 @@ export function fontHead(lang: 'en' | 'ar', weight: 'regular' | 'bold' = 'bold')
   return weight === 'bold' ? FF.syneBold : FF.syneRegular;
 }
 
+// Body text runs one step heavier than the nominal weight ("a little bolder" - regular reads thin on dark
+// backgrounds): regular -> 500, medium -> 600, semibold -> 700. The names stay the same so call sites and the
+// hierarchy between them are unchanged.
 export function fontBody(lang: 'en' | 'ar', weight: 'regular' | 'medium' | 'semibold' = 'regular'): string {
   if (lang === 'ar') {
-    if (weight === 'semibold') return FF.cairoSemiBold;
-    if (weight === 'medium') return FF.cairoMedium;
-    return FF.cairoRegular;
+    if (weight === 'semibold') return FF.cairoBold;
+    if (weight === 'medium') return FF.cairoSemiBold;
+    return FF.cairoMedium;
   }
-  if (weight === 'semibold') return FF.outfitSemiBold;
-  if (weight === 'medium') return FF.outfitMedium;
-  return FF.outfitRegular;
+  if (weight === 'semibold') return FF.outfitBold;
+  if (weight === 'medium') return FF.outfitSemiBold;
+  return FF.outfitMedium;
 }
 
 export const fontMono = (weight: 'light' | 'regular' | 'medium' = 'regular') =>
