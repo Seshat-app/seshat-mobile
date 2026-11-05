@@ -450,6 +450,8 @@ export default function MonthlyReportScreen() {
               </>
             )}
 
+            <MoreNumbers report={report} currency={currency} />
+
             <RButton full onPress={sharePdf} disabled={exporting} loading={exporting}>
               <View style={{
                 flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -624,5 +626,77 @@ function TotalsCard({
         </Text>
       </View>
     </RCard>
+  );
+}
+
+
+/** The month in more detail: extremes and pace, week by week, where the money sits, and what is still owed. */
+function MoreNumbers({ report, currency }: { report: MonthlyReport; currency: string }) {
+  const { tok, lang } = useI18n();
+  const ar = lang === 'ar';
+  const cur = currencyLabel(currency, lang);
+  const dir = ar ? 'row-reverse' : 'row';
+  const day = (iso: string) => new Date(iso + 'T00:00:00Z').toLocaleDateString(ar ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const Row = ({ name, note, value, last }: { name: string; note?: string; value: string; last?: boolean }) => (
+    <View style={{ flexDirection: dir, justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: last ? 0 : 1, borderBottomColor: tok.border }}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: fontBody(lang), fontSize: 13.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{name}</Text>
+        {note ? <Text style={{ marginTop: 2, fontFamily: fontMono(), fontSize: 10.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{note}</Text> : null}
+      </View>
+      <Text style={{ fontFamily: fontMono(), fontSize: 12.5, color: tok.bone }}>{value}</Text>
+    </View>
+  );
+  const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <>
+      <REyebrow style={{ marginTop: 6, marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{title}</REyebrow>
+      <RCard padding={0} style={{ paddingHorizontal: 16, paddingVertical: 4, marginBottom: 14 }}>{children}</RCard>
+    </>
+  );
+  const h = report.highlights;
+  const money = (n: number) => `${fmtNumMasked(Math.round(n))} ${cur}`;
+  return (
+    <>
+      {h && (
+        <Card title={ar ? 'الشهر بالتفصيل' : 'The month in detail'}>
+          {h.biggestExpense && (
+            <Row
+              name={ar ? 'أكبر مصروف مفرد' : 'Biggest single expense'}
+              note={`${h.biggestExpense.description || (ar ? h.biggestExpense.categoryAr : h.biggestExpense.categoryEn)} · ${day(h.biggestExpense.date)}`}
+              value={money(h.biggestExpense.amount)}
+            />
+          )}
+          {h.busiestDay && <Row name={ar ? 'أكثر الأيام إنفاقاً' : 'Busiest day'} note={day(h.busiestDay.date)} value={money(h.busiestDay.expense)} />}
+          <Row name={ar ? 'المتوسط اليومي' : 'Average per day'} value={money(h.avgDailySpend)} />
+          <Row name={ar ? 'متوسط العملية' : 'Average purchase'} value={money(h.avgExpenseSize)} />
+          <Row name={ar ? 'أيام بلا إنفاق' : 'Days you spent nothing'} value={String(h.noSpendDays)} />
+          <Row name={ar ? 'الإنفاق الجمعة والسبت' : 'Spent on Fri & Sat'} value={`${h.weekendShare}%`} last />
+        </Card>
+      )}
+      {report.weeks && report.weeks.length > 0 && (
+        <Card title={ar ? 'أسبوعاً بأسبوع' : 'Week by week'}>
+          {report.weeks.map((w, i) => (
+            <Row key={w.from} name={`${ar ? 'الأسبوع' : 'Week'} ${i + 1}`} note={`${day(w.from)} – ${day(w.to)}`} value={money(w.expense)} last={i === report.weeks!.length - 1} />
+          ))}
+        </Card>
+      )}
+      {report.accounts && (
+        <Card title={ar ? 'أين تستقر أموالك' : 'Where your money sits'}>
+          {report.accounts.items.map((a) => (
+            <Row key={a.name} name={a.name} note={`${ar ? 'دخل' : 'in'} ${money(a.monthIn)} · ${ar ? 'خرج' : 'out'} ${money(a.monthOut)}`} value={money(a.balance)} />
+          ))}
+          <Row name={ar ? 'الإجمالي' : 'Total'} value={money(report.accounts.total)} last />
+        </Card>
+      )}
+      {report.debts && report.debts.totalOwed > 0 && (
+        <Card title={ar ? 'الديون' : 'Debts'}>
+          <Row
+            name={ar ? 'المتبقي عليك' : 'Still owed'}
+            note={report.debts.paidThisMonth > 0 ? `${ar ? 'سُدّد هذا الشهر' : 'Paid this month'}: ${money(report.debts.paidThisMonth)}` : undefined}
+            value={money(report.debts.totalOwed)}
+            last
+          />
+        </Card>
+      )}
+    </>
   );
 }

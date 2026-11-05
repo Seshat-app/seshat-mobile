@@ -56,6 +56,18 @@ export type MonthlyReport = {
     budgetPct: number | null;
     countTx: number;
   }[];
+  highlights?: {
+    biggestExpense: { description: string; amount: number; date: string; categoryEn: string; categoryAr: string } | null;
+    busiestDay: { date: string; expense: number } | null;
+    noSpendDays: number;
+    avgDailySpend: number;
+    avgExpenseSize: number;
+    weekendShare: number;
+    topIncome: { description: string; total: number }[];
+  };
+  weeks?: { from: string; to: string; income: number; expense: number }[];
+  accounts?: { total: number; items: { name: string; kind: string; balance: number; monthIn: number; monthOut: number }[] };
+  debts?: { totalOwed: number; paidThisMonth: number; count: number } | null;
   narrative?: {
     en: ReportInsight;
     ar: ReportInsight;
