@@ -6,6 +6,8 @@
 // Returns the secure_url on success. The caller is responsible for then
 // PATCH-ing /me with that URL so the app remembers the avatar.
 
+import { File } from 'expo-file-system';
+
 const CLOUD_NAME = 'dys1tdumg';
 const AVATAR_PRESET = 'seshat_avatars';
 // Unsigned Cloudinary preset for receipts. Configured server-side with:
@@ -48,16 +50,16 @@ async function uploadImage(
   // returned, so a PNG/WebP/HEIC pick failed the preset's format check.
   const type = (mime && mime.startsWith('image/')) ? mime : 'image/jpeg';
   const filename = `${baseName}.${extensionFor(type)}`;
-  // Cloudinary's REST API accepts multipart/form-data with `file` and
-  // `upload_preset` fields. React Native's FormData polyfills the upload
-  // shape transparently for fetch.
+  // Cloudinary's REST API accepts multipart/form-data with `file` and `upload_preset` fields.
+  // Expo's fetch (the global fetch on SDK 57) rejects React Native's classic `{ uri, type, name }`
+  // form part with "Unsupported FormDataPart implementation". It accepts any part that exposes
+  // `bytes()`, so read the file with expo-file-system and hand it over in that shape.
+  const file = new File(localUri);
   const form = new FormData();
-  // The cast to `any` is unfortunate but standard for RN file uploads - the
-  // FormData type definition was written for the browser and expects Blob.
   form.append('file', {
-    uri: localUri,
-    type,
     name: filename,
+    type,
+    bytes: () => file.bytes(),
   } as any);
   form.append('upload_preset', preset);
 
