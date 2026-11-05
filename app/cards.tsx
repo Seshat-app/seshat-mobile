@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { fmtNum } from '../lib/privacy';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useRouter } from 'expo-router';
@@ -118,7 +119,7 @@ export default function CardsScreen() {
                 </View>
                 <Text style={{ marginTop: 12, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
                   {ar ? 'الإجمالي: ' : 'All time: '}
-                  {`−${Math.round(c.total.expense).toLocaleString()} / +${Math.round(c.total.income).toLocaleString()} ${currency}`}
+                  {`−${fmtNum(Math.round(c.total.expense))} / +${fmtNum(Math.round(c.total.income))} ${currency}`}
                 </Text>
               </RCard>
             </Pressable>

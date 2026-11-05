@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { isHidden, MASK, useHideNumbers, loadHideNumbers } from './privacy';
 import { I18nManager } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Mode, tokens, Tokens } from './theme';
@@ -237,6 +238,10 @@ const MODE_KEY = 'seshat.mode';
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>('en');
   const [mode, setModeState] = useState<Mode>('dark');
+  // Hide-numbers mode: subscribing here re-renders every useI18n consumer when it flips, so each screen's
+  // formatAmount() call picks up the new state without every screen subscribing itself.
+  const numbersHidden = useHideNumbers();
+  useEffect(() => { void loadHideNumbers(); }, []);
 
   useEffect(() => {
     SecureStore.getItemAsync(LANG_KEY).then((v) => { if (v === 'en' || v === 'ar') setLangState(v); });
@@ -267,7 +272,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       dir: lang === 'ar' ? 'rtl' : 'ltr',
       tok: tokens(mode),
     };
-  }, [lang, mode]);
+  }, [lang, mode, numbersHidden]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
@@ -293,6 +298,7 @@ export function localDateStr(date: Date = new Date()): string {
 // because the design brief makes that configurable; we keep numbers in
 // Latin digits with thousand separators to match the prototype default.
 export function formatAmount(value: number, opts: { decimals?: number; sign?: boolean; short?: boolean } = {}): string {
+  if (isHidden()) return MASK; // privacy mode: no number is ever shown
   const { decimals = 2, sign = false, short = false } = opts;
   const abs = Math.abs(value);
   let str: string;

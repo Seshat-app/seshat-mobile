@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { fmtNum } from '../../../lib/privacy';
 import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -280,7 +281,7 @@ export default function OrgProjectsScreen() {
                             }}
                           >
                             {p.budget != null
-                              ? `${lang === 'ar' ? 'ميزانية' : 'BUDGET'} · ${p.budget.toLocaleString()} ${p.currency}`
+                              ? `${lang === 'ar' ? 'ميزانية' : 'BUDGET'} · ${fmtNum(p.budget)} ${p.currency}`
                               : (lang === 'ar' ? 'اضغط لإضافة ميزانية' : 'TAP TO SET BUDGET')}
                           </Text>
                         </Pressable>

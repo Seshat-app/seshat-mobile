@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fmtNum } from '../../lib/privacy';
 import { View, Text, StyleSheet, Platform, type ColorValue } from 'react-native';
 import { Tabs, useSegments, router } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
@@ -89,8 +90,8 @@ export default function TabsLayout() {
       const cat = categories.find((c) => c._id === p.categoryId);
       const catName = lang === 'ar' && cat?.nameAr ? cat.nameAr : (cat?.nameEn ?? '');
       const msg = lang === 'ar'
-        ? `تم رصده. ${p.amount.toLocaleString()} ج.م · ${catName}`
-        : `Detected. ${p.amount.toLocaleString()} ${p.currency} · ${catName}`;
+        ? `تم رصده. ${fmtNum(p.amount)} ج.م · ${catName}`
+        : `Detected. ${fmtNum(p.amount)} ${p.currency} · ${catName}`;
       setToast(msg);
       setSheetOpen(false);
       setTimeout(() => setToast(null), 2800);

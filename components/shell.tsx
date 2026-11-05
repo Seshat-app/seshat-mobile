@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
+import { useHideNumbers, toggleHideNumbers } from '../lib/privacy';
 import { LiquidBackdrop } from './LiquidBackdrop';
 import { cardChipName } from '../lib/cards';
 import { isLiquid } from './Glass';
@@ -6,7 +7,7 @@ import { View, Text, Pressable, StyleSheet, ViewStyle, Animated, Easing, Activit
 import { FrostedHeader } from './FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { BarChart3, Bell, Crosshair, LayoutGrid, Mic, Plus } from 'lucide-react-native';
+import { BarChart3, Bell, Crosshair, LayoutGrid, Mic, Plus, Eye, EyeOff } from 'lucide-react-native';
 import { useI18n, formatAmount, currencyLabel, monthYear, greeting } from '../lib/i18n';
 import { useNotifications } from '../lib/notifications';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -99,9 +100,36 @@ export function RHomeHeader({
             for any surface that wants an inline entry point. */}
         {/* Workspace / org switcher — tap to switch ledgers. Lives where the
             view switcher used to be; the view now changes by swiping the hero. */}
-        <WorkspaceChip />
+        <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+          <HideNumbersButton />
+          <WorkspaceChip />
+        </View>
       </View>
     </FrostedHeader>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// HideNumbersButton — eye toggle for privacy mode: every amount in the app shows as •••• while it is on.
+// ─────────────────────────────────────────────────────────────
+function HideNumbersButton() {
+  const { tok, lang } = useI18n();
+  const hidden = useHideNumbers();
+  return (
+    <Pressable
+      onPress={toggleHideNumbers}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={hidden ? (lang === 'ar' ? 'إظهار الأرقام' : 'Show numbers') : (lang === 'ar' ? 'إخفاء الأرقام' : 'Hide numbers')}
+      style={({ pressed }) => ({
+        width: 36, height: 36, borderRadius: 999,
+        alignItems: 'center', justifyContent: 'center',
+        backgroundColor: hidden ? 'rgba(201,168,76,0.14)' : (pressed ? tok.elevated : tok.shellBg),
+        borderWidth: 1, borderColor: hidden ? tok.gold : tok.shellBorder,
+      })}
+    >
+      {hidden ? <EyeOff size={17} color={tok.gold} strokeWidth={1.7} /> : <Eye size={17} color={tok.bone} strokeWidth={1.7} />}
+    </Pressable>
   );
 }
 

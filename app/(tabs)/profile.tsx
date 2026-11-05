@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useHideNumbers, setHideNumbers } from '../../lib/privacy';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import {
-  Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound,
-  MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare,
-} from 'lucide-react-native';
+import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, EyeOff } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -425,6 +423,15 @@ export default function ProfileScreen() {
         </View>
 
         {/* Capture — auto-record bank notifications. */}
+        <View style={{ marginTop: 18 }}>
+          <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'الخصوصية' : 'Privacy'}
+          </REyebrow>
+          <RCard padding={0} style={{ paddingHorizontal: 16 }}>
+            <HideNumbersRow />
+          </RCard>
+        </View>
+
         <View style={{ marginTop: 18 }}>
           <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
             {lang === 'ar' ? 'الرصد التلقائي' : 'Auto-capture'}
@@ -860,6 +867,28 @@ function PlanRow({
 }
 
 // Floating chat bubble on/off (Android 11+). Android draws the bubble itself; this only posts it.
+function HideNumbersRow() {
+  const { tok, lang } = useI18n();
+  const hidden = useHideNumbers();
+  return (
+    <PlanRow
+      icon={EyeOff}
+      title={lang === 'ar' ? 'إخفاء الأرقام' : 'Hide numbers'}
+      hint={lang === 'ar' ? 'تظهر كل المبالغ •••• حتى تُظهرها' : 'Every amount shows as •••• until you turn it off'}
+      onPress={() => setHideNumbers(!hidden)}
+      trailing={
+        <Switch
+          value={hidden}
+          onValueChange={setHideNumbers}
+          trackColor={{ false: tok.elevated, true: tok.gold }}
+          thumbColor={hidden ? tok.bone : tok.muted}
+        />
+      }
+      last
+    />
+  );
+}
+
 function BubbleRow() {
   const { tok, lang } = useI18n();
   const [on, setOn] = useState(false);

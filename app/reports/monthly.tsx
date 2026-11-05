@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { fmtNum as fmtNumMasked } from '../../lib/privacy';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -93,7 +94,7 @@ export default function MonthlyReportScreen() {
   };
 
   const currency = report?.currency ?? profile?.currency ?? 'EGP';
-  const fmtNum = (n: number) => Math.round(n).toLocaleString();
+  const fmtNum = (n: number) => fmtNumMasked(Math.round(n));
 
   return (
     <PlanScreen

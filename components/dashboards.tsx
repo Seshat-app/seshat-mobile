@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { fmtNum } from '../lib/privacy';
 import {
   View, Text, StyleSheet, ScrollView, useWindowDimensions,
   NativeSyntheticEvent, NativeScrollEvent,
@@ -69,19 +70,19 @@ function buildInsight(data: DashboardData, lang: 'en' | 'ar'): SeshatInsightData
     if (lang === 'ar') {
       const sign = delta >= 0 ? 'أعلى' : 'أقل';
       return {
-        hero: { value: curExp.toLocaleString(), label: lang === 'ar' ? 'إجمالي المصروف' : 'total spent' },
+        hero: { value: fmtNum(curExp), label: lang === 'ar' ? 'إجمالي المصروف' : 'total spent' },
         text: `صرفتِ هذا الشهر ${sign} بـ ${Math.abs(delta).toFixed(0)}٪ من الشهر الماضي.`,
       };
     }
     const sign = delta >= 0 ? 'more' : 'less';
     return {
-      hero: { value: curExp.toLocaleString(), label: 'total spent' },
+      hero: { value: fmtNum(curExp), label: 'total spent' },
       text: `That's ${Math.abs(delta).toFixed(0)}% ${sign} than last month.`,
     };
   }
   if (top) {
     return {
-      hero: { value: top.total.toLocaleString(), label: catLabel(top, lang) },
+      hero: { value: fmtNum(top.total), label: catLabel(top, lang) },
       text: lang === 'ar'
         ? 'أكبر فئة هذا الشهر. تابعيها.'
         : 'Your biggest category this month. Watch it.',
@@ -299,7 +300,7 @@ export function DashboardNumbers({ data, currency}: { data: DashboardData; curre
                         letterSpacing: 1.2, textTransform: 'uppercase',
                         textAlign: lang === 'ar' ? 'right' : 'left',
                       }}>
-                        {p.budgetPct}% {lang === 'ar' ? 'من' : 'of'} {p.budget.toLocaleString()} {currency}
+                        {p.budgetPct}% {lang === 'ar' ? 'من' : 'of'} {fmtNum(p.budget)} {currency}
                       </Text>
                     </>
                   ) : (
