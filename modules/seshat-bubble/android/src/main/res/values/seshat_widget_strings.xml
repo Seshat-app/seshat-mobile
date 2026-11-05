@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="seshat_widget_month_desc">Spent so far this month against your budget, today, and your last entry.</string>
+    <string name="seshat_widget_budgets_desc">Your budgets as progress bars, and spending per card.</string>
+    <string name="seshat_widget_maat_desc">Whether your month is in balance, weighed from your pace so far.</string>
+    <string name="seshat_widget_quickadd_desc">Log an expense, scan a receipt, or ask Seshat in one tap.</string>
+    <string name="seshat_widget_month_label">Seshat · Month at a glance</string>
+    <string name="seshat_widget_budgets_label">Seshat · Budgets and cards</string>
+    <string name="seshat_widget_maat_label">Seshat · Maat\u2019s verdict</string>
+    <string name="seshat_widget_quickadd_label">Seshat · Quick add</string>
+</resources>

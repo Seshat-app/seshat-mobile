@@ -96,7 +96,6 @@
       "./plugins/withPodDeploymentTarget",
       "./plugins/withSeshatAppIntent",
       "./plugins/withNoBootReceiver",
-      "./plugins/withAndroidWidget",
       "expo-font",
       "expo-sharing",
       "expo-status-bar",

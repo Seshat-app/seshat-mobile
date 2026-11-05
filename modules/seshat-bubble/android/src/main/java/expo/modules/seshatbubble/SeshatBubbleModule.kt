@@ -21,6 +21,13 @@ class SeshatBubbleModule : Module() {
 
     Function("openSettings") { context.startActivity(BubbleController.settingsIntent(context)) }
 
+    // Home-screen widgets: the app hands over the phone's capture token, the API address and the language, then
+    // asks the widgets to redraw (they fetch /widget/summary themselves).
+    Function("setWidgetConfig") { token: String, api: String, lang: String ->
+      expo.modules.seshatbubble.widgets.WidgetStore.setConfig(context, token, api, lang)
+    }
+    Function("refreshWidgets") { expo.modules.seshatbubble.widgets.WidgetStore.redrawAll(context) }
+
     // Collapses the panel back to the floating bubble (the chat header's close button).
     Function("collapse") { appContext.currentActivity?.finish() }
   }

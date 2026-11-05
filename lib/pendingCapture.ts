@@ -18,7 +18,7 @@ const PENDING_DIR = () => `${FileSystem.documentDirectory}pending-captures/`;
 
 type Config = { token: string; api: string; savedAt: number };
 
-async function ensureDeviceToken(): Promise<void> {
+export async function ensureDeviceToken(): Promise<void> {
   try {
     if (!(await hasToken())) return;
     const raw = await SecureStore.getItemAsync(KEY);

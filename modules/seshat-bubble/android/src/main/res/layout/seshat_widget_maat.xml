@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/sw_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@drawable/seshat_widget_bg" android:padding="14dp">
+  <TextView android:id="@+id/sw_title" android:text="MAAT\u2019S VERDICT" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="#D4AF37" android:textStyle="bold" android:letterSpacing="0.15"/>
+  <TextView android:id="@+id/sw_state" android:text="In balance" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="22sp" android:textStyle="bold" android:textColor="#4ABA7A" android:maxLines="1" android:ellipsize="end"/>
+  <TextView android:id="@+id/sw_line" android:text="Heading for 7,100 of 7,500 EGP" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:textSize="12sp" android:textColor="#EDE6D6" android:maxLines="3" android:ellipsize="end"/>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+  <TextView android:id="@+id/sw_days" android:text="Days left 11" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="11sp" android:textColor="#8D877B" android:maxLines="1"/>
+  <TextView android:id="@+id/sw_watch" android:text="Watch · Food &amp; Dining 84%" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textSize="11sp" android:textColor="#8D877B" android:maxLines="1" android:ellipsize="end"/>
+</LinearLayout>

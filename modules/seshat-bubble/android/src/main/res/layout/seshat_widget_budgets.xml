@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/sw_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:background="@drawable/seshat_widget_bg" android:padding="14dp">
+  <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical">
+    <TextView android:id="@+id/sw_b_title" android:text="BUDGETS" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="#D4AF37" android:textStyle="bold" android:letterSpacing="0.15"/>
+    <TextView android:id="@+id/sw_b_empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="11sp" android:textColor="#8D877B"/>
+    <LinearLayout android:id="@+id/sw_b1" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="7dp">
+      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:id="@+id/sw_b1_name" android:text="Food &amp; Dining" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#EDE6D6" android:maxLines="1" android:ellipsize="end"/>
+        <TextView android:id="@+id/sw_b1_pct" android:text="84%" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="11sp" android:textStyle="bold" android:textColor="#4ABA7A"/>
+      </LinearLayout>
+      <LinearLayout android:layout_width="match_parent" android:layout_height="3dp"/>
+      <ProgressBar android:id="@+id/sw_b1_g" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_good" android:visibility="gone"/>
+      <ProgressBar android:id="@+id/sw_b1_w" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_warn" android:visibility="gone"/>
+      <ProgressBar android:id="@+id/sw_b1_b" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_bad" android:visibility="gone"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/sw_b2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="7dp">
+      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:id="@+id/sw_b2_name" android:text="Transport" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#EDE6D6" android:maxLines="1" android:ellipsize="end"/>
+        <TextView android:id="@+id/sw_b2_pct" android:text="53%" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="11sp" android:textStyle="bold" android:textColor="#4ABA7A"/>
+      </LinearLayout>
+      <LinearLayout android:layout_width="match_parent" android:layout_height="3dp"/>
+      <ProgressBar android:id="@+id/sw_b2_g" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_good" android:visibility="gone"/>
+      <ProgressBar android:id="@+id/sw_b2_w" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_warn" android:visibility="gone"/>
+      <ProgressBar android:id="@+id/sw_b2_b" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_bad" android:visibility="gone"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/sw_b3" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="7dp">
+      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:id="@+id/sw_b3_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#EDE6D6" android:maxLines="1" android:ellipsize="end"/>
+        <TextView android:id="@+id/sw_b3_pct" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="11sp" android:textStyle="bold" android:textColor="#4ABA7A"/>
+      </LinearLayout>
+      <LinearLayout android:layout_width="match_parent" android:layout_height="3dp"/>
+      <ProgressBar android:id="@+id/sw_b3_g" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_good" android:visibility="gone"/>
+      <ProgressBar android:id="@+id/sw_b3_w" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_warn" android:visibility="gone"/>
+      <ProgressBar android:id="@+id/sw_b3_b" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="5dp" android:indeterminate="false" android:max="100" android:progress="0" android:progressDrawable="@drawable/seshat_bar_bad" android:visibility="gone"/>
+    </LinearLayout>
+  </LinearLayout>
+  <LinearLayout android:layout_width="14dp" android:layout_height="match_parent"/>
+  <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical">
+    <TextView android:id="@+id/sw_c_title" android:text="BY CARD" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textColor="#D4AF37" android:textStyle="bold" android:letterSpacing="0.15"/>
+    <TextView android:id="@+id/sw_c_empty" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textSize="11sp" android:textColor="#8D877B"/>
+    <LinearLayout android:id="@+id/sw_c1" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="9dp">
+      <TextView android:id="@+id/sw_c1_name" android:text="CIB ••4821" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#EDE6D6" android:maxLines="1" android:ellipsize="end"/>
+      <TextView android:id="@+id/sw_c1_amt" android:text="2.3K EGP" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="bold" android:textColor="#EDE6D6" android:layout_marginStart="6dp"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/sw_c2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="9dp">
+      <TextView android:id="@+id/sw_c2_name" android:text="QNB ••7710" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#EDE6D6" android:maxLines="1" android:ellipsize="end"/>
+      <TextView android:id="@+id/sw_c2_amt" android:text="1.2K EGP" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="bold" android:textColor="#EDE6D6" android:layout_marginStart="6dp"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/sw_c3" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="9dp">
+      <TextView android:id="@+id/sw_c3_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#EDE6D6" android:maxLines="1" android:ellipsize="end"/>
+      <TextView android:id="@+id/sw_c3_amt" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="bold" android:textColor="#EDE6D6" android:layout_marginStart="6dp"/>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

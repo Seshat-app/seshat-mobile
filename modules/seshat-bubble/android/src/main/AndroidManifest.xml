@@ -11,5 +11,21 @@
       android:documentLaunchMode="always"
       android:windowSoftInputMode="adjustResize"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density" />
+    <receiver android:name="expo.modules.seshatbubble.widgets.SeshatMonthWidget" android:exported="true" android:label="@string/seshat_widget_month_label">
+      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/seshat_widget_month_info" />
+    </receiver>
+    <receiver android:name="expo.modules.seshatbubble.widgets.SeshatBudgetsWidget" android:exported="true" android:label="@string/seshat_widget_budgets_label">
+      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/seshat_widget_budgets_info" />
+    </receiver>
+    <receiver android:name="expo.modules.seshatbubble.widgets.SeshatMaatWidget" android:exported="true" android:label="@string/seshat_widget_maat_label">
+      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/seshat_widget_maat_info" />
+    </receiver>
+    <receiver android:name="expo.modules.seshatbubble.widgets.SeshatQuickAddWidget" android:exported="true" android:label="@string/seshat_widget_quickadd_label">
+      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/seshat_widget_quickadd_info" />
+    </receiver>
   </application>
 </manifest>

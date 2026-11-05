@@ -10,6 +10,8 @@ type Native = {
   hide(): void;
   openSettings(): void;
   collapse(): void;
+  setWidgetConfig(token: string, api: string, lang: string): void;
+  refreshWidgets(): void;
 };
 
 const native: Native | null = Platform.OS === 'android' ? requireNativeModule<Native>('SeshatBubble') : null;
@@ -22,4 +24,6 @@ export const SeshatBubble = {
   hide: () => native?.hide(),
   openSettings: () => native?.openSettings(),
   collapse: () => native?.collapse(),
+  setWidgetConfig: (token: string, api: string, lang: string) => native?.setWidgetConfig(token, api, lang),
+  refreshWidgets: () => native?.refreshWidgets(),
 };

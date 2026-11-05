@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { apiFetch, hasToken, setActiveLedger, getActiveLedger } from './api';
 import { registerForPushNotifications, subscribeToNotificationTaps } from './push';
 import { usePendingCapture } from './pendingCapture';
+import { syncAndroidWidgets } from './androidWidgets';
 import { onDataChanged } from './dataEvents';
 import type { ApiCategory } from '../components/AddTransactionSheet';
 
@@ -230,6 +231,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   usePendingCapture();
 
   const bumpVersion = useCallback(() => setDataVersion((v) => v + 1), []);
+
+  // Android widgets: hand them the token + language and have them redraw (opening the app, a language
+  // change or any data change). No-op on iPhone.
+  useEffect(() => {
+    if (profile?.language) void syncAndroidWidgets(profile.language);
+  }, [profile?.language, dataVersion]);
 
   // Writes made outside a screen (chat, voice, background capture) announce themselves here.
   useEffect(() => onDataChanged(bumpVersion), [bumpVersion]);
