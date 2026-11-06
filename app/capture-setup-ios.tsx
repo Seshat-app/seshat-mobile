@@ -131,14 +131,6 @@ export default function CaptureSetupIosScreen() {
               : 'Tap the back arrow at the top left. The automation saves and runs on its own. Test it by texting yourself a message containing the currency from another number, then open Profile → Cards.'}
           </Text>
         </StepCard>
-
-        <StepCard step={7} title={ar ? 'المحافظ (فودافون كاش)' : 'Wallets (Vodafone Cash)'} tok={tok} lang={lang}>
-          <Text style={para}>
-            {ar
-              ? 'رسائل المحافظ لا تحمل العملة دائماً (قد تكتب "L.E" أو لا تذكر العملة). أضف أتمتة ثانية بنفس الخطوات، لكن اترك الشرط على "Sender is" واكتب اسم المرسل، مثل VF-Cash، ثم نفس إجراء "Log bank message". الرسائل التي ليست عمليات (مثل رسائل الرصيد فقط) يتجاهلها سيشات.'
-              : 'Wallet messages do not always carry the currency (they may write "L.E" or none). Add a second automation the same way, but keep the condition as "Sender is" and type the sender name, such as VF-Cash, then the same "Log bank message" action. Messages that are not transactions (like balance-only texts) are ignored by Seshat.'}
-          </Text>
-        </StepCard>
       </ScreenScroll>
     </PlanScreen>
   );

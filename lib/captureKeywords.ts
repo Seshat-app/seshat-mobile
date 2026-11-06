@@ -3,7 +3,8 @@ import { useAppData } from './appData';
 // Words a bank message carries for each currency, so the Shortcuts automation
 // ("Message Contains …") follows the account's currency instead of assuming EGP.
 const NAMES: Record<string, string[]> = {
-  EGP: ['جنيه', 'LE'],
+  // "L.E" with the dot: wallets such as Vodafone Cash write the pound that way. Plain "LE" would match almost any word.
+  EGP: ['جنيه', 'جم', 'L.E'],
   SAR: ['ريال', 'SR'],
   AED: ['درهم', 'Dhs'],
   KWD: ['دينار', 'KD'],
