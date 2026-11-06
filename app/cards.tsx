@@ -63,7 +63,7 @@ export default function CardsScreen() {
         }
       >
         {cards && cards.length > 0 && (
-          <RCard accent padding={18} style={{ marginBottom: 14 }}>
+          <RCard padding={18} style={{ marginBottom: 14 }}>
             <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>
               {ar ? 'إجمالي ما تملكه' : 'Total you hold'}
             </REyebrow>

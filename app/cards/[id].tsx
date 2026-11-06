@@ -97,7 +97,7 @@ export default function CardDetailScreen() {
       >
         {card && (
           <>
-            <RCard accent padding={16} style={{ marginBottom: 12 }}>
+            <RCard padding={16} style={{ marginBottom: 12 }}>
               <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'الرصيد الحالي' : 'Balance now'}</REyebrow>
               <RAmount value={card.balance ?? 0} currency={currency} size={30} decimals={0} />
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginTop: 14 }}>

@@ -137,7 +137,10 @@ export default function HomeScreen() {
                 <View style={{ flex: 1, minHeight: 400 }}><EmptyState /></View>
               ) : (
                 <>
-                  <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
+                  {/* Breathing room under the banners above (they used to touch the hero card). */}
+                  <View style={{ marginTop: 14 }}>
+                    <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
+                  </View>
                   <TodayCard data={data!} currency={currency} />
                   <AccountsOverview currency={currency} />
                   <DashboardBody data={data!} currency={currency} />
