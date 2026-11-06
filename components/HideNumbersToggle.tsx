@@ -1,35 +1,50 @@
-import { Pressable, View } from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, Text } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import { hapticLight } from './press';
+import { fontMono } from '../lib/fonts';
 import { useI18n } from '../lib/i18n';
 import { toggleHideNumbers, useHideNumbers } from '../lib/privacy';
 import { RAmount } from './ui';
 import type { ComponentProps } from 'react';
 
-/** Small eye beside the big numbers: tap to hide every amount in the app (••••), tap again to show. */
-export function HideNumbersToggle({ size = 20 }: { size?: number }) {
+const HINT_KEY = 'hide_numbers_hint_seen';
+
+/**
+ * The hero balance IS the hide/show control: tap the number to turn every amount in the app into •••• (tap again to
+ * show). No button to place. A one-line hint appears until the first time it is used; while hidden a small
+ * "tap to show" reminds how to bring the numbers back.
+ */
+export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: number }) {
+  const { eye: _eye, ...amount } = props;
   const { tok, lang } = useI18n();
   const hidden = useHideNumbers();
+  const ar = lang === 'ar';
+  const [hintSeen, setHintSeen] = useState(true);
+  useEffect(() => {
+    SecureStore.getItemAsync(HINT_KEY).then((v) => setHintSeen(!!v)).catch(() => {});
+  }, []);
+  const onPress = () => {
+    hapticLight();
+    toggleHideNumbers();
+    if (!hintSeen) { setHintSeen(true); SecureStore.setItemAsync(HINT_KEY, '1').catch(() => {}); }
+  };
+  const caption = hidden
+    ? (ar ? 'اضغط لإظهار الأرقام' : 'Tap to show numbers')
+    : (!hintSeen ? (ar ? 'اضغط على الرقم لإخفاء المبالغ' : 'Tap the number to hide amounts') : null);
   return (
     <Pressable
-      onPress={toggleHideNumbers}
-      hitSlop={12}
+      onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={hidden ? (lang === 'ar' ? 'إظهار الأرقام' : 'Show numbers') : (lang === 'ar' ? 'إخفاء الأرقام' : 'Hide numbers')}
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 2 })}
+      accessibilityLabel={hidden ? (ar ? 'إظهار الأرقام' : 'Show numbers') : (ar ? 'إخفاء الأرقام' : 'Hide numbers')}
+      style={{ alignSelf: ar ? 'flex-end' : 'flex-start' }}
     >
-      {hidden ? <EyeOff size={size} color={tok.gold} strokeWidth={1.7} /> : <Eye size={size} color={tok.muted} strokeWidth={1.7} />}
-    </Pressable>
-  );
-}
-
-/** The hero balance with the hide/show eye right beside it. */
-export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: number }) {
-  const { eye = 20, ...amount } = props;
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
       <RAmount {...amount} />
-      {/* At the card's far edge, level with the number: out of the way of the figure, easy to reach. */}
-      <HideNumbersToggle size={eye} />
-    </View>
+      {caption ? (
+        <Text style={{ marginTop: 6, fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: 0.6, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+          {caption}
+        </Text>
+      ) : null}
+    </Pressable>
   );
 }
