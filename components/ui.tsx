@@ -237,6 +237,7 @@ export function RPill({
           borderRadius: 999,
           paddingHorizontal: 14,
           paddingVertical: 8,
+          minHeight: 40,
           opacity: pressed ? 0.85 : 1,
         },
         style,
@@ -348,7 +349,8 @@ export function RField({
             style={{
               backgroundColor: 'transparent',
               paddingHorizontal: 16, paddingVertical: 14,
-              minHeight: multiline ? (minHeight ?? 120) : undefined,
+              // One field height everywhere (48 inside the 4px bezel = 56 outside), matching full-width buttons.
+              minHeight: multiline ? (minHeight ?? 120) : 48,
               color: tok.bone,
               fontFamily: mono ? fontMono('regular') : fontBody(lang),
               fontSize: 15,
@@ -501,6 +503,8 @@ export function RButton({
     // Full-width buttons use a pill shape (999) — more premium, consistent with
     // the website's CTA language. Inline buttons stay with a softer square radius.
     borderRadius: full ? 999 : radius.btn,
+    // Sizes line up with fields: a full-width button is as tall as a field (56), an inline one is 48.
+    minHeight: full ? 56 : 48,
     paddingVertical: full ? 15 : 12,
     paddingHorizontal: 20,
     flexDirection: 'row',

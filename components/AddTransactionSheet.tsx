@@ -709,7 +709,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               <View style={{ flex: 1 }}>
                 <RField value={newCatName} onChange={setNewCatName} placeholder={lang === 'ar' ? 'اسم الفئة الجديدة' : 'New category name'} autoFocus />
               </View>
-              <RButton onPress={createCategory} disabled={!newCatName.trim()} loading={creatingCat}>{lang === 'ar' ? 'أضف' : 'Add'}</RButton>
+              <RButton style={{ minHeight: 56 }} onPress={createCategory} disabled={!newCatName.trim()} loading={creatingCat}>{lang === 'ar' ? 'أضف' : 'Add'}</RButton>
             </View>
           )}
 

@@ -192,7 +192,7 @@ export default function TransactionsScreen() {
             active={hasActiveFilters(filters)}
             onPress={() => setFilterSheetOpen(true)}
             icon={<SlidersHorizontal size={16} color={hasActiveFilters(filters) ? tok.void : tok.muted} />}
-            style={{ paddingVertical: 12, paddingHorizontal: 12, gap: 0 }}
+            style={{ width: 56, height: 56, minHeight: 56, paddingVertical: 0, paddingHorizontal: 0, gap: 0, justifyContent: 'center' }}
           >
             {''}
           </RPill>
