@@ -76,7 +76,7 @@ function splitCardStyle(style?: ViewStyle | ViewStyle[]): { shell: ViewStyle; co
 export function RCard({
   children, style, large, accent, padding, glow,
 }: { children: ReactNode; style?: ViewStyle | ViewStyle[]; large?: boolean; accent?: boolean; padding?: number; glow?: boolean }) {
-  const { tok, dir, mode } = useI18n();
+  const { tok, mode } = useI18n();
   const corePad = padding !== undefined
     ? { padding }
     : large
@@ -90,11 +90,9 @@ export function RCard({
   const bezel = 4;
   const outerRadius = large ? 26 : 22;
   const innerRadius = Math.max(0, outerRadius - bezel);
-  const accentRail: ViewStyle | null = accent
-    ? (dir === 'rtl'
-        ? { borderRightWidth: 2, borderRightColor: tok.gold }
-        : { borderLeftWidth: 2, borderLeftColor: tok.gold })
-    : null;
+  // `accent` marks a highlighted card (banners, prompts). It used to draw a gold strip down one side; now it is a
+  // soft gold-tinted tray and border, so it stands out without a strap.
+  const tinted = !!glow || !!accent;
 
   return (
     <View
@@ -102,9 +100,9 @@ export function RCard({
         {
           padding: bezel,
           borderRadius: outerRadius,
-          backgroundColor: glow ? tok.glowShellBg : tok.shellBg,
+          backgroundColor: tinted ? tok.glowShellBg : tok.shellBg,
           borderWidth: 1,
-          borderColor: glow ? tok.glowShellBorder : tok.shellBorder,
+          borderColor: tinted ? tok.glowShellBorder : tok.shellBorder,
         },
         // Gold glow lifts focal cards off the void — kept soft and faint. iOS only: Android
         // draws `elevation` shadows through a see-through surface, which shows up as a dark
@@ -127,7 +125,6 @@ export function RCard({
         style={[
           { borderRadius: innerRadius, backgroundColor: tok.coreBg, overflow: 'hidden' },
           corePad,
-          ...(accentRail ? [accentRail] : []),
           core,
         ]}
       >
