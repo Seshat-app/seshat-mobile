@@ -93,7 +93,8 @@ function Row({ step, index, busy }: { step: ActivityStep; index: number; busy?: 
         ],
       }}
     >
-      <View style={{ marginTop: 2, width: 12, alignItems: 'center', justifyContent: 'center' }}>
+      {/* Same height as the label's line (16) and centred in it, so the loader/icon sits on the text's middle. */}
+      <View style={{ height: 16, width: 14, alignItems: 'center', justifyContent: 'center' }}>
         {busy ? (
           <ActivityIndicator
             size="small"

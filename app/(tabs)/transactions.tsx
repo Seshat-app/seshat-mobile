@@ -176,7 +176,7 @@ export default function TransactionsScreen() {
         <RefreshSpinner refreshing={refreshing} />
       </FrostedHeader>
 
-      <View style={{ paddingHorizontal: 16, flex: 1 }}>
+      <View style={{ paddingHorizontal: 16, flex: 1, paddingTop: 12 }}>
         {/* Search + filter */}
         <View style={{
           flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -203,7 +203,7 @@ export default function TransactionsScreen() {
         {cards.length > 0 ? (
           <RHScroll style={{ marginBottom: 8 }}>
             <RPill active={cardFilter === null} onPress={() => setCardFilter(null)}>
-              {lang === 'ar' ? 'كل البطاقات' : 'All cards'}
+              {lang === 'ar' ? 'كل الحسابات' : 'All accounts'}
             </RPill>
             {cards.map((c) => (
               <RPill key={c.id} active={cardFilter === c.id} onPress={() => setCardFilter(c.id)}>
@@ -211,7 +211,7 @@ export default function TransactionsScreen() {
               </RPill>
             ))}
             <RPill active={cardFilter === 'none'} onPress={() => setCardFilter('none')}>
-              {lang === 'ar' ? 'بدون بطاقة' : 'No card'}
+              {lang === 'ar' ? 'بدون حساب' : 'No account'}
             </RPill>
           </RHScroll>
         ) : null}

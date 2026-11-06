@@ -26,8 +26,9 @@ export function HideNumbersToggle({ size = 20 }: { size?: number }) {
 export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: number }) {
   const { eye = 20, ...amount } = props;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
       <RAmount {...amount} />
+      {/* At the card's far edge, level with the number: out of the way of the figure, easy to reach. */}
       <HideNumbersToggle size={eye} />
     </View>
   );
