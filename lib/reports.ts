@@ -97,6 +97,14 @@ export async function getReportAvailability(): Promise<ReportAvailability> {
   return r.data;
 }
 
+export type ReportMonth = { year: number; month: number; label: string; from: string; to: string };
+
+/** Every finished month since the user started, newest first. */
+export async function listReportMonths(): Promise<ReportMonth[]> {
+  const r = await apiFetch<{ data: ReportMonth[] }>('/reports/monthly/months');
+  return r.data;
+}
+
 export async function getMonthlyReport(year?: number, month?: number): Promise<MonthlyReport> {
   const qs = new URLSearchParams();
   if (year) qs.set('year', String(year));

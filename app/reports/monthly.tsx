@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fmtNum as fmtNumMasked } from '../../lib/privacy';
-import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Alert, Pressable, StyleSheet } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TrendingUp, TrendingDown, Sparkles, Download, Hourglass } from 'lucide-react-native';
@@ -12,8 +12,10 @@ import { PlanScreen } from '../../components/PlanShell';
 import { RCard, REyebrow, RButton, RStatus } from '../../components/ui';
 import { useI18n, currencyLabel } from '../../lib/i18n';
 import { hasToken, apiFetchText } from '../../lib/api';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
 import {
-  getMonthlyReport, getReportAvailability, monthlyReportHtmlPath,
+  getMonthlyReport, getReportAvailability, monthlyReportHtmlPath, listReportMonths, type ReportMonth,
   type MonthlyReport, type ReportAvailability,
 } from '../../lib/reports';
 import { useAppData } from '../../lib/appData';
@@ -31,6 +33,11 @@ export default function MonthlyReportScreen() {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
   const { profile } = useAppData();
+  const router = useRouter();
+  // With ?year=&month= this screen shows that month's report; without them it lists the finished months.
+  const params = useLocalSearchParams<{ year?: string; month?: string }>();
+  const picked = params.year && params.month ? { year: Number(params.year), month: Number(params.month) } : null;
+  const [months, setMonths] = useState<ReportMonth[]>([]);
   const [report, setReport] = useState<MonthlyReport | null>(null);
   const [availability, setAvailability] = useState<ReportAvailability | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,9 +53,11 @@ export default function MonthlyReportScreen() {
       // round-trip to Groq + a clearer error path.
       const avail = await getReportAvailability();
       setAvailability(avail);
-      if (avail.available) {
-        const r = await getMonthlyReport();
-        setReport(r);
+      if (avail.available && picked) {
+        setReport(await getMonthlyReport(picked.year, picked.month));
+      } else if (avail.available) {
+        setMonths(await listReportMonths());
+        setReport(null);
       } else {
         setReport(null);
       }
@@ -57,7 +66,7 @@ export default function MonthlyReportScreen() {
     } finally {
       if (mode === 'initial') setLoading(false); else setRefreshing(false);
     }
-  }, []);
+  }, [picked?.year, picked?.month]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -98,8 +107,8 @@ export default function MonthlyReportScreen() {
 
   return (
     <PlanScreen
-      title={report ? report.period.label : (lang === 'ar' ? 'التقرير الشهري' : 'Monthly report')}
-      subtitle={lang === 'ar' ? 'مدعوم بماعت' : 'Powered by Maat'}
+      title={report ? report.period.label : (lang === 'ar' ? 'التقارير الشهرية' : 'Monthly reports')}
+      subtitle={picked ? (lang === 'ar' ? 'مدعوم بماعت' : 'Powered by Maat') : (lang === 'ar' ? 'اختر شهراً مضى' : 'Pick a finished month')}
       refreshing={refreshing}
     >
       <ScreenScroll
@@ -119,6 +128,33 @@ export default function MonthlyReportScreen() {
           <RCard padding={32}><ActivityIndicator color={tok.gold} /></RCard>
         ) : availability && !availability.available ? (
           <BrewingState availability={availability} tok={tok} lang={lang} />
+        ) : !picked ? (
+          months.length === 0 ? (
+            <RCard padding={24}>
+              <Text style={{ fontFamily: fontBody(lang), fontSize: 14, lineHeight: 21, color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                {lang === 'ar' ? 'لا توجد تقارير بعد. يظهر تقرير كل شهر بعد انتهائه.' : 'No reports yet. Each month gets a report once it is over.'}
+              </Text>
+            </RCard>
+          ) : (
+            <RCard padding={0} style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
+              {months.map((m, i) => (
+                <Pressable
+                  key={`${m.year}-${m.month}`}
+                  onPress={() => router.push({ pathname: '/reports/monthly', params: { year: String(m.year), month: String(m.month) } })}
+                  style={({ pressed }) => ({
+                    flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 12, paddingVertical: 16,
+                    borderBottomWidth: i === months.length - 1 ? 0 : StyleSheet.hairlineWidth, borderBottomColor: tok.border, opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 16, color: tok.bone, textAlign: lang === 'ar' ? 'right' : 'left' }}>{m.label}</Text>
+                    <Text style={{ marginTop: 2, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left' }}>{m.from} → {m.to}</Text>
+                  </View>
+                  <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
+                </Pressable>
+              ))}
+            </RCard>
+          )
         ) : !report ? (
           <RCard padding={32}>
             <Text style={{
