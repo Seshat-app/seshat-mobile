@@ -49,7 +49,7 @@ const FAST_ACCEPT_PACKAGES = new Set<string>([
 // so a notification in a foreign currency (USD travel charge, AED) still
 // triggers a parse.
 // Egyptian banks also write "جم" for EGP; it is a bare two-letter word, so it must not sit inside a longer Arabic word.
-const CURRENCY_HINT = /\b(EGP|USD|EUR|GBP|SAR|AED|KWD|QAR|OMR|BHD|JPY|CHF|TRY)\b|ج\.م|(?:^|[^\u0600-\u06FF])جم(?![\u0600-\u06FF])|جنيه|ريال|درهم|دينار/i;
+const CURRENCY_HINT = /\b(EGP|USD|EUR|GBP|SAR|AED|KWD|QAR|OMR|BHD|JPY|CHF|TRY)\b|\d\s*L\.?\s?E\b|ج\.م|(?:^|[^\u0600-\u06FF])جم(?![\u0600-\u06FF])|جنيه|ريال|درهم|دينار/i;
 
 // Universal financial-verb fingerprint. Matches across English + Arabic
 // across every Egyptian bank's notification format I've seen. Tuned to
