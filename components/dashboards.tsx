@@ -751,7 +751,7 @@ function ChartRadar({ data, currency }: { data: DashboardData; currency: string 
             style={{
               position: 'absolute', width: POP_W,
               // Opens outward from the dot (away from the balance in the middle), level with it.
-              left: Math.min(Math.max(sel.x >= cx ? offsetX + sel.x + sel.r + 10 : offsetX + sel.x - sel.r - 10 - POP_W, 6), Math.max(6, stageW - POP_W - 6)),
+              left: Math.min(Math.max(sel.x >= cx ? offsetX + sel.x + sel.r * 2 + 8 : offsetX + sel.x - sel.r * 2 - 8 - POP_W, 6), Math.max(6, stageW - POP_W - 6)),
               top: Math.min(Math.max(sel.y - 29, 4), SIZE - 62),
               paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12,
               backgroundColor: tok.elevated, borderWidth: 1, borderColor: tok.gold,
