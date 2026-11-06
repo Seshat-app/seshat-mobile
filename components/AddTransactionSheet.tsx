@@ -4,7 +4,7 @@ import {
   Modal, Alert, Platform, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers } from 'lucide-react-native';
+import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers, Plus } from 'lucide-react-native';
 import { AddBySeshatPanel } from './AddBySeshatPanel';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n, currencyLabel, localDateStr } from '../lib/i18n';
@@ -19,6 +19,8 @@ import { useKeyboardHeight } from './useKeyboardHeight';
 import { useRecorder } from './useRecorder';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { uploadReceipt } from '../lib/cloudinary';
+import { useAppData } from '../lib/appData';
+import { hapticLight } from './press';
 
 export type ApiCategory = { _id: string; nameEn: string; nameAr?: string; emoji?: string; type?: 'income' | 'expense' | 'both' };
 
@@ -102,13 +104,29 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   const [saving, setSaving] = useState(false);
   // Where the money comes from / goes to. null = not said (the entry is just not tied to a source).
   const [cardId, setCardId] = useState<string | null>(null);
-  const [sources, setSources] = useState<Array<{ id: string; name: string }>>([]);
+  const [sources, setSources] = useState<Array<{ id: string; name: string; kind: string }>>([]);
+  // Cash is picked for you unless you choose another; an entry with no source would never touch a balance.
+  const [sourceTouched, setSourceTouched] = useState(false);
   useEffect(() => {
     if (!visible) return;
-    apiFetch<{ data: Array<{ id: string; name: string }> }>('/cards')
-      .then((r) => setSources(r.data.map((c) => ({ id: c.id, name: c.name }))))
+    apiFetch<{ data: Array<{ id: string; name: string; kind: string }> }>('/cards')
+      .then((r) => setSources(r.data.map((c) => ({ id: c.id, name: c.name, kind: c.kind }))))
       .catch(() => {});
   }, [visible]);
+  useEffect(() => {
+    if (sourceTouched || cardId !== null) return;
+    const cash = sources.find((c) => c.kind === 'cash');
+    if (cash) setCardId(cash.id);
+  }, [sources, sourceTouched, cardId]);
+
+  // Quick-create a category from the sheet when the one you need does not exist.
+  const { refresh: refreshAppData } = useAppData();
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [creatingCat, setCreatingCat] = useState(false);
+  // What the smart reader understood from the note: a clean label for the entry.
+  const [aiDesc, setAiDesc] = useState<string | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
 
   // Filter categories to those usable for the current type.
   const filteredCats = useMemo(() => {
@@ -127,7 +145,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   useEffect(() => {
     if (!visible) {
       setAmount('0'); setType('expense'); setSeshatMode(false); setSeshatText('');
-      setCatId(null); setProjectId(null); setCardId(null); setSaving(false);
+      setCatId(null); setProjectId(null); setCardId(null); setSourceTouched(false); setSaving(false);
+      setShowNewCat(false); setNewCatName(''); setAiDesc(null);
       setNotes(''); setIsMonthlyBaseline(false); setShowNotes(false);
     }
   }, [visible]);
@@ -153,16 +172,37 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     }
   }, [visible]);
 
-  // Live-parse Seshat text and apply detected amount + matching category.
+  // Read the note as a DESCRIPTION: not every number in it is money ("fuel 92, 5 liters, 22.25 per liter" is 111.25,
+  // and 92 is the fuel grade). The server reads it; the local parser is only a fallback when it cannot.
   useEffect(() => {
     if (!seshatMode) return;
-    const parsed = parseNL(seshatText);
-    if (parsed) {
-      setAmount(String(parsed.amount));
-      // map hint to a real backend category
-      const target = filteredCats.find((c) => catIdFromName(c.nameEn) === parsed.catHint);
-      if (target) setCatId(target._id);
-    }
+    const text = seshatText.trim();
+    if (!text) { setAiDesc(null); return; }
+    let alive = true;
+    const timer = setTimeout(async () => {
+      setAiBusy(true);
+      try {
+        const r = await apiFetch<{ data: { ok: boolean; amount?: number; type?: 'income' | 'expense'; description?: string; categoryId?: string } }>(
+          '/transactions/parse-text', { method: 'POST', body: JSON.stringify({ text }) },
+        );
+        if (!alive) return;
+        if (r.data.ok && r.data.amount) {
+          setAmount(String(r.data.amount));
+          if (r.data.type) setType(r.data.type);
+          if (r.data.description) setAiDesc(r.data.description);
+          if (r.data.categoryId) setCatId(r.data.categoryId);
+          return;
+        }
+      } catch { /* offline or parser down: fall back below */ }
+      if (!alive) return;
+      const parsed = parseNL(text);
+      if (parsed) {
+        setAmount(String(parsed.amount));
+        const target = filteredCats.find((c) => catIdFromName(c.nameEn) === parsed.catHint);
+        if (target) setCatId(target._id);
+      }
+    }, 650);
+    return () => { alive = false; clearTimeout(timer); setAiBusy(false); };
   }, [seshatText, seshatMode]);
 
   // Detect when the user dictated MULTIPLE amounts in one go (e.g. via
@@ -195,6 +235,26 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     });
   };
 
+  const createCategory = async () => {
+    const name = newCatName.trim();
+    if (!name || creatingCat) return;
+    setCreatingCat(true);
+    try {
+      const r = await apiFetch<{ data: { _id: string } }>('/categories', {
+        method: 'POST',
+        body: JSON.stringify({ nameEn: name, nameAr: name, emoji: '📌', type: type === 'income' ? 'income' : 'expense' }),
+      });
+      await refreshAppData();
+      setTimeout(() => setCatId(r.data._id), 60);
+      setShowNewCat(false);
+      setNewCatName('');
+    } catch (err) {
+      Alert.alert(lang === 'ar' ? 'تعذّر إنشاء الفئة' : 'Could not create the category', err instanceof Error ? err.message : undefined);
+    } finally {
+      setCreatingCat(false);
+    }
+  };
+
   const submit = async () => {
     if (!canSave) return;
     setSaving(true);
@@ -206,7 +266,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
         categoryId: catId!,
         projectId: projectId ?? undefined,
         cardId: cardId ?? undefined,
-        description: seshatMode && seshatText.trim() ? seshatText.trim() : undefined,
+        description: seshatMode && seshatText.trim() ? (aiDesc ?? seshatText.trim()) : undefined,
         notes: notes.trim() ? notes.trim() : undefined,
         date: localDateStr(),
         isMonthlyBaseline: type === 'income' ? isMonthlyBaseline : undefined,
@@ -545,6 +605,13 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </View>
           </View>
 
+          {/* The middle scrolls (so the keyboard can never trap it); the top bar and Save stay put. */}
+          <ScrollView
+            style={{ flexShrink: 1, flexGrow: 0 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
           {/* Detected eyebrow */}
           <View style={{ height: 16, alignItems: 'center', justifyContent: 'center' }}>
             {detected && (
@@ -591,7 +658,27 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                 </Pressable>
               );
             })}
+            {/* Quick-create a category when the one you need is not there */}
+            <Pressable onPress={() => { hapticLight(); setShowNewCat((v) => !v); }} style={{ alignItems: 'center', gap: 5, paddingHorizontal: 2 }}>
+              <View style={{
+                width: 44, height: 44, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed',
+                borderColor: showNewCat ? tok.gold : tok.borderHi, alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Plus size={20} color={showNewCat ? tok.gold : tok.muted} />
+              </View>
+              <Text style={{ maxWidth: 60, color: showNewCat ? tok.gold : tok.muted, fontFamily: fontMono('regular'), fontSize: 9, letterSpacing: lang === 'ar' ? 0 : 1, textTransform: lang === 'ar' ? 'none' : 'uppercase' }}>
+                {lang === 'ar' ? 'جديدة' : 'New'}
+              </Text>
+            </Pressable>
           </ScrollView>
+          {showNewCat && (
+            <View style={{ paddingHorizontal: 18, paddingTop: 2, paddingBottom: 8, flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <RField value={newCatName} onChange={setNewCatName} placeholder={lang === 'ar' ? 'اسم الفئة الجديدة' : 'New category name'} autoFocus />
+              </View>
+              <RButton onPress={createCategory} disabled={!newCatName.trim()} loading={creatingCat}>{lang === 'ar' ? 'أضف' : 'Add'}</RButton>
+            </View>
+          )}
 
           {/* Project chip row. Only rendered when the active workspace has
               at least one project — i.e., an organization ledger. Personal
@@ -631,12 +718,15 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </ScrollView>
           ) : null}
 
-          {/* Paid from / received into: one of the user's money sources. Nothing is picked by default; tap a chip to
-              choose it, tap it again to clear. */}
+          {/* Paid from / received into. Its own boxed row, clearly apart from the categories above. Cash is
+              preselected; tap another account to change it. */}
           {sources.length > 0 ? (
-            <View style={{ marginBottom: 4 }}>
+            <View style={{
+              marginHorizontal: 18, marginTop: 6, marginBottom: 6, paddingVertical: 10, borderRadius: 14,
+              backgroundColor: tok.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+            }}>
               <Text style={{
-                paddingHorizontal: 20, marginBottom: 6, fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: lang === 'ar' ? 0 : 1.6,
+                paddingHorizontal: 14, marginBottom: 8, fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: lang === 'ar' ? 0 : 1.6,
                 color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left', textTransform: lang === 'ar' ? 'none' : 'uppercase',
               }}>
                 {type === 'income' ? (lang === 'ar' ? 'استلمتُ في' : 'Received in') : (lang === 'ar' ? 'دفعتُ من' : 'Paid from')}
@@ -644,11 +734,11 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={{ flexGrow: 0, flexShrink: 0, height: 38 }}
-                contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 20, alignItems: 'center' }}
+                style={{ flexGrow: 0, flexShrink: 0, height: 36 }}
+                contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 14, alignItems: 'center' }}
               >
                 {sources.map((c) => (
-                  <RPill key={c.id} active={cardId === c.id} onPress={() => setCardId(cardId === c.id ? null : c.id)}>{c.name}</RPill>
+                  <RPill key={c.id} active={cardId === c.id} onPress={() => { setSourceTouched(true); setCardId(c.id); }}>{c.name}</RPill>
                 ))}
               </ScrollView>
             </View>
@@ -665,19 +755,20 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                     {row.map((k) => (
                       <Pressable
                         key={k}
-                        onPress={() => press(k)}
+                        onPress={() => { hapticLight(); press(k); }}
+                        onLongPress={k === '⌫' ? () => setAmount('0') : undefined}
                         style={({ pressed }) => ({
                           flex: 1,
-                          borderRadius: 14,
-                          backgroundColor: pressed ? tok.elevated : tok.surface,
-                          borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                          borderRadius: 16,
+                          backgroundColor: pressed ? 'rgba(201,168,76,0.22)' : tok.surface,
+                          borderWidth: 1, borderColor: pressed ? tok.gold : tok.border,
                           alignItems: 'center', justifyContent: 'center',
                         })}
                       >
                         {k === '⌫' ? (
-                          <Delete size={20} color={tok.bone} />
+                          <Delete size={22} color={tok.muted} />
                         ) : (
-                          <Text style={{ color: tok.bone, fontFamily: fontMono('regular'), fontSize: 24 }}>{k}</Text>
+                          <Text style={{ color: tok.bone, fontFamily: fontMono('regular'), fontSize: 27 }}>{k}</Text>
                         )}
                       </Pressable>
                     ))}
@@ -718,6 +809,11 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                 ))}
               </ScrollView>
 
+              {(aiBusy || aiDesc) && (
+                <Text style={{ marginTop: 10, color: tok.gold, fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                  {aiBusy ? (lang === 'ar' ? 'أقرأ ملاحظتك…' : 'Reading your note…') : `${lang === 'ar' ? 'فهمتُ' : 'Understood'}: ${aiDesc}`}
+                </Text>
+              )}
               <View style={{
                 marginTop: 12,
                 flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -807,47 +903,45 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </View>
           )}
 
-          {/* Details row: notes button + monthly baseline toggle (income only). */}
-          <View style={{
-            paddingHorizontal: 18, paddingTop: 10, paddingBottom: 4,
-            flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-            alignItems: 'center', gap: 8,
-          }}>
-            <RPill
-              active={!!notes.trim() || showNotes}
-              onPress={() => setShowNotes((v) => !v)}
-              icon={<NotebookPen size={14} color={(notes.trim() || showNotes) ? tok.void : tok.muted} />}
-            >
-              {notes.trim()
-                ? (lang === 'ar' ? 'ملاحظة مضافة' : 'Note added')
-                : (lang === 'ar' ? 'إضافة ملاحظة' : 'Add note')}
-            </RPill>
+          </ScrollView>
 
-            {type === 'income' && (
-              <RPill
-                active={isMonthlyBaseline}
-                onPress={() => setIsMonthlyBaseline((v) => !v)}
-                icon={<Repeat size={14} color={isMonthlyBaseline ? tok.void : tok.muted} />}
-              >
-                {lang === 'ar' ? 'دخل شهري ثابت' : 'Monthly baseline'}
-              </RPill>
-            )}
-          </View>
-
-          {/* Notes input field, slides out when toggled. */}
-          {showNotes && (
-            <View style={{ paddingHorizontal: 18, paddingTop: 4, paddingBottom: 6 }}>
+          {/* Note: a full-width field row above Save (same height as the other controls), not a floating pill. */}
+          <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
+            {showNotes ? (
               <RField
                 value={notes}
                 onChange={setNotes}
-                placeholder={lang === 'ar'
-                  ? 'تفاصيل أو سياق لهذه المعاملة...'
-                  : 'Details or context for this entry...'}
+                placeholder={lang === 'ar' ? 'تفاصيل أو سياق لهذه المعاملة...' : 'Details or context for this entry...'}
                 multiline
                 minHeight={64}
+                autoFocus
               />
-            </View>
-          )}
+            ) : (
+              <Pressable
+                onPress={() => setShowNotes(true)}
+                style={({ pressed }) => ({
+                  height: 48, borderRadius: 14, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+                  backgroundColor: pressed ? tok.elevated : tok.surface, flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 10,
+                })}
+              >
+                <NotebookPen size={16} color={notes.trim() ? tok.gold : tok.muted} />
+                <Text numberOfLines={1} style={{ flex: 1, color: notes.trim() ? tok.bone : tok.muted, fontFamily: fontBody(lang), fontSize: 14, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                  {notes.trim() || (lang === 'ar' ? 'أضف ملاحظة (اختياري)' : 'Add a note (optional)')}
+                </Text>
+              </Pressable>
+            )}
+            {type === 'income' && (
+              <View style={{ marginTop: 8, flexDirection: lang === 'ar' ? 'row-reverse' : 'row' }}>
+                <RPill
+                  active={isMonthlyBaseline}
+                  onPress={() => setIsMonthlyBaseline((v) => !v)}
+                  icon={<Repeat size={14} color={isMonthlyBaseline ? tok.void : tok.muted} />}
+                >
+                  {lang === 'ar' ? 'دخل شهري ثابت' : 'Monthly baseline'}
+                </RPill>
+              </View>
+            )}
+          </View>
 
           {/* Save */}
           <View style={{ paddingHorizontal: 18, paddingTop: 6, backgroundColor: tok.void }}>
