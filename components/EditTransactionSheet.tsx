@@ -20,6 +20,8 @@ export type EditingTx = {
   description?: string;
   date: string;
   categoryId?: string | { _id: string };
+  // The account it is tagged to (populated by the API), if any.
+  cardId?: string | { _id?: string } | null;
 };
 
 type Props = {
@@ -43,9 +45,17 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+  const [sources, setSources] = useState<Array<{ id: string; name: string }>>([]);
+  const [cardId, setCardId] = useState<string>('');
+
+  useEffect(() => {
+    if (!visible) return;
+    apiFetch<{ data: Array<{ id: string; name: string }> }>('/cards').then((r) => setSources(r.data.map((c) => ({ id: c.id, name: c.name })))).catch(() => {});
+  }, [visible]);
 
   useEffect(() => {
     if (!editing || !visible) return;
+    setCardId(typeof editing.cardId === 'string' ? editing.cardId : editing.cardId?._id ?? '');
     setAmount(String(editing.amount));
     setType(editing.type);
     setCategoryId(typeof editing.categoryId === 'string' ? editing.categoryId : editing.categoryId?._id ?? '');
@@ -69,6 +79,8 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
           amount: n,
           categoryId,
           description: description.trim() || undefined,
+          // Which account it moved: fixes entries that were tagged to the wrong one (or none).
+          cardId: cardId || null,
         }),
         idempotencyKey: newIdempotencyKey(),
       });
@@ -161,6 +173,30 @@ export function EditTransactionSheet({ visible, editing, categories, onClose, on
             })}
           </ScrollView>
         </View>
+
+        {/* Account */}
+        {sources.length > 0 && (
+          <View>
+            <Text style={{
+              fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, letterSpacing: 1.4, marginBottom: 6,
+              textAlign: lang === 'ar' ? 'right' : 'left',
+            }}>{type === 'income' ? (lang === 'ar' ? 'استُلم في' : 'RECEIVED IN') : (lang === 'ar' ? 'دُفع من' : 'PAID FROM')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, flexDirection: lang === 'ar' ? 'row-reverse' : 'row' }}>
+              {sources.map((c) => {
+                const active = c.id === cardId;
+                return (
+                  <Pressable
+                    key={c.id}
+                    onPress={() => setCardId(active ? '' : c.id)}
+                    style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, backgroundColor: active ? tok.gold : tok.elevated }}
+                  >
+                    <Text style={{ fontFamily: fontBody(lang, active ? 'semibold' : 'medium'), fontSize: 13, color: active ? tok.void : tok.bone }}>{c.name}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Description */}
         <RField

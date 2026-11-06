@@ -272,3 +272,59 @@ export function CorrectBalanceSheet({ visible, onClose, account, onDone }: {
     </Sheet>
   );
 }
+
+/**
+ * "This is the same account as another one": a bank can call one account by two numbers (the card's digits and the
+ * account's). Merging moves every entry across and makes future messages with either number land on one account.
+ */
+export function MergeAccountSheet({ visible, onClose, account, others, onDone }: {
+  visible: boolean; onClose: () => void; account: { id: string; name: string } | null; others: CardSummary[]; onDone?: () => void;
+}) {
+  const { lang } = useI18n();
+  const ar = lang === 'ar';
+  const [into, setInto] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const choices = others.filter((o) => o.id !== account?.id && o.kind !== 'cash');
+  useEffect(() => { if (visible) setInto(null); }, [visible]);
+  const target = choices.find((c) => c.id === into);
+
+  const submit = async () => {
+    if (!account || !into) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/cards/${account.id}/merge`, { method: 'POST', body: JSON.stringify({ intoId: into }) });
+      emitDataChanged();
+      onDone?.();
+      onClose();
+    } catch (err) {
+      Alert.alert(ar ? 'تعذّر الدمج' : 'Could not merge', err instanceof Error ? err.message : undefined);
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Sheet
+      visible={visible} onClose={onClose}
+      title={ar ? 'نفس الحساب؟' : 'Same account?'}
+      hint={ar
+        ? `إن كان «${account?.name ?? ''}» هو نفسه حساباً آخر لديك، ادمجهما: تنتقل كل عملياته، وأي رسالة بنك تحمل أياً من الرقمين تذهب للحساب الواحد.`
+        : `If “${account?.name ?? ''}” is another account you already have under a second number, merge them: all its entries move over, and bank messages with either number land on the one account.`}
+    >
+      {choices.length === 0 ? (
+        <Text style={{ fontFamily: fontBody(lang), fontSize: 13.5, color: '#8A8A8A', textAlign: ar ? 'right' : 'left' }}>
+          {ar ? 'لا يوجد حساب آخر للدمج معه.' : 'There is no other account to merge into.'}
+        </Text>
+      ) : (
+        <View style={{ gap: 8 }}>
+          <REyebrow style={{ textAlign: ar ? 'right' : 'left' }}>{ar ? 'ادمجه في' : 'Merge it into'}</REyebrow>
+          {choices.map((c) => <AccountPick key={c.id} s={c} on={c.id === into} onPress={() => setInto(c.id)} />)}
+        </View>
+      )}
+      {target && (
+        <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, lineHeight: 18, color: '#8A8A8A', textAlign: ar ? 'right' : 'left' }}>
+          {ar ? `سيختفي «${account?.name}» وتنتقل عملياته إلى «${target.name}».` : `“${account?.name}” will disappear and its entries move to “${target.name}”.`}
+        </Text>
+      )}
+      <RButton full onPress={submit} disabled={!into} loading={busy}>{ar ? 'ادمج الحسابين' : 'Merge accounts'}</RButton>
+    </Sheet>
+  );
+}

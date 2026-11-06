@@ -13,7 +13,7 @@ import { apiFetch, hasToken } from '../../lib/api';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { S } from '../../lib/theme';
 import type { CardDetail, CardSummary } from '../../lib/cards';
-import { MoveMoneySheet, CorrectBalanceSheet } from '../../components/MoneySheets';
+import { MoveMoneySheet, CorrectBalanceSheet, MergeAccountSheet } from '../../components/MoneySheets';
 import { CategoryIconByKey } from '../../components/icons';
 import { iconKeyForCategory } from '../../lib/categoryMap';
 
@@ -32,6 +32,7 @@ export default function CardDetailScreen() {
   const [renaming, setRenaming] = useState(false);
   const [label, setLabel] = useState('');
   const [fixing, setFixing] = useState(false);
+  const [merging, setMerging] = useState(false);
   const [sources, setSources] = useState<CardSummary[]>([]);
   const [moving, setMoving] = useState(false);
 
@@ -178,12 +179,18 @@ export default function CardDetailScreen() {
               ))}
             </RCard>
 
+            {card.kind !== 'cash' && (
+              <Pressable onPress={() => setMerging(true)} style={{ alignSelf: 'center', padding: 10 }}>
+                <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: tok.gold }}>{ar ? 'هل هو نفس حساب آخر؟ ادمجهما' : 'Same account as another one? Merge them'}</Text>
+              </Pressable>
+            )}
             <Pressable onPress={remove} style={{ alignSelf: 'center', padding: 10 }}>
               <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color: tok.muted }}>{ar ? 'إخفاء هذه البطاقة' : 'Hide this card'}</Text>
             </Pressable>
           </>
         )}
       </ScreenScroll>
+      <MergeAccountSheet visible={merging} onClose={() => setMerging(false)} account={card ? { id: card.id, name: card.name } : null} others={sources} onDone={() => { bumpVersion(); router.back(); }} />
       <CorrectBalanceSheet visible={fixing} onClose={() => setFixing(false)} account={card ? { id: card.id, name: card.name, balance: card.balance } : null} onDone={() => void load()} />
       <MoveMoneySheet visible={moving} onClose={() => setMoving(false)} sources={sources} initialFrom={id} onDone={() => void load()} />
     </PlanScreen>
