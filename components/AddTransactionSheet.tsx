@@ -4,7 +4,7 @@ import {
   Modal, Alert, Platform, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers, Plus } from 'lucide-react-native';
+import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers, Plus, ChevronDown } from 'lucide-react-native';
 import { AddBySeshatPanel } from './AddBySeshatPanel';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n, currencyLabel, localDateStr } from '../lib/i18n';
@@ -119,6 +119,21 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     if (cash) setCardId(cash.id);
   }, [sources, sourceTouched, cardId]);
 
+  // Currency of this entry. When it differs from the account's currency the server converts it at today's rate.
+  const [entryCurrency, setEntryCurrency] = useState(defaultCurrency);
+  const [showCurrencies, setShowCurrencies] = useState(false);
+  const [fxRate, setFxRate] = useState<number | null>(null);
+  useEffect(() => { setEntryCurrency(defaultCurrency); }, [defaultCurrency, visible]);
+  useEffect(() => {
+    if (entryCurrency === defaultCurrency) { setFxRate(null); return; }
+    let alive = true;
+    apiFetch<{ data: { rate: number | null } }>(`/transactions/fx-rate?from=${entryCurrency}`)
+      .then((r) => { if (alive) setFxRate(r.data.rate); })
+      .catch(() => { if (alive) setFxRate(null); });
+    return () => { alive = false; };
+  }, [entryCurrency, defaultCurrency]);
+  const currencyChoices = useMemo(() => Array.from(new Set([defaultCurrency, 'USD', 'EUR', 'SAR', 'AED', 'GBP', 'KWD'])), [defaultCurrency]);
+
   // Quick-create a category from the sheet when the one you need does not exist.
   const { refresh: refreshAppData } = useAppData();
   const [showNewCat, setShowNewCat] = useState(false);
@@ -146,7 +161,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     if (!visible) {
       setAmount('0'); setType('expense'); setSeshatMode(false); setSeshatText('');
       setCatId(null); setProjectId(null); setCardId(null); setSourceTouched(false); setSaving(false);
-      setShowNewCat(false); setNewCatName(''); setAiDesc(null);
+      setShowNewCat(false); setNewCatName(''); setAiDesc(null); setShowCurrencies(false);
       setNotes(''); setIsMonthlyBaseline(false); setShowNotes(false);
     }
   }, [visible]);
@@ -182,13 +197,14 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     const timer = setTimeout(async () => {
       setAiBusy(true);
       try {
-        const r = await apiFetch<{ data: { ok: boolean; amount?: number; type?: 'income' | 'expense'; description?: string; categoryId?: string } }>(
+        const r = await apiFetch<{ data: { ok: boolean; amount?: number; currency?: string; type?: 'income' | 'expense'; description?: string; categoryId?: string } }>(
           '/transactions/parse-text', { method: 'POST', body: JSON.stringify({ text }) },
         );
         if (!alive) return;
         if (r.data.ok && r.data.amount) {
           setAmount(String(r.data.amount));
           if (r.data.type) setType(r.data.type);
+          if (r.data.currency) setEntryCurrency(r.data.currency);
           if (r.data.description) setAiDesc(r.data.description);
           if (r.data.categoryId) setCatId(r.data.categoryId);
           return;
@@ -262,7 +278,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
       await onSave({
         type,
         amount: numericAmount,
-        currency: defaultCurrency,
+        currency: entryCurrency,
         categoryId: catId!,
         projectId: projectId ?? undefined,
         cardId: cardId ?? undefined,
@@ -436,8 +452,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
 
   const saveLabel = canSave
     ? lang === 'ar'
-      ? `${t('save')} · ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(defaultCurrency, lang)} · ${catLabel(selectedCat, lang)}`
-      : `${t('save')} · ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(defaultCurrency, lang)} · ${catLabel(selectedCat, lang)}`
+      ? `${t('save')} · ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(entryCurrency, lang)} · ${catLabel(selectedCat, lang)}`
+      : `${t('save')} · ${Math.abs(numericAmount).toLocaleString()} ${currencyLabel(entryCurrency, lang)} · ${catLabel(selectedCat, lang)}`
     : t('save');
 
   const chips = lang === 'ar'
@@ -599,11 +615,28 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               >
                 {amount}
               </Text>
-              <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 18, marginLeft: 8 }}>
-                {currencyLabel(defaultCurrency, lang)}
-              </Text>
+              <Pressable onPress={() => { hapticLight(); setShowCurrencies((v) => !v); }} hitSlop={10} style={{ marginLeft: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={{ color: entryCurrency !== defaultCurrency ? tok.gold : tok.muted, fontFamily: fontMono('regular'), fontSize: 18 }}>
+                  {currencyLabel(entryCurrency, lang)}
+                </Text>
+                <ChevronDown size={14} color={tok.muted} />
+              </Pressable>
             </View>
           </View>
+          {entryCurrency !== defaultCurrency && (
+            <Text style={{ textAlign: 'center', color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, paddingBottom: 2 }}>
+              {fxRate
+                ? `≈ ${Math.round(numericAmount * fxRate * 100) / 100} ${currencyLabel(defaultCurrency, lang)} · ${lang === 'ar' ? 'بسعر اليوم' : "today's rate"}`
+                : (lang === 'ar' ? 'جارٍ جلب سعر الصرف…' : 'Getting the exchange rate…')}
+            </Text>
+          )}
+          {showCurrencies && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, height: 40 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 20, alignItems: 'center' }}>
+              {currencyChoices.map((c) => (
+                <RPill key={c} active={entryCurrency === c} onPress={() => { setEntryCurrency(c); setShowCurrencies(false); }}>{c}</RPill>
+              ))}
+            </ScrollView>
+          )}
 
           {/* The middle scrolls (so the keyboard can never trap it); the top bar and Save stay put. */}
           <ScrollView
