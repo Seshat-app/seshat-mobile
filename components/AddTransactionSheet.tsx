@@ -631,21 +631,27 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </ScrollView>
           ) : null}
 
-          {/* Paid from / received into: one of the user's money sources (cash, a card, a wallet). */}
+          {/* Paid from / received into: one of the user's money sources. Nothing is picked by default; tap a chip to
+              choose it, tap it again to clear. */}
           {sources.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexGrow: 0, flexShrink: 0, height: 38, marginBottom: 4 }}
-              contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 20, alignItems: 'center' }}
-            >
-              <RPill active={cardId === null} onPress={() => setCardId(null)}>
-                {type === 'income' ? (lang === 'ar' ? 'استلمتُ في…' : 'Received in…') : (lang === 'ar' ? 'دفعتُ من…' : 'Paid from…')}
-              </RPill>
-              {sources.map((c) => (
-                <RPill key={c.id} active={cardId === c.id} onPress={() => setCardId(c.id)}>{c.name}</RPill>
-              ))}
-            </ScrollView>
+            <View style={{ marginBottom: 4 }}>
+              <Text style={{
+                paddingHorizontal: 20, marginBottom: 6, fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: lang === 'ar' ? 0 : 1.6,
+                color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left', textTransform: lang === 'ar' ? 'none' : 'uppercase',
+              }}>
+                {type === 'income' ? (lang === 'ar' ? 'استلمتُ في' : 'Received in') : (lang === 'ar' ? 'دفعتُ من' : 'Paid from')}
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ flexGrow: 0, flexShrink: 0, height: 38 }}
+                contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 20, alignItems: 'center' }}
+              >
+                {sources.map((c) => (
+                  <RPill key={c.id} active={cardId === c.id} onPress={() => setCardId(cardId === c.id ? null : c.id)}>{c.name}</RPill>
+                ))}
+              </ScrollView>
+            </View>
           ) : null}
 
           {/* Body — keypad mode reserves 300px for the 4-row grid; Seshat

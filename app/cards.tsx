@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fmtNum } from '../lib/privacy';
-import { View, Text, Pressable, RefreshControl } from 'react-native';
+import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,13 +45,11 @@ export default function CardsScreen() {
   useEffect(() => { void load(); }, [load, dataVersion]);
 
   const totalBalance = (cards ?? []).reduce((a, c) => a + (c.balance ?? 0), 0);
-  const monthSpent = (cards ?? []).reduce((a, c) => a + c.month.expense, 0);
-  const monthIncome = (cards ?? []).reduce((a, c) => a + c.month.income, 0);
 
   return (
     <PlanScreen
       title={ar ? 'حساباتي' : 'Accounts'}
-      subtitle={ar ? 'أين تعيش أموالك: بنك، محفظة، كاش' : 'Where your money lives: bank, wallet, cash'}
+      subtitle={ar ? 'بنك ومحفظة وكاش: رصيد كل واحد' : 'Bank, wallet and cash: each balance'}
       refreshing={refreshing}
     >
       <ScreenScroll
@@ -66,102 +63,81 @@ export default function CardsScreen() {
         }
       >
         {cards && cards.length > 0 && (
-          <RCard accent padding={16} style={{ marginBottom: 14 }}>
+          <RCard accent padding={18} style={{ marginBottom: 14 }}>
             <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>
               {ar ? 'إجمالي ما تملكه' : 'Total you hold'}
             </REyebrow>
-            <RAmount value={totalBalance} currency={currency} size={30} decimals={0} />
-            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginTop: 14 }}>
-              <RButton variant="secondary" icon={<ArrowLeftRight size={15} color={tok.bone} />} onPress={() => setMoving(true)}>
-                {ar ? 'تحويل بين حساباتي' : 'Move money'}
-              </RButton>
-              <RButton variant="ghost" icon={<Plus size={15} color={tok.gold} />} onPress={() => setAdding(true)}>
-                {ar ? 'إضافة' : 'Add'}
-              </RButton>
-            </View>
-          </RCard>
-        )}
-
-        {cards && cards.length > 0 && (
-          <RCard padding={16} style={{ marginBottom: 14 }}>
-            <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>
-              {ar ? 'هذا الشهر عبر كل البطاقات' : 'This month, all cards'}
-            </REyebrow>
-            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
-              <Stat label={ar ? 'مصروف' : 'Spent'} value={-monthSpent} currency={currency} />
-              <Stat label={ar ? 'دخل' : 'Income'} value={monthIncome} currency={currency} sign />
+            <RAmount value={totalBalance} currency={currency} size={32} decimals={0} />
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginTop: 16 }}>
+              <View style={{ flex: 1 }}>
+                <RButton full icon={<ArrowLeftRight size={16} color={tok.void} />} onPress={() => setMoving(true)}>
+                  {ar ? 'نقل مبلغ' : 'Move money'}
+                </RButton>
+              </View>
+              <View style={{ flex: 1 }}>
+                <RButton full variant="secondary" icon={<Plus size={16} color={tok.bone} />} onPress={() => setAdding(true)}>
+                  {ar ? 'حساب جديد' : 'Add account'}
+                </RButton>
+              </View>
             </View>
           </RCard>
         )}
 
         {cards && cards.length === 0 && (
           <RCard padding={20}>
-            <Text style={{ fontFamily: fontHead(lang), fontSize: 16, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
-              {ar ? 'لا توجد بطاقات بعد' : 'No cards yet'}
+            <Text style={{ fontFamily: fontHead(lang), fontSize: 17, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
+              {ar ? 'أين تعيش أموالك؟' : 'Where does your money live?'}
             </Text>
             <Text style={{ marginTop: 8, fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
-              {ar
-                ? 'تظهر البطاقات تلقائياً عندما تصل رسائل البنك المسجَّلة بالرصد التلقائي، وكل بطاقة بآخر أرقامها. فعّل الرصد من الملف الشخصي.'
-                : 'Cards appear on their own once bank messages are captured, each by its last digits. Turn on auto-capture from Profile.'}
+              {ar ? 'أضف حسابك البنكي أو محفظتك لتتبّع رصيد كل واحد.' : 'Add your bank account or wallet and Seshat tracks the balance of each.'}
             </Text>
+            <View style={{ marginTop: 14 }}>
+              <RButton full onPress={() => setAdding(true)}>{ar ? 'أضف حساباً' : 'Add an account'}</RButton>
+            </View>
           </RCard>
         )}
 
-        {(cards ?? []).map((c) => {
-          const Icon = ICON[c.kind] ?? CreditCard;
-          return (
-            <Pressable
-              key={c.id}
-              onPress={() => router.push({ pathname: '/cards/[id]', params: { id: c.id } })}
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginBottom: 12 })}
-            >
-              <RCard padding={16}>
-                <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{
-                    width: 40, height: 40, borderRadius: 12, backgroundColor: tok.elevated,
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon size={20} color={tok.gold} />
+        {cards && cards.length > 0 && cards.every((c) => c.kind === 'cash') && (
+          <Pressable onPress={() => setAdding(true)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, marginBottom: 14 })}>
+            <RCard padding={14}>
+              <Text style={{ fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+                {ar ? 'لديك الكاش فقط. أضف حسابك البنكي أو محفظتك ليظهر رصيدها هنا.' : 'You only have Cash so far. Add your bank account or wallet to see its balance here.'}
+              </Text>
+            </RCard>
+          </Pressable>
+        )}
+
+        {(cards ?? []).length > 0 && (
+          <RCard padding={0} style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
+            {(cards ?? []).map((c, i, all) => {
+              const Icon = ICON[c.kind] ?? CreditCard;
+              const kindLabel = c.kind === 'cash' ? (ar ? 'كاش' : 'Cash') : c.kind === 'wallet' ? (ar ? 'محفظة' : 'Wallet') : c.kind === 'account' ? (ar ? 'حساب بنكي' : 'Bank account') : (ar ? 'بطاقة' : 'Card');
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => router.push({ pathname: '/cards/[id]', params: { id: c.id } })}
+                  style={({ pressed }) => ({
+                    flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12, paddingVertical: 14,
+                    borderBottomWidth: i === all.length - 1 ? 0 : StyleSheet.hairlineWidth, borderBottomColor: tok.border, opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: tok.elevated, alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={19} color={tok.gold} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text numberOfLines={1} style={{ fontFamily: fontHead(lang), fontSize: 16, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
-                      {c.name}
-                    </Text>
-                    <Text style={{ marginTop: 2, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
-                      {c.total.count} {ar ? 'عملية' : c.total.count === 1 ? 'operation' : 'operations'}
-                    </Text>
+                    <Text numberOfLines={1} style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 15.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{c.name}</Text>
+                    <Text style={{ marginTop: 2, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{kindLabel}</Text>
                   </View>
-                  <ChevronRight size={18} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
-                </View>
-                <View style={{ height: 14 }} />
-                <REyebrow style={{ marginBottom: 4, textAlign: ar ? 'right' : 'left' }}>{ar ? 'الرصيد' : 'Balance'}</REyebrow>
-                <RAmount value={c.balance ?? 0} currency={currency} size={24} decimals={0} />
-                <View style={{ height: 14 }} />
-                <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
-                  <Stat label={ar ? 'مصروف هذا الشهر' : 'Spent this month'} value={-c.month.expense} currency={currency} />
-                  <Stat label={ar ? 'دخل هذا الشهر' : 'In this month'} value={c.month.income} currency={currency} sign />
-                </View>
-                <Text style={{ marginTop: 12, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
-                  {ar ? 'الإجمالي: ' : 'All time: '}
-                  {`−${fmtNum(Math.round(c.total.expense))} / +${fmtNum(Math.round(c.total.income))} ${currency}`}
-                </Text>
-              </RCard>
-            </Pressable>
-          );
-        })}
+                  <RAmount value={c.balance ?? 0} currency={currency} size={17} decimals={0} />
+                  <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
+                </Pressable>
+              );
+            })}
+          </RCard>
+        )}
       </ScreenScroll>
       <MoveMoneySheet visible={moving} onClose={() => setMoving(false)} sources={cards ?? []} onDone={() => void load()} />
       <AddSourceSheet visible={adding} onClose={() => setAdding(false)} onDone={() => void load()} />
     </PlanScreen>
-  );
-}
-
-function Stat({ label, value, currency, sign }: { label: string; value: number; currency: string; sign?: boolean }) {
-  const { lang } = useI18n();
-  return (
-    <View style={{ flex: 1 }}>
-      <REyebrow style={{ marginBottom: 4, textAlign: lang === 'ar' ? 'right' : 'left' }}>{label}</REyebrow>
-      <RAmount value={value} currency={currency} size={18} sign={!!sign} decimals={0} />
-    </View>
   );
 }

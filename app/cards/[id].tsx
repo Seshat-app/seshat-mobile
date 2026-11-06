@@ -13,7 +13,7 @@ import { apiFetch, hasToken } from '../../lib/api';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { S } from '../../lib/theme';
 import type { CardDetail, CardSummary } from '../../lib/cards';
-import { MoveMoneySheet } from '../../components/MoneySheets';
+import { MoveMoneySheet, CorrectBalanceSheet } from '../../components/MoneySheets';
 import { CategoryIconByKey } from '../../components/icons';
 import { iconKeyForCategory } from '../../lib/categoryMap';
 
@@ -31,7 +31,7 @@ export default function CardDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [label, setLabel] = useState('');
-  const [opening, setOpening] = useState('');
+  const [fixing, setFixing] = useState(false);
   const [sources, setSources] = useState<CardSummary[]>([]);
   const [moving, setMoving] = useState(false);
 
@@ -63,11 +63,7 @@ export default function CardDetailScreen() {
 
   const saveLabel = async () => {
     try {
-      const ob = parseFloat(opening.replace(/,/g, ''));
-      await apiFetch(`/cards/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ label: label.trim(), ...(Number.isFinite(ob) ? { openingBalance: ob } : {}) }),
-      });
+      await apiFetch(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify({ label: label.trim() }) });
       setRenaming(false);
       bumpVersion();
       void load();
@@ -103,10 +99,17 @@ export default function CardDetailScreen() {
             <RCard accent padding={16} style={{ marginBottom: 12 }}>
               <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'الرصيد الحالي' : 'Balance now'}</REyebrow>
               <RAmount value={card.balance ?? 0} currency={currency} size={30} decimals={0} />
-              <View style={{ marginTop: 12 }}>
-                <RButton variant="secondary" icon={<ArrowLeftRight size={15} color={tok.bone} />} onPress={() => setMoving(true)}>
-                  {ar ? 'تحويل من هذا الحساب' : 'Move money from here'}
-                </RButton>
+              <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginTop: 14 }}>
+                <View style={{ flex: 1 }}>
+                  <RButton full icon={<ArrowLeftRight size={15} color={tok.void} />} onPress={() => setMoving(true)}>
+                    {ar ? 'نقل مبلغ' : 'Move money'}
+                  </RButton>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <RButton full variant="secondary" onPress={() => setFixing(true)}>
+                    {ar ? 'صحّح الرصيد' : 'Correct balance'}
+                  </RButton>
+                </View>
               </View>
             </RCard>
 
@@ -156,14 +159,13 @@ export default function CardDetailScreen() {
             <RCard padding={16} style={{ marginBottom: 12 }}>
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={{ fontFamily: fontHead(lang), fontSize: 15, color: tok.bone }}>{ar ? 'العمليات' : 'Operations'}</Text>
-                <Pressable onPress={() => { setLabel(card.label ?? ''); setOpening(String(card.openingBalance ?? 0)); setRenaming((r) => !r); }} hitSlop={10} accessibilityLabel={ar ? 'إعادة تسمية' : 'Rename'}>
+                <Pressable onPress={() => { setLabel(card.label ?? ''); setRenaming((r) => !r); }} hitSlop={10} accessibilityLabel={ar ? 'إعادة تسمية' : 'Rename'}>
                   <Pencil size={16} color={tok.muted} />
                 </Pressable>
               </View>
               {renaming && (
                 <View style={{ marginTop: 12, gap: 10 }}>
                   <RField label={ar ? 'اسم البطاقة' : 'Card name'} value={label} onChange={setLabel} placeholder={card.name} />
-                  <RField label={ar ? 'الرصيد عند البدء' : 'Balance when you started tracking'} value={opening} onChange={setOpening} keyboardType="decimal-pad" mono />
                   <RButton full onPress={saveLabel}>{ar ? 'حفظ' : 'Save'}</RButton>
                 </View>
               )}
@@ -182,6 +184,7 @@ export default function CardDetailScreen() {
           </>
         )}
       </ScreenScroll>
+      <CorrectBalanceSheet visible={fixing} onClose={() => setFixing(false)} account={card ? { id: card.id, name: card.name, balance: card.balance } : null} onDone={() => void load()} />
       <MoveMoneySheet visible={moving} onClose={() => setMoving(false)} sources={sources} initialFrom={id} onDone={() => void load()} />
     </PlanScreen>
   );

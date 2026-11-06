@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ReleaseNotesModal } from '../../components/ReleaseNotesModal';
 import { useAppLock, setAppLockEnabled, lockSupport } from '../../lib/appLock';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
@@ -6,7 +7,7 @@ import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, ScanFace, Fingerprint } from 'lucide-react-native';
+import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, ScanFace, Fingerprint, Sparkles } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -51,6 +52,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [displayNameAr, setDisplayNameAr] = useState('');
   const [currency, setCurrency] = useState('EGP');
@@ -509,6 +511,12 @@ export default function ProfileScreen() {
               onPress={() => Linking.openURL(`mailto:${BRAND.supportEmail}`).catch(() => {})}
             />
             <PlanRow
+              icon={Sparkles}
+              title={lang === 'ar' ? 'ما الجديد' : "What's new"}
+              hint={lang === 'ar' ? 'ملاحظات الإصدار وكل التحديثات' : 'Release notes and every update'}
+              onPress={() => setNotesOpen(true)}
+            />
+            <PlanRow
               icon={Info}
               title={lang === 'ar' ? 'عن سيشات' : 'About Seshat'}
               hint={lang === 'ar' ? 'قصتنا وكيف يعمل' : 'Our story and how it works'}
@@ -697,6 +705,7 @@ export default function ProfileScreen() {
 
       {/* WorkspaceSheet is mounted globally at the tabs layout level so
           it can be summoned from any screen via openWorkspaceSheet(). */}
+      <ReleaseNotesModal visible={notesOpen} onClose={() => setNotesOpen(false)} />
     </ScreenScaffold>
   );
 }

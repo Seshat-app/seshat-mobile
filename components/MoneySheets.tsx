@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import { X, Landmark, CreditCard, Wallet, Banknote, ArrowDown, ArrowUpDown, Check } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { apiFetch } from '../lib/api';
+import { fmtNum } from '../lib/privacy';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 import { REyebrow, RButton, RField } from './ui';
@@ -11,9 +12,11 @@ import { useKeyboardHeight } from './useKeyboardHeight';
 import { emitDataChanged } from '../lib/dataEvents';
 import type { CardSummary } from '../lib/cards';
 
-/** Bottom sheet shell shared by the two money-source sheets. */
-function Sheet({ visible, onClose, eyebrow, title, children }: {
-  visible: boolean; onClose: () => void; eyebrow: string; title: string; children: React.ReactNode;
+const ICON = { card: CreditCard, account: Landmark, wallet: Wallet, cash: Banknote } as const;
+
+/** Bottom sheet shell shared by the money-source sheets. */
+function Sheet({ visible, onClose, title, hint, children }: {
+  visible: boolean; onClose: () => void; title: string; hint?: string; children: React.ReactNode;
 }) {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
@@ -24,76 +27,79 @@ function Sheet({ visible, onClose, eyebrow, title, children }: {
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' }} onPress={onClose} />
       <View style={{
         position: 'absolute', left: 0, right: 0, bottom: kb,
-        backgroundColor: tok.void, maxHeight: '88%',
+        backgroundColor: tok.void, maxHeight: '92%',
         borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
         paddingHorizontal: 18, paddingTop: 10, paddingBottom: kb ? 14 : insets.bottom + 18,
         borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
       }}>
         <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 999, backgroundColor: tok.border, marginBottom: 12 }} />
-        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
           <View style={{ flex: 1 }}>
-            <REyebrow style={{ color: tok.gold, marginBottom: 4, textAlign: ar ? 'right' : 'left' }}>{eyebrow}</REyebrow>
-            <Text style={{ fontFamily: fontHead(lang), fontSize: 20, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{title}</Text>
+            <Text style={{ fontFamily: fontHead(lang), fontSize: 21, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{title}</Text>
+            {hint ? <Text style={{ marginTop: 4, fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{hint}</Text> : null}
           </View>
-          <Pressable onPress={onClose} hitSlop={8}><X size={20} color={tok.muted} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={10}><X size={20} color={tok.muted} /></Pressable>
         </View>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 14 }}>{children}</ScrollView>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 6 }}>{children}</ScrollView>
       </View>
     </Modal>
   );
 }
 
-function Chips<T extends string>({ options, value, onChange, label }: {
-  options: Array<{ key: T; label: string }>; value: T | null; onChange: (k: T) => void; label: string;
-}) {
+/** One account as a tappable row: icon, name, balance, and a check when picked. */
+function AccountPick({ s, on, onPress }: { s: CardSummary; on: boolean; onPress: () => void }) {
   const { tok, lang } = useI18n();
   const ar = lang === 'ar';
+  const Icon = ICON[s.kind] ?? CreditCard;
   return (
-    <View>
-      <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{label}</REyebrow>
-      <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
-        {options.map((o) => {
-          const on = o.key === value;
-          return (
-            <Pressable
-              key={o.key}
-              onPress={() => onChange(o.key)}
-              style={({ pressed }) => ({
-                paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999,
-                backgroundColor: on ? tok.gold : tok.elevated, borderWidth: 1, borderColor: on ? tok.gold : tok.border,
-                opacity: pressed ? 0.8 : 1,
-              })}
-            >
-              <Text style={{ fontFamily: fontMono(on ? 'medium' : 'regular'), fontSize: 12.5, color: on ? tok.void : tok.bone }}>{o.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12,
+        padding: 12, borderRadius: 14, borderWidth: 1.5, borderColor: on ? tok.gold : tok.border,
+        backgroundColor: on ? 'rgba(201,168,76,0.10)' : tok.elevated, opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Icon size={18} color={on ? tok.gold : tok.muted} />
+      <Text numberOfLines={1} style={{ flex: 1, fontFamily: fontBody(lang, 'semibold'), fontSize: 14.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{s.name}</Text>
+      <Text style={{ fontFamily: fontMono('regular'), fontSize: 12.5, color: tok.muted }}>{fmtNum(Math.round(s.balance ?? 0))}</Text>
+      <View style={{ width: 18 }}>{on ? <Check size={17} color={tok.gold} /> : null}</View>
+    </Pressable>
   );
 }
 
-/** Move money between two of your own sources (ATM withdrawal, account to account, wallet top-up). */
+/**
+ * Move money between two of your own accounts. Amount first, then where it left and where it went; a one-line
+ * preview shows what each balance becomes. "Withdraw cash" pre-fills the common case (bank to Cash).
+ */
 export function MoveMoneySheet({ visible, onClose, sources, initialFrom, onDone }: {
   visible: boolean; onClose: () => void; sources: CardSummary[]; initialFrom?: string; onDone?: () => void;
 }) {
-  const { lang } = useI18n();
+  const { tok, lang } = useI18n();
   const ar = lang === 'ar';
   const [from, setFrom] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const cash = sources.find((s) => s.kind === 'cash');
+  const firstBank = sources.find((s) => s.kind !== 'cash');
+
   useEffect(() => {
     if (!visible) return;
-    setFrom(initialFrom ?? sources.find((s) => s.kind !== 'cash')?.id ?? sources[0]?.id ?? null);
-    setTo(sources.find((s) => s.kind === 'cash' && s.id !== initialFrom)?.id ?? null);
+    const start = initialFrom ?? firstBank?.id ?? sources[0]?.id ?? null;
+    setFrom(start);
+    setTo(cash && cash.id !== start ? cash.id : sources.find((s) => s.id !== start)?.id ?? null);
     setAmount('');
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const opts = sources.map((s) => ({ key: s.id, label: s.name }));
   const value = parseFloat(amount.replace(/,/g, ''));
-  const ok = !!from && !!to && from !== to && Number.isFinite(value) && value > 0;
+  const a = sources.find((s) => s.id === from);
+  const b = sources.find((s) => s.id === to);
+  const ok = !!a && !!b && a.id !== b.id && Number.isFinite(value) && value > 0;
+
+  const swap = () => { setFrom(to); setTo(from); };
+  const withdraw = () => { if (firstBank && cash) { setFrom(from && from !== cash.id ? from : firstBank.id); setTo(cash.id); } };
 
   const submit = async () => {
     if (!ok) return;
@@ -111,32 +117,71 @@ export function MoveMoneySheet({ visible, onClose, sources, initialFrom, onDone 
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} eyebrow={ar ? 'تحويل' : 'Move money'} title={ar ? 'انقل مبلغاً بين حساباتك' : 'Move money between your accounts'}>
-      <Chips label={ar ? 'من' : 'From'} options={opts} value={from} onChange={setFrom} />
-      <Chips label={ar ? 'إلى' : 'To'} options={opts.filter((o) => o.key !== from)} value={to} onChange={setTo} />
-      <RField label={ar ? 'المبلغ' : 'Amount'} value={amount} onChange={setAmount} keyboardType="decimal-pad" mono placeholder="0" />
-      <Text style={{ fontFamily: fontBody(lang), fontSize: 12, lineHeight: 18, color: '#8A8A8A', textAlign: ar ? 'right' : 'left' }}>
-        {ar ? 'لا يُحتسب كمصروف ولا دخل، يغيّر فقط رصيد الحسابين.' : 'This is not spending or income. It only changes the two balances.'}
-      </Text>
-      <RButton full onPress={submit} disabled={!ok} loading={busy}>{ar ? 'نقل' : 'Move'}</RButton>
+    <Sheet
+      visible={visible} onClose={onClose}
+      title={ar ? 'نقل مبلغ' : 'Move money'}
+      hint={ar ? 'سحب كاش أو تحويل بين حساباتك. لا يُحسب كمصروف.' : 'Withdraw cash or move money between your own accounts. It is not counted as spending.'}
+    >
+      {cash && firstBank && (
+        <Pressable onPress={withdraw} style={({ pressed }) => ({ alignSelf: ar ? 'flex-end' : 'flex-start', flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: tok.border, backgroundColor: tok.elevated, opacity: pressed ? 0.8 : 1 })}>
+          <Banknote size={15} color={tok.gold} />
+          <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.bone }}>{ar ? 'سحب كاش من ماكينة' : 'Withdrew cash (ATM)'}</Text>
+        </Pressable>
+      )}
+      <RField label={ar ? 'كم المبلغ؟' : 'How much?'} value={amount} onChange={setAmount} keyboardType="decimal-pad" mono placeholder="0" />
+
+      <View style={{ gap: 8 }}>
+        <REyebrow style={{ textAlign: ar ? 'right' : 'left' }}>{ar ? 'خرج من' : 'Taken from'}</REyebrow>
+        {sources.map((s) => <AccountPick key={`f${s.id}`} s={s} on={s.id === from} onPress={() => { setFrom(s.id); if (s.id === to) setTo(from); }} />)}
+      </View>
+
+      <Pressable onPress={swap} hitSlop={10} style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, padding: 4 }}>
+        <ArrowDown size={16} color={tok.gold} />
+        <ArrowUpDown size={14} color={tok.muted} />
+      </Pressable>
+
+      <View style={{ gap: 8 }}>
+        <REyebrow style={{ textAlign: ar ? 'right' : 'left' }}>{ar ? 'وصل إلى' : 'Moved to'}</REyebrow>
+        {sources.filter((s) => s.id !== from).map((s) => <AccountPick key={`t${s.id}`} s={s} on={s.id === to} onPress={() => setTo(s.id)} />)}
+      </View>
+
+      {ok && a && b && (
+        <View style={{ padding: 12, borderRadius: 12, backgroundColor: tok.elevated, gap: 4 }}>
+          <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+            {a.name}: {fmtNum(Math.round(a.balance))} → {fmtNum(Math.round(a.balance - value))}
+          </Text>
+          <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+            {b.name}: {fmtNum(Math.round(b.balance))} → {fmtNum(Math.round(b.balance + value))}
+          </Text>
+        </View>
+      )}
+      <RButton full onPress={submit} disabled={!ok} loading={busy}>{ar ? 'انقل' : 'Move it'}</RButton>
     </Sheet>
   );
 }
 
-/** Add a card, account or e-wallet by hand, with the balance it holds today. */
+const KINDS: Array<{ key: 'account' | 'card' | 'wallet'; icon: typeof Landmark; en: string; ar: string; ph: string; phAr: string }> = [
+  { key: 'account', icon: Landmark, en: 'Bank account', ar: 'حساب بنكي', ph: 'e.g. CIB salary', phAr: 'مثال: حساب CIB' },
+  { key: 'card', icon: CreditCard, en: 'Card', ar: 'بطاقة', ph: 'e.g. Visa NBK', phAr: 'مثال: فيزا NBK' },
+  { key: 'wallet', icon: Wallet, en: 'Wallet', ar: 'محفظة', ph: 'e.g. Vodafone Cash', phAr: 'مثال: فودافون كاش' },
+];
+
+/** Add an account in three plain steps: what kind, what to call it, how much is in it now. Digits are optional. */
 export function AddSourceSheet({ visible, onClose, onDone }: { visible: boolean; onClose: () => void; onDone?: () => void }) {
-  const { lang } = useI18n();
+  const { tok, lang } = useI18n();
   const ar = lang === 'ar';
-  const [kind, setKind] = useState<'card' | 'account' | 'wallet'>('account');
+  const [kind, setKind] = useState<'account' | 'card' | 'wallet'>('account');
   const [name, setName] = useState('');
-  const [last4, setLast4] = useState('');
   const [opening, setOpening] = useState('');
+  const [digits, setDigits] = useState('');
+  const [showDigits, setShowDigits] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (visible) { setKind('account'); setName(''); setLast4(''); setOpening(''); } }, [visible]);
+  useEffect(() => { if (visible) { setKind('account'); setName(''); setOpening(''); setDigits(''); setShowDigits(false); } }, [visible]);
 
-  const digits = last4.replace(/\D/g, '').slice(-4);
-  const ok = digits.length >= 3;
+  const k = useMemo(() => KINDS.find((x) => x.key === kind)!, [kind]);
+  const last4 = digits.replace(/\D/g, '').slice(-4);
+  const ok = name.trim().length > 0;
 
   const submit = async () => {
     if (!ok) return;
@@ -146,7 +191,8 @@ export function AddSourceSheet({ visible, onClose, onDone }: { visible: boolean;
       await apiFetch('/cards', {
         method: 'POST',
         body: JSON.stringify({
-          kind, last4: digits, label: name.trim() || undefined,
+          kind, label: name.trim(),
+          ...(last4.length >= 3 ? { last4 } : {}),
           ...(Number.isFinite(balance) ? { openingBalance: balance } : {}),
         }),
       });
@@ -161,19 +207,68 @@ export function AddSourceSheet({ visible, onClose, onDone }: { visible: boolean;
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} eyebrow={ar ? 'مصدر أموال' : 'Money source'} title={ar ? 'أضف بطاقة أو حساباً أو محفظة' : 'Add a card, account or wallet'}>
-      <Chips
-        label={ar ? 'النوع' : 'Type'} value={kind} onChange={setKind}
-        options={[
-          { key: 'account', label: ar ? 'حساب بنكي' : 'Bank account' },
-          { key: 'card', label: ar ? 'بطاقة' : 'Card' },
-          { key: 'wallet', label: ar ? 'محفظة (فودافون كاش…)' : 'E-wallet (Vodafone Cash…)' },
-        ]}
-      />
-      <RField label={ar ? 'الاسم (اختياري)' : 'Name (optional)'} value={name} onChange={setName} placeholder={ar ? 'مثال: حساب CIB' : 'e.g. CIB salary'} />
-      <RField label={ar ? 'آخر 4 أرقام' : 'Last 4 digits'} value={last4} onChange={setLast4} keyboardType="number-pad" maxLength={4} mono placeholder="1234" />
-      <RField label={ar ? 'الرصيد الحالي' : 'Balance today'} value={opening} onChange={setOpening} keyboardType="decimal-pad" mono placeholder="0" />
-      <RButton full onPress={submit} disabled={!ok} loading={busy}>{ar ? 'إضافة' : 'Add'}</RButton>
+    <Sheet
+      visible={visible} onClose={onClose}
+      title={ar ? 'أضف حساباً' : 'Add an account'}
+      hint={ar ? 'سيتتبّع سيشات رصيده مع كل عملية.' : 'Seshat will track its balance with every entry.'}
+    >
+      <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10 }}>
+        {KINDS.map((x) => {
+          const on = x.key === kind; const Icon = x.icon;
+          return (
+            <Pressable key={x.key} onPress={() => setKind(x.key)} style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: on ? tok.gold : tok.border, backgroundColor: on ? 'rgba(201,168,76,0.10)' : tok.elevated, opacity: pressed ? 0.85 : 1 })}>
+              <Icon size={22} color={on ? tok.gold : tok.muted} />
+              <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 12.5, color: tok.bone }}>{ar ? x.ar : x.en}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <RField label={ar ? 'الاسم' : 'Name'} value={name} onChange={setName} placeholder={ar ? k.phAr : k.ph} autoFocus />
+      <RField label={ar ? 'كم فيه الآن؟' : 'How much is in it now?'} value={opening} onChange={setOpening} keyboardType="decimal-pad" mono placeholder="0" />
+      {showDigits ? (
+        <RField label={ar ? 'آخر 4 أرقام (لربط رسائل البنك)' : 'Last 4 digits (matches bank messages)'} value={digits} onChange={setDigits} keyboardType="number-pad" maxLength={4} mono placeholder="1234" />
+      ) : (
+        <Pressable onPress={() => setShowDigits(true)} hitSlop={8}>
+          <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: tok.gold, textAlign: ar ? 'right' : 'left' }}>
+            {ar ? '+ لديها رقم؟ أضف آخر 4 أرقام لربط رسائل البنك تلقائياً' : '+ Has card digits? Add them so bank messages match automatically'}
+          </Text>
+        </Pressable>
+      )}
+      <RButton full onPress={submit} disabled={!ok} loading={busy}>{ar ? 'أضف الحساب' : 'Add account'}</RButton>
+    </Sheet>
+  );
+}
+
+/** Fix an account's balance by telling Seshat what it holds right now. */
+export function CorrectBalanceSheet({ visible, onClose, account, onDone }: {
+  visible: boolean; onClose: () => void; account: Pick<CardSummary, 'id' | 'name' | 'balance'> | null; onDone?: () => void;
+}) {
+  const { lang } = useI18n();
+  const ar = lang === 'ar';
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (visible && account) setValue(String(Math.round(account.balance ?? 0))); }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  const n = parseFloat(value.replace(/,/g, ''));
+  const submit = async () => {
+    if (!account || !Number.isFinite(n)) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/cards/${account.id}`, { method: 'PATCH', body: JSON.stringify({ currentBalance: n }) });
+      emitDataChanged();
+      onDone?.();
+      onClose();
+    } catch (err) {
+      Alert.alert(ar ? 'تعذّر الحفظ' : 'Could not save', err instanceof Error ? err.message : undefined);
+    } finally { setBusy(false); }
+  };
+  return (
+    <Sheet
+      visible={visible} onClose={onClose}
+      title={ar ? 'صحّح الرصيد' : 'Correct the balance'}
+      hint={ar ? `اكتب ما في «${account?.name ?? ''}» الآن، وسيضبط سيشات الباقي.` : `Type what “${account?.name ?? ''}” holds right now. Seshat adjusts the rest.`}
+    >
+      <RField label={ar ? 'الرصيد الحالي' : 'Balance now'} value={value} onChange={setValue} keyboardType="decimal-pad" mono autoFocus />
+      <RButton full onPress={submit} disabled={!Number.isFinite(n)} loading={busy}>{ar ? 'احفظ' : 'Save'}</RButton>
     </Sheet>
   );
 }
