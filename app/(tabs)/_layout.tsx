@@ -221,7 +221,9 @@ export default function TabsLayout() {
             try {
               const res = await apiFetch<{ data: { transcript: string } }>('/voice/transcribe', {
                 method: 'POST',
-                body: JSON.stringify(audio),
+                // The API reads `audio_base64` (the recorder's field is `base64`); sending the raw object made it answer
+                // "audio_base64 is required" every time.
+                body: JSON.stringify({ audio_base64: audio.base64, format: audio.format, language: lang }),
               });
               const text = res.data.transcript?.trim();
               if (!text) return;
