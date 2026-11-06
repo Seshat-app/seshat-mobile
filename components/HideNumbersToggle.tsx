@@ -15,8 +15,8 @@ const HINT_KEY = 'hide_numbers_hint_seen';
  * show). No button to place. A one-line hint appears until the first time it is used; while hidden a small
  * "tap to show" reminds how to bring the numbers back.
  */
-export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: number }) {
-  const { eye: _eye, ...amount } = props;
+export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: number; center?: boolean }) {
+  const { eye: _eye, center, ...amount } = props;
   const { tok, lang } = useI18n();
   const hidden = useHideNumbers();
   const ar = lang === 'ar';
@@ -37,7 +37,7 @@ export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: nu
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={hidden ? (ar ? 'إظهار الأرقام' : 'Show numbers') : (ar ? 'إخفاء الأرقام' : 'Hide numbers')}
-      style={{ alignSelf: ar ? 'flex-end' : 'flex-start' }}
+      style={{ alignSelf: center ? 'center' : (ar ? 'flex-end' : 'flex-start'), alignItems: center ? 'center' : undefined }}
     >
       <RAmount {...amount} />
       {caption ? (

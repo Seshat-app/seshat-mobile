@@ -4,7 +4,7 @@ import {
   View, Text, StyleSheet, ScrollView, useWindowDimensions,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { ArrowUp, ArrowDown } from 'lucide-react-native';
 import { useI18n, monthYear } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -663,72 +663,77 @@ function ChartSparkbar({ data, currency }: { data: DashboardData; currency: stri
 }
 
 /**
- * "Where it goes": a donut of this month's spending by category (top five, the rest folded into "Other") with a
- * legend beside it and the month's total spent in the middle. Replaces the old radar-dots card.
+ * The radar: this month's biggest categories as dots on soft gold rings (the bigger the spend, the bigger and
+ * brighter the dot; the biggest sits closest to the centre), the net balance in the middle. Restyled in the current
+ * design language: filled translucent rings and glowing dots instead of hairline HUD lines.
  */
-function ChartCategories({ data, currency }: { data: DashboardData; currency: string }) {
+function ChartRadar({ data, currency }: { data: DashboardData; currency: string }) {
   const { tok, lang, t } = useI18n();
   const ar = lang === 'ar';
-  const spent = data.current.expense.total;
-  const all = data.categoryBreakdown.filter((c) => c.total > 0);
-  const top = all.slice(0, 5);
-  const rest = all.slice(5).reduce((a, c) => a + c.total, 0);
-  const rows = [
-    ...top.map((c) => ({ key: c.categoryId, label: catLabel(c, lang), value: c.total })),
-    ...(rest > 0 ? [{ key: 'rest', label: ar ? 'أخرى' : 'Other', value: rest }] : []),
-  ];
-  const total = rows.reduce((a, r) => a + r.value, 0) || 1;
-  // One gold, stepped down in strength: the biggest slice is the strongest.
-  const shades = [1, 0.78, 0.58, 0.42, 0.3, 0.2];
-
-  const SIZE = 150, STROKE = 16;
-  const R = (SIZE - STROKE) / 2;
-  const C = 2 * Math.PI * R;
-  let offset = 0;
-  const GAP = rows.length > 1 ? 3 : 0;
-
+  const top = data.categoryBreakdown.slice(0, 6);
+  const hasEnough = top.length >= 3;
+  const max = top[0]?.total ?? 1;
+  const SIZE = CHART_INNER;
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const R = SIZE / 2 - 6;
+  const blips = top.map((cat, i) => {
+    const angle = -Math.PI / 2 + (i / Math.max(top.length, 1)) * Math.PI * 2 + 0.35;
+    const radius = R * 0.5 + (i / Math.max(top.length - 1, 1)) * R * 0.42;
+    const strength = 0.45 + 0.55 * (cat.total / max);
+    return { cat, x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), r: 3.5 + (cat.total / max) * 5, strength, i };
+  });
   return (
     <RCard large glow>
-      <View style={{ height: CHART_INNER, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 16 }}>
-        {rows.length === 0 ? (
-          <Text style={{ flex: 1, fontFamily: fontMono('regular'), fontSize: 12, color: tok.muted, textAlign: 'center' }}>{t('notEnoughData')}</Text>
-        ) : (
-          <>
-            <View style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
-              <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute' }}>
-                <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={tok.border} strokeWidth={STROKE} opacity={0.5} />
-                {rows.map((r, i) => {
-                  const len = Math.max(0, (r.value / total) * C - GAP);
-                  const seg = (
-                    <Circle
-                      key={r.key} cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none"
-                      stroke={tok.gold} strokeOpacity={shades[i] ?? 0.2} strokeWidth={STROKE}
-                      strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset}
-                      transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
-                    />
-                  );
-                  offset += (r.value / total) * C;
-                  return seg;
-                })}
-              </Svg>
-              <View pointerEvents="none" style={{ alignItems: 'center' }}>
-                <REyebrow>{ar ? 'المصروف' : 'Spent'}</REyebrow>
-                <View style={{ marginTop: 2 }}>
-                  <RAmount value={-spent} short size={ar ? 20 : 22} currency={currency} decimals={0} />
-                </View>
-              </View>
-            </View>
-            <View style={{ flex: 1, gap: 9 }}>
-              {rows.slice(0, 5).map((r, i) => (
-                <View key={r.key} style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: tok.gold, opacity: shades[i] ?? 0.2 }} />
-                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: fontBody(lang), fontSize: 12.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{r.label}</Text>
-                  <Text style={{ fontFamily: fontMono('regular'), fontSize: 11.5, color: tok.muted }}>{Math.round((r.value / total) * 100)}%</Text>
-                </View>
+      <View style={{ height: CHART_INNER, alignItems: 'center', justifyContent: 'center' }}>
+        {/* SIZE x SIZE stage: the dots and their labels share one coordinate space. */}
+        <View style={{ position: 'absolute', width: SIZE, height: SIZE }} pointerEvents="none">
+        <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute' }}>
+          {/* Soft rings: translucent gold fills, outermost first so they stack into a gentle glow. */}
+          <Circle cx={cx} cy={cy} r={R} fill={tok.gold} fillOpacity={0.035} stroke={tok.gold} strokeOpacity={0.16} strokeWidth={1} />
+          <Circle cx={cx} cy={cy} r={R * 0.72} fill={tok.gold} fillOpacity={0.05} stroke={tok.gold} strokeOpacity={0.18} strokeWidth={1} />
+          <Circle cx={cx} cy={cy} r={R * 0.45} fill={tok.gold} fillOpacity={0.07} stroke={tok.gold} strokeOpacity={0.22} strokeWidth={1} />
+          {hasEnough && (
+            <>
+              <Path d={`M ${cx + R} ${cy} A ${R} ${R} 0 0 0 ${cx} ${cy - R}`} stroke={tok.gold} strokeWidth={2} fill="none" opacity={0.35} strokeLinecap="round" />
+              {blips.map((b) => (
+                <G key={b.cat.categoryId}>
+                  <Circle cx={b.x} cy={b.y} r={b.r * 2.4} fill={tok.gold} opacity={0.10 * b.strength} />
+                  <Circle cx={b.x} cy={b.y} r={b.r * 1.5} fill={tok.gold} opacity={0.18 * b.strength} />
+                  <Circle cx={b.x} cy={b.y} r={b.r} fill={tok.gold} opacity={b.strength} />
+                </G>
               ))}
-            </View>
-          </>
-        )}
+            </>
+          )}
+        </Svg>
+        {/* Names beside the three biggest dots, so the dots mean something. */}
+        {hasEnough && blips.slice(0, 3).map((b) => (
+          <Text
+            key={`l${b.cat.categoryId}`}
+            numberOfLines={1}
+            style={{
+              position: 'absolute', left: b.x + b.r + 6, top: b.y - 7, maxWidth: 70,
+              fontFamily: fontMono('regular'), fontSize: 9.5, letterSpacing: ar ? 0 : 0.6, color: tok.muted,
+              textTransform: ar ? 'none' : 'uppercase',
+            }}
+          >
+            {catLabel(b.cat, lang)}
+          </Text>
+        ))}
+        </View>
+        <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
+          {hasEnough ? (
+            <>
+              <REyebrow>{t('netBalance')}</REyebrow>
+              <View style={{ marginTop: 4 }}>
+                <BalanceAmount center value={data.current.balance} size={ar ? 22 : 26} currency={currency} decimals={0} />
+              </View>
+            </>
+          ) : (
+            <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: tok.bone, letterSpacing: 0.4, textAlign: 'center', paddingHorizontal: 24 }}>
+              {t('notEnoughData')}
+            </Text>
+          )}
+        </View>
       </View>
     </RCard>
   );
@@ -769,7 +774,7 @@ export function ChartCarousel({
         {VIEWS.map((v) => (
           <View key={v} style={{ width, paddingHorizontal: 16 }}>
             {v === 'numbers' && <ChartNumbers data={data} currency={currency} />}
-            {v === 'hud' && <ChartCategories data={data} currency={currency} />}
+            {v === 'hud' && <ChartRadar data={data} currency={currency} />}
             {v === 'bento' && <ChartSparkbar data={data} currency={currency} />}
           </View>
         ))}
