@@ -15,8 +15,8 @@ const HINT_KEY = 'hide_numbers_hint_seen';
  * show). No button to place. A one-line hint appears until the first time it is used; while hidden a small
  * "tap to show" reminds how to bring the numbers back.
  */
-export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: number; center?: boolean }) {
-  const { eye: _eye, center, ...amount } = props;
+export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: number; center?: boolean; caption?: boolean }) {
+  const { eye: _eye, center, caption: showCaption = true, ...amount } = props;
   const { tok, lang } = useI18n();
   const hidden = useHideNumbers();
   const ar = lang === 'ar';
@@ -29,7 +29,7 @@ export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: nu
     toggleHideNumbers();
     if (!hintSeen) { setHintSeen(true); SecureStore.setItemAsync(HINT_KEY, '1').catch(() => {}); }
   };
-  const caption = hidden
+  const caption = !showCaption ? null : hidden
     ? (ar ? 'اضغط لإظهار الأرقام' : 'Tap to show numbers')
     : (!hintSeen ? (ar ? 'اضغط على الرقم لإخفاء المبالغ' : 'Tap the number to hide amounts') : null);
   return (

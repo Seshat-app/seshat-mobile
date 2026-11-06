@@ -32,7 +32,7 @@ export function TodayCard({ data, currency }: { data: DashboardData; currency: s
     </View>
   );
   return (
-    <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
+    <RCard padding={16} style={{ marginHorizontal: 16, marginTop: 18, marginBottom: 12 }}>
       <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 14 }}>
         <Col label={ar ? 'صافي اليوم' : 'Today (net)'} value={todayNet} sign />
         <Col label={ar ? 'متوسط اليوم' : 'Per day'} value={-avg} />

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fmtNum } from '../lib/privacy';
 import {
-  View, Text, StyleSheet, ScrollView, useWindowDimensions,
+  View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
@@ -663,69 +663,78 @@ function ChartSparkbar({ data, currency }: { data: DashboardData; currency: stri
 }
 
 /**
- * The radar: this month's biggest categories as dots on soft gold rings (the bigger the spend, the bigger and
- * brighter the dot; the biggest sits closest to the centre), the net balance in the middle. Restyled in the current
- * design language: filled translucent rings and glowing dots instead of hairline HUD lines.
+ * The radar: this month's biggest categories as dots on soft gold rings around the net balance. The bigger the spend,
+ * the bigger and brighter the dot. Nothing is written on the dots: tap one and a small popover shows the category,
+ * what was spent and its share of the month; tap it again (or anywhere else) to close it.
  */
 function ChartRadar({ data, currency }: { data: DashboardData; currency: string }) {
   const { tok, lang, t } = useI18n();
   const ar = lang === 'ar';
-  const top = data.categoryBreakdown.slice(0, 6);
+  const top = data.categoryBreakdown.filter((c) => c.total > 0).slice(0, 6);
   const hasEnough = top.length >= 3;
   const max = top[0]?.total ?? 1;
+  const spent = data.current.expense.total || 1;
   const SIZE = CHART_INNER;
   const cx = SIZE / 2, cy = SIZE / 2;
   const R = SIZE / 2 - 6;
+  const [stageW, setStageW] = useState(0);
+  const [picked, setPicked] = useState<string | null>(null);
+
+  // Dots sit on the ring band (clear of the balance in the middle), evenly spaced from the top, the biggest first.
   const blips = top.map((cat, i) => {
-    const angle = -Math.PI / 2 + (i / Math.max(top.length, 1)) * Math.PI * 2 + 0.35;
-    const radius = R * 0.5 + (i / Math.max(top.length - 1, 1)) * R * 0.42;
-    const strength = 0.45 + 0.55 * (cat.total / max);
-    return { cat, x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), r: 3.5 + (cat.total / max) * 5, strength, i };
+    const angle = -Math.PI / 2 + (i / top.length) * Math.PI * 2;
+    const radius = R * (i % 2 === 0 ? 0.86 : 0.68);
+    const strength = 0.5 + 0.5 * (cat.total / max);
+    return { cat, x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), r: 5 + (cat.total / max) * 5, strength };
   });
+  const sel = blips.find((b) => b.cat.categoryId === picked) ?? null;
+  const offsetX = Math.max(0, (stageW - SIZE) / 2);
+  const POP_W = 168;
+
   return (
     <RCard large glow>
-      <View style={{ height: CHART_INNER, alignItems: 'center', justifyContent: 'center' }}>
-        {/* SIZE x SIZE stage: the dots and their labels share one coordinate space. */}
-        <View style={{ position: 'absolute', width: SIZE, height: SIZE }} pointerEvents="none">
-        <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute' }}>
-          {/* Soft rings: translucent gold fills, outermost first so they stack into a gentle glow. */}
-          <Circle cx={cx} cy={cy} r={R} fill={tok.gold} fillOpacity={0.035} stroke={tok.gold} strokeOpacity={0.16} strokeWidth={1} />
-          <Circle cx={cx} cy={cy} r={R * 0.72} fill={tok.gold} fillOpacity={0.05} stroke={tok.gold} strokeOpacity={0.18} strokeWidth={1} />
-          <Circle cx={cx} cy={cy} r={R * 0.45} fill={tok.gold} fillOpacity={0.07} stroke={tok.gold} strokeOpacity={0.22} strokeWidth={1} />
-          {hasEnough && (
-            <>
-              <Path d={`M ${cx + R} ${cy} A ${R} ${R} 0 0 0 ${cx} ${cy - R}`} stroke={tok.gold} strokeWidth={2} fill="none" opacity={0.35} strokeLinecap="round" />
-              {blips.map((b) => (
-                <G key={b.cat.categoryId}>
-                  <Circle cx={b.x} cy={b.y} r={b.r * 2.4} fill={tok.gold} opacity={0.10 * b.strength} />
-                  <Circle cx={b.x} cy={b.y} r={b.r * 1.5} fill={tok.gold} opacity={0.18 * b.strength} />
-                  <Circle cx={b.x} cy={b.y} r={b.r} fill={tok.gold} opacity={b.strength} />
-                </G>
-              ))}
-            </>
-          )}
-        </Svg>
-        {/* Names beside the three biggest dots, so the dots mean something. */}
-        {hasEnough && blips.slice(0, 3).map((b) => (
-          <Text
-            key={`l${b.cat.categoryId}`}
-            numberOfLines={1}
-            style={{
-              position: 'absolute', left: b.x + b.r + 6, top: b.y - 7, maxWidth: 70,
-              fontFamily: fontMono('regular'), fontSize: 9.5, letterSpacing: ar ? 0 : 0.6, color: tok.muted,
-              textTransform: ar ? 'none' : 'uppercase',
-            }}
-          >
-            {catLabel(b.cat, lang)}
-          </Text>
-        ))}
+      <Pressable
+        onPress={() => setPicked(null)}
+        onLayout={(e) => setStageW(e.nativeEvent.layout.width)}
+        style={{ height: CHART_INNER, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <View style={{ position: 'absolute', width: SIZE, height: SIZE }} pointerEvents="box-none">
+          <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute' }} pointerEvents="none">
+            {/* Soft rings: translucent gold fills, outermost first so they stack into a gentle glow. */}
+            <Circle cx={cx} cy={cy} r={R} fill={tok.gold} fillOpacity={0.035} stroke={tok.gold} strokeOpacity={0.16} strokeWidth={1} />
+            <Circle cx={cx} cy={cy} r={R * 0.77} fill={tok.gold} fillOpacity={0.05} stroke={tok.gold} strokeOpacity={0.18} strokeWidth={1} />
+            <Circle cx={cx} cy={cy} r={R * 0.52} fill={tok.gold} fillOpacity={0.06} stroke={tok.gold} strokeOpacity={0.2} strokeWidth={1} />
+          </Svg>
+          {hasEnough && blips.map((b) => {
+            const on = picked === b.cat.categoryId;
+            const size = b.r * 2;
+            return (
+              <Pressable
+                key={b.cat.categoryId}
+                onPress={() => setPicked(on ? null : b.cat.categoryId)}
+                hitSlop={14}
+                style={{ position: 'absolute', left: b.x - b.r * 2, top: b.y - b.r * 2, width: b.r * 4, height: b.r * 4, alignItems: 'center', justifyContent: 'center' }}
+                accessibilityRole="button"
+                accessibilityLabel={catLabel(b.cat, lang)}
+              >
+                {/* halo, then the dot */}
+                <View style={{ position: 'absolute', width: b.r * 4, height: b.r * 4, borderRadius: b.r * 2, backgroundColor: tok.gold, opacity: (on ? 0.28 : 0.12) * b.strength }} />
+                <View style={{
+                  width: size, height: size, borderRadius: b.r, backgroundColor: tok.gold, opacity: b.strength,
+                  borderWidth: on ? 2 : 0, borderColor: tok.bone,
+                }} />
+              </Pressable>
+            );
+          })}
         </View>
-        <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
+
+        {/* The net balance, alone in the middle. */}
+        <View pointerEvents="box-none" style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
           {hasEnough ? (
             <>
               <REyebrow>{t('netBalance')}</REyebrow>
               <View style={{ marginTop: 4 }}>
-                <BalanceAmount center value={data.current.balance} size={ar ? 22 : 26} currency={currency} decimals={0} />
+                <BalanceAmount center caption={false} value={data.current.balance} size={ar ? 20 : 24} currency={currency} decimals={0} />
               </View>
             </>
           ) : (
@@ -734,7 +743,27 @@ function ChartRadar({ data, currency }: { data: DashboardData; currency: string 
             </Text>
           )}
         </View>
-      </View>
+
+        {/* Popover for the tapped dot: category, amount, share of the month's spending. */}
+        {sel && (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute', width: POP_W,
+              left: Math.min(Math.max(offsetX + sel.x - POP_W / 2, 6), Math.max(6, stageW - POP_W - 6)),
+              top: sel.y > SIZE * 0.45 ? Math.max(4, sel.y - 72) : Math.min(SIZE - 70, sel.y + sel.r + 12),
+              paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12,
+              backgroundColor: tok.elevated, borderWidth: 1, borderColor: tok.gold,
+            }}
+          >
+            <Text numberOfLines={1} style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{catLabel(sel.cat, lang)}</Text>
+            <View style={{ marginTop: 3, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+              <RAmount value={-sel.cat.total} currency={currency} size={14} decimals={0} />
+              <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color: tok.gold }}>{Math.round((sel.cat.total / spent) * 100)}%</Text>
+            </View>
+          </View>
+        )}
+      </Pressable>
     </RCard>
   );
 }
