@@ -21,7 +21,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       { en: 'Accounts: add your bank account, wallet and cash, see each balance, and move money between them. An ATM withdrawal becomes cash automatically, not spending.', ar: 'الحسابات: أضف حسابك البنكي ومحفظتك والكاش، وشاهد رصيد كل واحد، وانقل المال بينها. سحب الماكينة يصبح كاش تلقائياً لا مصروفاً.' },
       { en: 'Seshat asks when it is unsure about a captured transaction, with quick answers right in the notification.', ar: 'سيشات تسألك عندما لا تتأكد من معاملة مرصودة، مع إجابات سريعة داخل الإشعار.' },
       { en: 'Home-screen widgets on iPhone and Android: Month at a glance, Budgets and cards, Maat’s verdict and Quick add.', ar: 'ودجتس للشاشة الرئيسية على آيفون وأندرويد: شهرك بنظرة، الميزانيات والبطاقات، حكم ماعت، وإضافة سريعة.' },
-      { en: 'Hide numbers: tap the eye beside your balance to show amounts as ••••.', ar: 'إخفاء الأرقام: اضغط على العين بجانب رصيدك لتظهر المبالغ ••••.' },
+      { en: 'Hide numbers: tap your balance to show every amount as ••••, and tap again to bring them back.', ar: 'إخفاء الأرقام: اضغط على رصيدك لتظهر كل المبالغ ••••، واضغط مرة أخرى لإعادتها.' },
       { en: 'App lock with Face ID or your fingerprint.', ar: 'قفل التطبيق بـ Face ID أو بصمتك.' },
       { en: 'A gentle daily reminder to log (1 PM and 8 PM). Turn it off in Habits.', ar: 'تذكير يومي لطيف بالتسجيل (١ ظهراً و٨ مساءً). يمكنك إيقافه من العادات.' },
       { en: 'iPhone Shortcuts and Siri: “Quick add” logs an amount and a few words without opening the app.', ar: 'اختصارات آيفون وسيري: «إضافة سريعة» تسجّل مبلغاً وكلمات دون فتح التطبيق.' },

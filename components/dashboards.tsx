@@ -683,7 +683,7 @@ function ChartRadar({ data, currency }: { data: DashboardData; currency: string 
   // Dots sit on the ring band (clear of the balance in the middle), evenly spaced from the top, the biggest first.
   const blips = top.map((cat, i) => {
     const angle = -Math.PI / 2 + (i / top.length) * Math.PI * 2;
-    const radius = R * (i % 2 === 0 ? 0.86 : 0.68);
+    const radius = R * (i % 2 === 0 ? 0.92 : 0.8);
     const strength = 0.5 + 0.5 * (cat.total / max);
     return { cat, x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), r: 5 + (cat.total / max) * 5, strength };
   });
@@ -734,7 +734,7 @@ function ChartRadar({ data, currency }: { data: DashboardData; currency: string 
             <>
               <REyebrow>{t('netBalance')}</REyebrow>
               <View style={{ marginTop: 4 }}>
-                <BalanceAmount center caption={false} value={data.current.balance} size={ar ? 20 : 24} currency={currency} decimals={0} />
+                <BalanceAmount center caption={false} value={data.current.balance} size={ar ? 18 : 21} currency={currency} decimals={0} />
               </View>
             </>
           ) : (
@@ -750,8 +750,9 @@ function ChartRadar({ data, currency }: { data: DashboardData; currency: string 
             pointerEvents="none"
             style={{
               position: 'absolute', width: POP_W,
-              left: Math.min(Math.max(offsetX + sel.x - POP_W / 2, 6), Math.max(6, stageW - POP_W - 6)),
-              top: sel.y > SIZE * 0.45 ? Math.max(4, sel.y - 72) : Math.min(SIZE - 70, sel.y + sel.r + 12),
+              // Opens outward from the dot (away from the balance in the middle), level with it.
+              left: Math.min(Math.max(sel.x >= cx ? offsetX + sel.x + sel.r + 10 : offsetX + sel.x - sel.r - 10 - POP_W, 6), Math.max(6, stageW - POP_W - 6)),
+              top: Math.min(Math.max(sel.y - 29, 4), SIZE - 62),
               paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12,
               backgroundColor: tok.elevated, borderWidth: 1, borderColor: tok.gold,
             }}
