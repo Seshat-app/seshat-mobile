@@ -204,6 +204,9 @@ export type TxRowData = {
   source?: 'manual' | 'voice' | 'seshat' | 'bot' | 'notification' | 'receipt-ocr';
   // The card / account used (populated by the API).
   cardId?: { _id?: string; bank?: string | null; last4?: string; label?: string | null; kind?: string } | null;
+  // Entered in another currency: the row's amount is already converted; this is what was typed.
+  originalAmount?: number;
+  originalCurrency?: string;
 };
 
 function sourceChipLabel(source: TxRowData['source'], lang: 'en' | 'ar'): string | null {
@@ -283,7 +286,7 @@ export function RTxRow({
           })()}
         </View>
         <REyebrow style={{ marginTop: 3, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-          {catLabel(tx.categoryId, lang)} · {dateLabel}{cardChipName(tx.cardId) ? ` · ${cardChipName(tx.cardId)}` : ''}
+          {catLabel(tx.categoryId, lang)} · {dateLabel}{cardChipName(tx.cardId) ? ` · ${cardChipName(tx.cardId)}` : ''}{tx.originalCurrency && tx.originalAmount ? ` · ${tx.originalAmount} ${tx.originalCurrency}` : ''}
         </REyebrow>
       </View>
       <RAmount value={signed} currency={tx.currency} size={15} sign={signed > 0} decimals={signed % 1 === 0 ? 0 : 2} />
