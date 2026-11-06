@@ -126,7 +126,12 @@ export default function CardsScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 15.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{c.name}</Text>
-                    <Text style={{ marginTop: 2, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{kindLabel}</Text>
+                    <Text style={{ marginTop: 2, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+                      {kindLabel}
+                      {c.reportedBalance != null && Math.abs(c.reportedBalance - (c.balance ?? 0)) >= 1
+                        ? ` · ${ar ? 'البنك يقول' : 'bank says'} ${Math.round(c.reportedBalance)}`
+                        : ''}
+                    </Text>
                   </View>
                   <RAmount value={c.balance ?? 0} currency={currency} size={17} decimals={0} />
                   <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />

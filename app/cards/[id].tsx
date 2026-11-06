@@ -114,6 +114,27 @@ export default function CardDetailScreen() {
               </View>
             </RCard>
 
+            {card.reportedBalance != null && Math.abs(card.reportedBalance - (card.balance ?? 0)) >= 1 && (
+              <RCard padding={14} style={{ marginBottom: 12 }}>
+                <Text style={{ fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
+                  {ar
+                    ? `آخر رسالة من البنك تقول إن رصيده ${Math.round(card.reportedBalance).toLocaleString()} ${currency}، وسيشات يحسب ${Math.round(card.balance ?? 0).toLocaleString()}.`
+                    : `Your last bank message says this holds ${Math.round(card.reportedBalance).toLocaleString()} ${currency}; Seshat has ${Math.round(card.balance ?? 0).toLocaleString()}.`}
+                </Text>
+                <View style={{ marginTop: 10 }}>
+                  <RButton
+                    onPress={async () => {
+                      await apiFetch(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify({ currentBalance: card.reportedBalance }) });
+                      bumpVersion();
+                      void load();
+                    }}
+                  >
+                    {ar ? 'استخدم رصيد البنك' : "Use the bank's balance"}
+                  </RButton>
+                </View>
+              </RCard>
+            )}
+
             <RCard padding={16} style={{ marginBottom: 12 }}>
               <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'هذا الشهر' : 'This month'}</REyebrow>
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>

@@ -14,6 +14,9 @@ export type CardSummary = {
   /** What the source holds now: opening balance + income - expense + transfers in - transfers out. */
   balance: number;
   openingBalance: number;
+  /** The balance the bank's last message printed (and when), offered to the user: never applied by itself. */
+  reportedBalance?: number | null;
+  reportedAt?: string | null;
 };
 
 export type CardDetail = Omit<CardSummary, 'lastUsedAt'> & {
