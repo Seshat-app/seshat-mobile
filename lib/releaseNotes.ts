@@ -13,6 +13,21 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    id: '2026-11-v1.1.1',
+    version: '1.1.1',
+    date: '2026-11-07',
+    title: { en: 'Smarter entries, clearer accounts', ar: 'إدخال أذكى وحسابات أوضح' },
+    items: [
+      { en: 'Add sheet: Cash is picked for you, other currencies are converted at the live rate (5 USD becomes EGP on the spot), and you can create a missing category right there.', ar: 'لوحة الإضافة: الكاش مختار تلقائياً، والعملات الأخرى تُحوَّل بسعر الصرف الحي (٥ دولار تصبح جنيهاً فوراً)، ويمكنك إنشاء فئة ناقصة من نفس المكان.' },
+      { en: 'The note box now reads your sentence properly: in “fuel 92, 5 liters, 22.25 per liter” the amount is 111.25, and 92 is just the fuel grade.', ar: 'خانة الملاحظة تفهم جملتك: في «بنزين ٩٢، ٥ لتر، ٢٢٫٢٥ للتر» المبلغ ١١١٫٢٥ و٩٢ مجرد نوع البنزين.' },
+      { en: 'Accounts: merge two numbers of the same account, line a balance up with what your bank message says, and Vodafone Cash sends now come off your wallet.', ar: 'الحسابات: ادمج رقمين لنفس الحساب، وطابق الرصيد مع ما تقوله رسالة البنك، وتحويلات فودافون كاش تُخصم الآن من محفظتك.' },
+      { en: 'Home: a Today / per day / month card, a quick look at where your money is, and a redesigned radar: tap a dot to see the category.', ar: 'الرئيسية: بطاقة اليوم والمتوسط والشهر، ونظرة سريعة على أين أموالك، ورادار جديد: اضغط على نقطة لترى الفئة.' },
+      { en: 'Tap your balance to hide every amount (no more eye button).', ar: 'اضغط على رصيدك لإخفاء كل المبالغ (لا زر عين بعد الآن).' },
+      { en: 'Reports now list every finished month since you joined. Invite friends with your referral link from Profile.', ar: 'التقارير تعرض كل شهر منتهٍ منذ انضمامك. ادعُ أصدقاءك برابط الإحالة من الملف الشخصي.' },
+      { en: 'Reminders and bills now arrive in one dedicated Seshat chat instead of an old conversation.', ar: 'التذكيرات والفواتير تصل الآن في محادثة سيشات مخصصة بدلاً من محادثة قديمة.' },
+    ],
+  },
+  {
     id: '2026-11-v1.1.0',
     version: '1.1.0',
     date: '2026-11-06',
