@@ -715,20 +715,22 @@ export default function ProfileScreen() {
 // ─────────────────────────────────────────────────────────────
 function AccountCard({ profile }: { profile: Profile }) {
   const { tok, lang } = useI18n();
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const ar = lang === 'ar';
+  const link = profile.referralCode ? `${SITE_URL}/register?ref=${profile.referralCode}` : '';
   const cap = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
   const joined = profile.createdAt && !Number.isNaN(new Date(profile.createdAt).getTime())
     ? new Date(profile.createdAt).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : '—';
 
-  const copy = async () => {
-    if (!profile.referralCode) return;
+  const copy = async (which: 'code' | 'link') => {
+    const text = which === 'code' ? profile.referralCode : link;
+    if (!text) return;
     try {
-      await Clipboard.setStringAsync(profile.referralCode);
+      await Clipboard.setStringAsync(text);
       hapticLight();
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setCopied(which);
+      setTimeout(() => setCopied(null), 1500);
     } catch { /* clipboard unavailable: the code is still on screen */ }
   };
 
@@ -766,7 +768,7 @@ function AccountCard({ profile }: { profile: Profile }) {
               {ar ? 'رمز الإحالة' : 'Referral code'}
             </Text>
             <Pressable
-              onPress={copy}
+              onPress={() => copy('code')}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={ar ? 'نسخ رمز الإحالة' : 'Copy referral code'}
@@ -775,7 +777,28 @@ function AccountCard({ profile }: { profile: Profile }) {
               <Text style={{ color: tok.gold, fontFamily: fontMono('medium'), fontSize: 14, letterSpacing: 2.4 }}>
                 {profile.referralCode}
               </Text>
-              {copied ? <Check size={15} color={tok.gold} /> : <Copy size={15} color={tok.muted} />}
+              {copied === 'code' ? <Check size={15} color={tok.gold} /> : <Copy size={15} color={tok.muted} />}
+            </Pressable>
+          </View>
+        ) : null}
+        {link ? (
+          <View style={{ paddingVertical: 14, borderTopWidth: 1, borderTopColor: tok.shellBorder }}>
+            <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, letterSpacing: 1.2, textTransform: ar ? 'none' : 'uppercase', textAlign: ar ? 'right' : 'left' }}>
+              {ar ? 'رابط الإحالة' : 'Referral link'}
+            </Text>
+            <Pressable
+              onPress={() => copy('link')}
+              accessibilityRole="button"
+              accessibilityLabel={ar ? 'نسخ رابط الإحالة' : 'Copy referral link'}
+              style={({ pressed }) => ({
+                marginTop: 8, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, padding: 12,
+                borderRadius: 12, backgroundColor: tok.elevated, opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text numberOfLines={1} style={{ flex: 1, color: tok.gold, fontFamily: fontMono('regular'), fontSize: 12.5, textAlign: 'left', writingDirection: 'ltr' }}>
+                {link.replace('https://', '')}
+              </Text>
+              {copied === 'link' ? <Check size={16} color={tok.gold} /> : <Copy size={16} color={tok.muted} />}
             </Pressable>
           </View>
         ) : null}

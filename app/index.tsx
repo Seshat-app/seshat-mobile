@@ -58,6 +58,9 @@ export default function AuthRouter() {
   const [pwd, setPwd] = useState('');
   const [name, setName] = useState('');
   const [pwd2, setPwd2] = useState('');
+  // Optional "referred by": a switch that reveals the referrer's code field.
+  const [referred, setReferred] = useState(false);
+  const [refCode, setRefCode] = useState('');
   const [code, setCode] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [err, setErr] = useState('');
@@ -149,7 +152,7 @@ export default function AuthRouter() {
     if (pwd !== pwd2) { setErr('Passwords do not match'); return; }
     if (pwd.length < 8) { setErr('Min. 8 characters'); return; }
     setErr(''); setBusy(true);
-    const r = await registerComplete(sessionId, name || email.split('@')[0], pwd);
+    const r = await registerComplete(sessionId, name || email.split('@')[0], pwd, referred ? refCode.trim() : undefined);
     if (r.success) {
       // After registration, ask whether this is an individual or an org
       // account before landing them in the tabs. Mirrors the web
@@ -406,6 +409,20 @@ export default function AuthRouter() {
           placeholder={lang === 'ar' ? 'إعادة الإدخال' : 'Re-enter password'}
           secureTextEntry textContentType="newPassword"
         />
+        <Pressable onPress={() => setReferred((v) => !v)} style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }}>
+          <View style={{ width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: referred ? tok.gold : tok.border, backgroundColor: referred ? tok.gold : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            {referred ? <Text style={{ color: tok.void, fontSize: 13, lineHeight: 15 }}>✓</Text> : null}
+          </View>
+          <Text style={{ flex: 1, fontFamily: fontBody(lang), fontSize: 14, color: tok.bone, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'أحالني شخص إلى سيشات' : 'Someone referred me to Seshat'}
+          </Text>
+        </Pressable>
+        {referred && (
+          <AuthField
+            label={lang === 'ar' ? 'رمز المُحيل' : "Referrer's code"} value={refCode} onChange={(v) => setRefCode(v.toUpperCase())}
+            placeholder="ABC1234"
+          />
+        )}
       </AuthChrome>
     );
   }

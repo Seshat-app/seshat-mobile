@@ -96,12 +96,12 @@ export async function registerVerifyCode(sessionId: string, code: string): Promi
   }
 }
 
-export async function registerComplete(sessionId: string, username: string, password: string): Promise<AuthResult> {
+export async function registerComplete(sessionId: string, username: string, password: string, referralCode?: string): Promise<AuthResult> {
   try {
     const res = await fetch(`${API_BASE}/auth/register/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, username, password }),
+      body: JSON.stringify({ sessionId, username, password, ...(referralCode ? { referralCode } : {}) }),
     });
     const json = await res.json();
     if (!res.ok || !json.success) {
