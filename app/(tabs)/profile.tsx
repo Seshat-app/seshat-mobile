@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useHideNumbers, setHideNumbers } from '../../lib/privacy';
 import { useAppLock, setAppLockEnabled, lockSupport } from '../../lib/appLock';
 import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert, Linking, Image, ActivityIndicator, Platform, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
@@ -7,7 +6,7 @@ import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, EyeOff, ScanFace, Fingerprint } from 'lucide-react-native';
+import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, ScanFace, Fingerprint } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -430,7 +429,6 @@ export default function ProfileScreen() {
           </REyebrow>
           <RCard padding={0} style={{ paddingHorizontal: 16 }}>
             <AppLockRow />
-            <HideNumbersRow />
           </RCard>
         </View>
 
@@ -907,28 +905,6 @@ function AppLockRow() {
           thumbColor={enabled ? tok.bone : tok.muted}
         />
       }
-    />
-  );
-}
-
-function HideNumbersRow() {
-  const { tok, lang } = useI18n();
-  const hidden = useHideNumbers();
-  return (
-    <PlanRow
-      icon={EyeOff}
-      title={lang === 'ar' ? 'إخفاء الأرقام' : 'Hide numbers'}
-      hint={lang === 'ar' ? 'تظهر كل المبالغ •••• حتى تُظهرها' : 'Every amount shows as •••• until you turn it off'}
-      onPress={() => setHideNumbers(!hidden)}
-      trailing={
-        <Switch
-          value={hidden}
-          onValueChange={setHideNumbers}
-          trackColor={{ false: tok.elevated, true: tok.gold }}
-          thumbColor={hidden ? tok.bone : tok.muted}
-        />
-      }
-      last
     />
   );
 }

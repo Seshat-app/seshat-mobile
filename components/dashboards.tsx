@@ -9,6 +9,7 @@ import { ArrowUp, ArrowDown } from 'lucide-react-native';
 import { useI18n, monthYear } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { RCard, REyebrow, RAmount, RProgress, RStatus } from './ui';
+import { BalanceAmount } from './HideNumbersToggle';
 import { useRouter } from 'expo-router';
 import { SectionHeader, RTxRow, type TxRowData, type DashView } from './shell';
 import { SeshatMark } from './SeshatMark';
@@ -207,7 +208,7 @@ export function DashboardNumbers({ data, currency}: { data: DashboardData; curre
       <RCard large glow>
         <REyebrow>{t('netBalance')}</REyebrow>
         <View style={{ marginTop: 10 }}>
-          <RAmount value={data.current.balance} size={lang === 'ar' ? 40 : 44} currency={currency} decimals={0} />
+          <BalanceAmount value={data.current.balance} size={lang === 'ar' ? 40 : 44} currency={currency} decimals={0} eye={22} />
         </View>
         <View style={{ flexDirection: 'row', gap: 22, marginTop: 22 }}>
           <View style={{ flex: 1 }}>
@@ -406,7 +407,7 @@ export function DashboardHud({ data, currency}: { data: DashboardData; currency:
               <>
                 <REyebrow>{t('netBalance')}</REyebrow>
                 <View style={{ marginTop: 6 }}>
-                  <RAmount value={data.current.balance} size={lang === 'ar' ? 28 : 32} currency={currency} decimals={0} />
+                  <BalanceAmount value={data.current.balance} size={lang === 'ar' ? 28 : 32} currency={currency} decimals={0} eye={18} />
                 </View>
               </>
             ) : (
@@ -507,7 +508,7 @@ export function DashboardBento({ data, currency}: { data: DashboardData; currenc
             : <RStatus kind="alert">{t('deficit')}</RStatus>}
         </View>
         <View style={{ marginTop: 14 }}>
-          <RAmount value={data.current.balance} size={lang === 'ar' ? 38 : 42} currency={currency} decimals={0} />
+          <BalanceAmount value={data.current.balance} size={lang === 'ar' ? 38 : 42} currency={currency} decimals={0} eye={22} />
         </View>
         <DailyNetBars series={data.dailyNet} height={40} />
         <REyebrow style={{ marginTop: 8 }}>30 {lang === 'ar' ? 'يوماً' : 'days'} · {lang === 'ar' ? 'الصافي اليومي' : 'daily net'}</REyebrow>
@@ -637,7 +638,7 @@ function ChartNumbers({ data, currency }: { data: DashboardData; currency: strin
             : <RStatus kind="alert">{t('deficit')}</RStatus>}
         </View>
         <View style={{ marginTop: 16 }}>
-          <RAmount value={data.current.balance} size={lang === 'ar' ? 44 : 50} currency={currency} decimals={0} />
+          <BalanceAmount value={data.current.balance} size={lang === 'ar' ? 44 : 50} currency={currency} decimals={0} eye={22} />
         </View>
         <REyebrow style={{ marginTop: 16 }}>{monthYear(lang)} · {t('detected')}</REyebrow>
       </View>
@@ -652,7 +653,7 @@ function ChartSparkbar({ data, currency }: { data: DashboardData; currency: stri
       <View style={{ height: CHART_INNER, justifyContent: 'center' }}>
         <REyebrow>{t('netBalance')}</REyebrow>
         <View style={{ marginTop: 12 }}>
-          <RAmount value={data.current.balance} size={lang === 'ar' ? 38 : 42} currency={currency} decimals={0} />
+          <BalanceAmount value={data.current.balance} size={lang === 'ar' ? 38 : 42} currency={currency} decimals={0} eye={22} />
         </View>
         <DailyNetBars series={data.dailyNet} height={44} />
         <REyebrow style={{ marginTop: 10 }}>30 {lang === 'ar' ? 'يوماً' : 'days'} · {lang === 'ar' ? 'الصافي اليومي' : 'daily net'}</REyebrow>
@@ -697,7 +698,7 @@ function ChartRadar({ data, currency }: { data: DashboardData; currency: string 
             <>
               <REyebrow>{t('netBalance')}</REyebrow>
               <View style={{ marginTop: 4 }}>
-                <RAmount value={data.current.balance} size={lang === 'ar' ? 22 : 26} currency={currency} decimals={0} />
+                <BalanceAmount value={data.current.balance} size={lang === 'ar' ? 22 : 26} currency={currency} decimals={0} eye={18} />
               </View>
             </>
           ) : (
