@@ -662,51 +662,73 @@ function ChartSparkbar({ data, currency }: { data: DashboardData; currency: stri
   );
 }
 
-function ChartRadar({ data, currency }: { data: DashboardData; currency: string }) {
+/**
+ * "Where it goes": a donut of this month's spending by category (top five, the rest folded into "Other") with a
+ * legend beside it and the month's total spent in the middle. Replaces the old radar-dots card.
+ */
+function ChartCategories({ data, currency }: { data: DashboardData; currency: string }) {
   const { tok, lang, t } = useI18n();
-  const top = data.categoryBreakdown.slice(0, 6);
-  const hasEnough = top.length >= 3;
-  const max = top[0]?.total ?? 1;
-  const SIZE = CHART_INNER;
-  const cx = SIZE / 2, cy = SIZE / 2;
-  const R = SIZE / 2 - 4;
-  const blips = top.map((cat, i) => {
-    const angle = -Math.PI / 2 + (i / Math.max(top.length, 1)) * Math.PI * 2 + 0.3;
-    const radius = R * 0.42 + (i / Math.max(top.length - 1, 1)) * R * 0.5;
-    return { cat, x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle), size: 3 + (cat.total / max) * 5 };
-  });
+  const ar = lang === 'ar';
+  const spent = data.current.expense.total;
+  const all = data.categoryBreakdown.filter((c) => c.total > 0);
+  const top = all.slice(0, 5);
+  const rest = all.slice(5).reduce((a, c) => a + c.total, 0);
+  const rows = [
+    ...top.map((c) => ({ key: c.categoryId, label: catLabel(c, lang), value: c.total })),
+    ...(rest > 0 ? [{ key: 'rest', label: ar ? 'أخرى' : 'Other', value: rest }] : []),
+  ];
+  const total = rows.reduce((a, r) => a + r.value, 0) || 1;
+  // One gold, stepped down in strength: the biggest slice is the strongest.
+  const shades = [1, 0.78, 0.58, 0.42, 0.3, 0.2];
+
+  const SIZE = 150, STROKE = 16;
+  const R = (SIZE - STROKE) / 2;
+  const C = 2 * Math.PI * R;
+  let offset = 0;
+  const GAP = rows.length > 1 ? 3 : 0;
+
   return (
     <RCard large glow>
-      <View style={{ height: CHART_INNER, alignItems: 'center', justifyContent: 'center' }}>
-        <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute' }}>
-          {[R * 0.45, R * 0.72, R].map((r, idx) => (
-            <Circle key={idx} cx={cx} cy={cy} r={r} fill="none" stroke={tok.border} strokeWidth={0.6} />
-          ))}
-          <Line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke={tok.border} strokeWidth={0.6} />
-          <Line x1={cx} y1={cy - R} x2={cx} y2={cy + R} stroke={tok.border} strokeWidth={0.6} />
-          {hasEnough && (
-            <>
-              <Path d={`M ${cx + R} ${cy} A ${R} ${R} 0 0 0 ${cx} ${cy - R}`} stroke={tok.gold} strokeWidth={1.4} fill="none" opacity={0.4} strokeLinecap="round" />
-              {blips.map((b, i) => (
-                <Circle key={b.cat.categoryId} cx={b.x} cy={b.y} r={b.size} fill={tok.gold} opacity={1 - i * 0.1} />
-              ))}
-            </>
-          )}
-        </Svg>
-        <View pointerEvents="none" style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center' }}>
-          {hasEnough ? (
-            <>
-              <REyebrow>{t('netBalance')}</REyebrow>
-              <View style={{ marginTop: 4 }}>
-                <BalanceAmount value={data.current.balance} size={lang === 'ar' ? 22 : 26} currency={currency} decimals={0} eye={18} />
+      <View style={{ height: CHART_INNER, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 16 }}>
+        {rows.length === 0 ? (
+          <Text style={{ flex: 1, fontFamily: fontMono('regular'), fontSize: 12, color: tok.muted, textAlign: 'center' }}>{t('notEnoughData')}</Text>
+        ) : (
+          <>
+            <View style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
+              <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'absolute' }}>
+                <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={tok.border} strokeWidth={STROKE} opacity={0.5} />
+                {rows.map((r, i) => {
+                  const len = Math.max(0, (r.value / total) * C - GAP);
+                  const seg = (
+                    <Circle
+                      key={r.key} cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none"
+                      stroke={tok.gold} strokeOpacity={shades[i] ?? 0.2} strokeWidth={STROKE}
+                      strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset}
+                      transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+                    />
+                  );
+                  offset += (r.value / total) * C;
+                  return seg;
+                })}
+              </Svg>
+              <View pointerEvents="none" style={{ alignItems: 'center' }}>
+                <REyebrow>{ar ? 'المصروف' : 'Spent'}</REyebrow>
+                <View style={{ marginTop: 2 }}>
+                  <RAmount value={-spent} short size={ar ? 20 : 22} currency={currency} decimals={0} />
+                </View>
               </View>
-            </>
-          ) : (
-            <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: tok.bone, letterSpacing: 0.4, textAlign: 'center', paddingHorizontal: 24 }}>
-              {t('notEnoughData')}
-            </Text>
-          )}
-        </View>
+            </View>
+            <View style={{ flex: 1, gap: 9 }}>
+              {rows.slice(0, 5).map((r, i) => (
+                <View key={r.key} style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: tok.gold, opacity: shades[i] ?? 0.2 }} />
+                  <Text numberOfLines={1} style={{ flex: 1, fontFamily: fontBody(lang), fontSize: 12.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{r.label}</Text>
+                  <Text style={{ fontFamily: fontMono('regular'), fontSize: 11.5, color: tok.muted }}>{Math.round((r.value / total) * 100)}%</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </View>
     </RCard>
   );
@@ -747,7 +769,7 @@ export function ChartCarousel({
         {VIEWS.map((v) => (
           <View key={v} style={{ width, paddingHorizontal: 16 }}>
             {v === 'numbers' && <ChartNumbers data={data} currency={currency} />}
-            {v === 'hud' && <ChartRadar data={data} currency={currency} />}
+            {v === 'hud' && <ChartCategories data={data} currency={currency} />}
             {v === 'bento' && <ChartSparkbar data={data} currency={currency} />}
           </View>
         ))}
