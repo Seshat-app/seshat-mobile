@@ -37,7 +37,7 @@ object WidgetStore {
     val api = p.getString("api", null) ?: return cached(ctx)
     return try {
       val conn = (URL("$api/widget/summary").openConnection() as HttpURLConnection).apply {
-        connectTimeout = 10_000; readTimeout = 10_000
+        connectTimeout = 3_000; readTimeout = 3_000
         setRequestProperty("Authorization", "Bearer $token")
         setRequestProperty("Accept", "application/json")
       }

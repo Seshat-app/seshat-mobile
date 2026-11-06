@@ -64,12 +64,18 @@ abstract class SummaryWidget : AppWidgetProvider() {
 
   override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
     draw(ctx, mgr, ids, WidgetStore.cached(ctx))
+    // A widget update arrives as a broadcast, which Android gives about 10 seconds. Fetch on a worker and stop
+    // waiting after 6 seconds so the broadcast always finishes in time (the cached figures are already drawn).
     val pending = goAsync()
+    val pool = java.util.concurrent.Executors.newSingleThreadExecutor()
     Thread {
       try {
-        val fresh = WidgetStore.fetch(ctx)
+        val fresh = try {
+          pool.submit<JSONObject?> { WidgetStore.fetch(ctx) }.get(6, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (_: Exception) { null }
         if (fresh != null) draw(ctx, mgr, ids, fresh)
       } finally {
+        pool.shutdownNow()
         pending.finish()
       }
     }.start()
