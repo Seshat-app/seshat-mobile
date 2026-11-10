@@ -15,7 +15,8 @@ export type Holding = {
 };
 type Acct = { id: string; name: string; kind?: string };
 
-const TYPES = ['gold', 'currency', 'crypto', 'other'] as const;
+const TYPES = ['gold', 'currency', 'crypto', 'stock', 'other'] as const;
+const TICKERS = ['COMI.CA', 'TMGH.CA', 'HRHO.CA', 'AAPL', 'NVDA'];
 const CURRENCIES = ['USD', 'EUR', 'SAR', 'AED', 'GBP'];
 const COINS = ['BTC', 'ETH', 'USDT'];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -55,26 +56,26 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
     return () => { alive = false; };
   }, [visible, type, karat, premium, symbol]);
 
-  const unitLabel = type === 'gold' ? (ar ? 'جرام' : 'grams') : type === 'other' ? (ar ? 'وحدات' : 'units') : symbol;
-  const ok = num(qty) > 0 && num(price) > 0 && (type !== 'other' || !!name.trim()) && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const unitLabel = type === 'gold' ? (ar ? 'جرام' : 'grams') : type === 'stock' ? (ar ? 'أسهم' : 'shares') : type === 'other' ? (ar ? 'وحدات' : 'units') : symbol;
+  const ok = num(qty) > 0 && num(price) > 0 && (type !== 'other' || !!name.trim()) && (type !== 'stock' || /^[A-Z0-9.^=\-]{1,14}$/.test(symbol)) && /^\d{4}-\d{2}-\d{2}$/.test(date);
   const save = async () => {
     if (!ok) return;
     setBusy(true);
     try {
       await apiFetch('/savings', { method: 'POST', body: JSON.stringify({
-        type, name: name.trim() || undefined, symbol: type === 'currency' || type === 'crypto' ? symbol : undefined, karat: type === 'gold' ? karat : undefined,
+        type, name: name.trim() || undefined, symbol: type === 'currency' || type === 'crypto' || type === 'stock' ? symbol : undefined, karat: type === 'gold' ? karat : undefined,
         premiumPct: type === 'gold' && premium ? num(premium) : undefined, quantity: num(qty), unitPrice: num(price), date, cardId: acct ?? undefined, moveMoney: move,
       }) });
       emitDataChanged(); onDone();
     } catch (err) { Alert.alert(ar ? 'تعذّر الحفظ' : 'Could not save', err instanceof Error ? err.message : undefined); }
     finally { setBusy(false); }
   };
-  const typeLabel = (t: string) => ({ gold: ar ? 'ذهب' : 'Gold', currency: ar ? 'عملة' : 'Currency', crypto: ar ? 'كريبتو' : 'Crypto', other: ar ? 'أخرى' : 'Other' } as Record<string, string>)[t];
+  const typeLabel = (t: string) => ({ gold: ar ? 'ذهب' : 'Gold', currency: ar ? 'عملة' : 'Currency', crypto: ar ? 'كريبتو' : 'Crypto', stock: ar ? 'أسهم' : 'Stock', other: ar ? 'أخرى' : 'Other' } as Record<string, string>)[t];
 
   return (
     <View style={{ gap: 16 }}>
       <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
-        {TYPES.map((t) => <RPill key={t} active={type === t} onPress={() => setType(t)}>{typeLabel(t)}</RPill>)}
+        {TYPES.map((t) => <RPill key={t} active={type === t} onPress={() => { setType(t); if (t === 'stock') setSymbol('COMI.CA'); else if (t === 'crypto') setSymbol('BTC'); else if (t === 'currency') setSymbol('USD'); }}>{typeLabel(t)}</RPill>)}
       </View>
       {type === 'gold' && (
         <View style={{ gap: 12 }}>
@@ -95,6 +96,12 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
         <View style={{ gap: 8 }}>
           <REyebrow>{ar ? 'العملة الرقمية' : 'Coin'}</REyebrow>
           <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>{COINS.map((c) => <RPill key={c} active={symbol === c} onPress={() => setSymbol(c)}>{c}</RPill>)}</View>
+        </View>
+      )}
+      {type === 'stock' && (
+        <View style={{ gap: 8 }}>
+          <RField label={ar ? 'رمز السهم (البورصة المصرية تنتهي بـ .CA)' : 'Ticker (Egyptian stocks end in .CA)'} value={symbol} onChange={(v) => setSymbol(v.toUpperCase().replace(/[^A-Z0-9.^=\-]/g, '').slice(0, 14))} mono />
+          <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>{TICKERS.map((c) => <RPill key={c} active={symbol === c} onPress={() => setSymbol(c)}>{c}</RPill>)}</View>
         </View>
       )}
       {type === 'other' && <RField label={ar ? 'الاسم (شهادة، سهم، صندوق…)' : 'Name (certificate, share, fund...)'} value={name} onChange={setName} />}
