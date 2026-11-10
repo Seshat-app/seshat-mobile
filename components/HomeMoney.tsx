@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Landmark, CreditCard, Wallet, Banknote, Users } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
@@ -98,6 +98,52 @@ export function AccountsOverview({ currency }: { currency: string }) {
   );
 }
 
+
+type TodayRow = { id: string; kind: string; title: string; body: string; screen: 'gam3ya' | 'reminders' | 'debts' | 'review' | 'home'; refId?: string };
+
+/**
+ * The few things that need you today, from one list the server builds (a gam3ya payment or payout, a bill coming up, a
+ * debt falling due, questions Seshat has, being over today's budget). Not shown at all when nothing needs you.
+ */
+export function TodayNeeds() {
+  const { tok, lang } = useI18n();
+  const { dataVersion } = useAppData();
+  const router = useRouter();
+  const ar = lang === 'ar';
+  const [rows, setRows] = useState<TodayRow[]>([]);
+  useEffect(() => {
+    let alive = true;
+    hasToken().then((ok) => {
+      if (!ok) return;
+      apiFetch<{ data: TodayRow[] }>('/me/today').then((r) => { if (alive) setRows(r.data); }).catch(() => {});
+    });
+    return () => { alive = false; };
+  }, [dataVersion]);
+  if (rows.length === 0) return null;
+  const go = (r: TodayRow) => {
+    if (r.screen === 'gam3ya') router.push(`/gam3ya/${r.refId}` as never);
+    else if (r.screen === 'reminders') router.push('/reminders' as never);
+    else if (r.screen === 'debts') router.push('/debts' as never);
+    else if (r.screen === 'review') router.push('/review' as never);
+  };
+  return (
+    <RCard accent padding={16} style={{ marginHorizontal: 16, marginTop: 6, marginBottom: 12 }}>
+      <REyebrow style={{ marginBottom: 10, textAlign: ar ? 'right' : 'left' }}>{ar ? 'يحتاجك اليوم' : 'Needs you today'}</REyebrow>
+      <View style={{ gap: 12 }}>
+        {rows.map((r, i) => (
+          <Pressable key={r.id} onPress={() => go(r)} disabled={r.screen === 'home'}
+            style={{ gap: 2, paddingTop: i === 0 ? 0 : 12, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: tok.border }}>
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ flex: 1, fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{r.title}</Text>
+              {r.screen !== 'home' ? <ChevronRight size={15} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} /> : null}
+            </View>
+            <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{r.body}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </RCard>
+  );
+}
 
 type CircleRow = {
   id: string; name: string; frequency: 'monthly' | 'weekly'; currency: string; archived?: boolean; paymentPerPeriod: number;

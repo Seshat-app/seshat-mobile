@@ -18,8 +18,7 @@ import {
 import { CaptureShortcutBanner } from '../../components/CaptureShortcutBanner';
 import { UpdateBanner } from '../../components/UpdateBanner';
 import { WidgetsAnnouncement } from '../../components/WidgetsAnnouncement';
-import { ReviewBanner } from '../../components/ReviewBanner';
-import { TodayCard, AccountsOverview, DailyBudgetCard, Gam3yaOverview } from '../../components/HomeMoney';
+import { TodayCard, AccountsOverview, DailyBudgetCard, Gam3yaOverview, TodayNeeds } from '../../components/HomeMoney';
 import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
@@ -105,12 +104,12 @@ export default function HomeScreen() {
           // salary baseline exists).
           const banners = (
             <>
+              <TodayNeeds />
               <SetupPrompt profile={profile} onChanged={() => { refresh(); bumpVersion(); }} />
               {checkIn.needed && (
                 <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
               )}
               <UpdateBanner />
-              <ReviewBanner />
               <WidgetsAnnouncement />
               <CaptureShortcutBanner />
             </>

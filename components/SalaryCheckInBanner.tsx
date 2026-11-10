@@ -1,3 +1,4 @@
+import { useBannerSlot } from '../lib/bannerSlot';
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,7 +56,8 @@ export function SalaryCheckInBanner({
   status, onPress,
 }: { status: CheckInStatus; onPress: () => void }) {
   const { tok, lang } = useI18n();
-  if (!status.needed) return null;
+  const active = useBannerSlot('salary', 80, !!status.needed);
+  if (!status.needed || !active) return null;
   const label = periodLabel(status.period, lang);
   return (
     <Pressable

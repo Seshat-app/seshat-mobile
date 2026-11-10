@@ -1,3 +1,4 @@
+import { useBannerSlot } from '../lib/bannerSlot';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { Download, X } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
@@ -9,7 +10,8 @@ import { useAndroidUpdate } from '../lib/androidUpdate';
 export function UpdateBanner() {
   const { tok, lang } = useI18n();
   const { update, dismiss } = useAndroidUpdate();
-  if (!update) return null;
+  const active = useBannerSlot('update', 60, !!update);
+  if (!update || !active) return null;
   const ar = lang === 'ar';
   const notes = ar ? (update.notesAr || update.notes) : update.notes;
 

@@ -1,3 +1,4 @@
+import { useBannerSlot } from '../lib/bannerSlot';
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, Platform, Modal, StyleSheet } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -53,9 +54,10 @@ export function WidgetsAnnouncement() {
         'Open Seshat once while signed in so the widgets can show your data.',
       ];
 
+  const active = useBannerSlot('widgets', 40, show);
   return (
     <>
-      {show && (
+      {show && active && (
         <Pressable
           onPress={() => { seen(); setOpen(true); }}
           style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}

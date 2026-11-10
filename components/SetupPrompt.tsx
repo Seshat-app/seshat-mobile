@@ -1,3 +1,4 @@
+import { useBannerSlot } from '../lib/bannerSlot';
 import { Fragment, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useI18n } from '../lib/i18n';
@@ -21,7 +22,8 @@ export function SetupPrompt({
   const ar = lang === 'ar';
 
   const missing = profile ? SETUP_ITEMS.filter((i) => i.isMissing(profile)) : [];
-  if (!profile || missing.length === 0) return null;
+  const active = useBannerSlot('setup', 70, !!profile && missing.length > 0);
+  if (!profile || missing.length === 0 || !active) return null;
 
   const item = missing[0];
   const Icon = item.icon;

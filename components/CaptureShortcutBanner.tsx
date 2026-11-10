@@ -1,3 +1,4 @@
+import { useBannerSlot } from '../lib/bannerSlot';
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -32,7 +33,8 @@ export function CaptureShortcutBanner() {
       .catch(() => {});
   }, []);
 
-  if (!show) return null;
+  const active = useBannerSlot('capture', 50, show);
+  if (!show || !active) return null;
   const close = () => { setShow(false); SecureStore.setItemAsync(KEY, 'done').catch(() => {}); };
   const ar = lang === 'ar';
 
