@@ -13,7 +13,7 @@ export type Holding = {
   value: number | null; gain: number | null; gainPct: number | null; goalId?: string | null;
   lots: Array<{ kind: 'buy' | 'sell'; date: string; quantity: number; unitPrice: number; fees: number }>;
 };
-type Acct = { id: string; name: string };
+type Acct = { id: string; name: string; kind?: string };
 
 const TYPES = ['gold', 'currency', 'crypto', 'other'] as const;
 const CURRENCIES = ['USD', 'EUR', 'SAR', 'AED', 'GBP'];
@@ -115,7 +115,7 @@ export function AddHoldingSheet({ visible, onClose, onDone }: { visible: boolean
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
           <RPill active={!move} onPress={() => setMove(false)}>{ar ? 'لا تخصم من حساب' : 'Do not deduct'}</RPill>
           <RPill active={move && acct === null} onPress={() => { setMove(true); setAcct(null); }}>{ar ? 'كاش' : 'Cash'}</RPill>
-          {accts.filter((a) => a.name !== 'Cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
+          {accts.filter((a) => a.kind !== 'cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
         </View>
       </View>
       {ok && <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: '#9C9A92', textAlign: ar ? 'right' : 'left' }}>
@@ -157,7 +157,7 @@ export function TradeSheet({ visible, kind, holding, onClose, onDone }: { visibl
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
           <RPill active={!move} onPress={() => setMove(false)}>{ar ? 'بدون حساب' : 'No account'}</RPill>
           <RPill active={move && acct === null} onPress={() => { setMove(true); setAcct(null); }}>{ar ? 'كاش' : 'Cash'}</RPill>
-          {accts.filter((a) => a.name !== 'Cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
+          {accts.filter((a) => a.kind !== 'cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
         </View>
       </View>
       <RButton full onPress={save} disabled={!ok} loading={busy}>{kind === 'buy' ? (ar ? 'سجّل الشراء' : 'Record the purchase') : (ar ? 'سجّل البيع' : 'Record the sale')}</RButton>

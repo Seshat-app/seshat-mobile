@@ -16,7 +16,7 @@ type Gam = {
   id: string; name: string; frequency: 'monthly' | 'weekly'; currency: string; paymentPerPeriod: number; pot: number; members: number;
   paidCount: number; paidTotal: number; remainingToPay: number; nextDue: Period | null; schedule: Period[];
 };
-type Acct = { id: string; name: string };
+type Acct = { id: string; name: string; kind?: string };
 type GoalRow = { _id: string; nameEn: string; nameAr: string; savedAmount: number; targetAmount: number };
 
 const n0 = (v: number) => Math.round(v).toLocaleString('en-US');
@@ -42,7 +42,7 @@ export default function Gam3yaDetailScreen() {
   }, [id]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
-    apiFetch<{ data: Acct[] }>('/cards').then((r) => setAccts(r.data)).catch(() => {});
+    apiFetch<{ data: Acct[] }>('/cards').then((r) => setAccts(r.data.filter((a) => a.kind !== 'cash'))).catch(() => {});
     apiFetch<{ data: GoalRow[] }>('/goals').then((r) => setGoals(r.data.filter((g) => g.savedAmount < g.targetAmount))).catch(() => {});
   }, []);
 
