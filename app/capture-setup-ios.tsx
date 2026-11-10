@@ -7,6 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { PlanScreen } from '../components/PlanShell';
 import { RCard, REyebrow, RButton } from '../components/ui';
 import { CaptureStatus } from '../components/CaptureStatus';
+import { CaptureTester } from '../components/CaptureTester';
 import { useI18n } from '../lib/i18n';
 import { useAccountCurrency, captureKeywordsFor } from '../lib/captureKeywords';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -46,6 +47,7 @@ export default function CaptureSetupIosScreen() {
     >
       <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + S[6], paddingTop: 8 }}>
         <CaptureStatus />
+        <CaptureTester />
         <RCard padding={16} style={{ marginBottom: 14 }}>
           <REyebrow style={{ marginBottom: 6, textAlign: ar ? 'right' : 'left' }}>
             {ar ? 'كيف تعمل؟' : 'How it works'}
