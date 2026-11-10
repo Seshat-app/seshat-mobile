@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { View, Text, Pressable, Alert, RefreshControl } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,11 +31,11 @@ export default function Gam3yaScreen() {
   const { tok, lang } = useI18n();
   const ar = lang === 'ar';
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [items, setItems] = useState<Gam[] | null>(null);
   const [tips, setTips] = useState<Suggestion[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [creating, setCreating] = useState<Partial<Suggestion> | boolean>(false);
-  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async (mode?: 'refresh') => {
     if (mode === 'refresh') setRefreshing(true);
@@ -48,7 +49,6 @@ export default function Gam3yaScreen() {
     finally { setRefreshing(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
-  const open = items?.find((g) => g.id === openId) ?? null;
   const cur = (g: Gam) => g.currency;
 
   return (
@@ -99,7 +99,7 @@ export default function Gam3yaScreen() {
             : g.finished ? (ar ? 'انتهت' : 'Finished')
             : g.nextDue ? (ar ? `القسط القادم ${g.nextDue.due.slice(0, 10)}` : `Next ${g.nextDue.due.slice(0, 10)}`) : '';
           return (
-            <Pressable key={g.id} onPress={() => setOpenId(g.id)} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+            <Pressable key={g.id} onPress={() => router.push(`/gam3ya/${g.id}` as never)} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
               <RCard padding={16}>
                 <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <Text style={{ flex: 1, color: tok.bone, fontFamily: fontBody(lang, 'medium'), fontSize: 15, textAlign: ar ? 'right' : 'left' }}>{g.name}</Text>
@@ -119,7 +119,6 @@ export default function Gam3yaScreen() {
       </ScreenScroll>
 
       <CreateSheet visible={!!creating} seed={typeof creating === 'object' ? creating : undefined} onClose={() => setCreating(false)} onDone={() => { setCreating(false); void load(); }} />
-      <DetailSheet gam={open} onClose={() => setOpenId(null)} onChanged={() => { emitDataChanged(); void load(); }} />
     </PlanScreen>
   );
 }
@@ -202,108 +201,6 @@ function CreateSheet({ visible, seed, onClose, onDone }: { visible: boolean; see
         </RCard>
       ) : null}
       <RButton full onPress={save} disabled={!ok} loading={busy}>{ar ? 'احفظ' : 'Save'}</RButton>
-    </Sheet>
-  );
-}
-
-function DetailSheet({ gam, onClose, onChanged }: { gam: Gam | null; onClose: () => void; onChanged: () => void }) {
-  const { tok, lang } = useI18n();
-  const ar = lang === 'ar';
-  const [sel, setSel] = useState<number | null>(null);
-  const [accts, setAccts] = useState<Acct[]>([]);
-  const [goals, setGoals] = useState<GoalRow[]>([]);
-  const [acct, setAcct] = useState<string | null>(null);
-  const [goalId, setGoalId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (!gam) return;
-    setSel(null);
-    apiFetch<{ data: Acct[] }>('/cards').then((r) => setAccts(r.data)).catch(() => {});
-    apiFetch<{ data: GoalRow[] }>('/goals').then((r) => setGoals(r.data.filter((x) => x.savedAmount < x.targetAmount))).catch(() => {});
-  }, [gam?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { setAcct(null); setGoalId(null); }, [sel]);
-  if (!gam) return <Sheet visible={false} onClose={onClose} title="">{null}</Sheet>;
-
-  const when = (iso: string) => new Date(iso).toLocaleDateString(ar ? 'ar-EG' : 'en-GB', gam.frequency === 'monthly' ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const run = async (path: string, body: object, failTitle: string) => {
-    setBusy(true);
-    try { await apiFetch(`/gam3ya/${gam.id}/${path}`, { method: 'POST', body: JSON.stringify(body) }); onChanged(); setSel(null); }
-    catch (err) { Alert.alert(failTitle, err instanceof Error ? err.message : undefined); }
-    finally { setBusy(false); }
-  };
-  const cur = gam.currency;
-  const pickRow = (list: Array<{ id: string; label: string }>, val: string | null, set: (v: string | null) => void, none: string) => (
-    <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
-      <RPill active={val === null} onPress={() => set(null)}>{none}</RPill>
-      {list.map((x) => <RPill key={x.id} active={val === x.id} onPress={() => set(x.id)}>{x.label}</RPill>)}
-    </View>
-  );
-
-  return (
-    <Sheet visible onClose={onClose} title={gam.name}
-      hint={ar
-        ? `${n0(gam.paymentPerPeriod)} ${cur} كل ${gam.frequency === 'weekly' ? 'أسبوع' : 'شهر'} · القبض ${n0(gam.pot)} ${cur} · دفعت ${n0(gam.paidTotal)} · متبقٍّ ${n0(gam.remainingToPay)}`
-        : `${n0(gam.paymentPerPeriod)} ${cur} each ${gam.frequency === 'weekly' ? 'week' : 'month'} · pot ${n0(gam.pot)} ${cur} · paid ${n0(gam.paidTotal)} · ${n0(gam.remainingToPay)} left`}>
-      <View style={{ gap: 8 }}>
-        {gam.schedule.map((p) => {
-          const color = p.state === 'paid' ? tok.gold : p.state === 'due' ? tok.alertText : tok.muted;
-          const stateLabel = p.state === 'paid' ? (ar ? 'مدفوع' : 'Paid') : p.state === 'due' ? (ar ? 'مستحق' : 'Due') : (ar ? 'قادم' : 'Upcoming');
-          const isSel = sel === p.period;
-          return (
-            <View key={p.period}>
-              <Pressable onPress={() => setSel(isSel ? null : p.period)}
-                style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: isSel ? tok.gold : tok.border, backgroundColor: tok.elevated }}>
-                <Text style={{ width: 26, fontFamily: fontMono('regular'), fontSize: 12, color: tok.muted }}>{p.period}</Text>
-                <Text style={{ flex: 1, fontFamily: fontBody(lang), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
-                  {when(p.due)}{p.isTurn ? (ar ? '  ·  دورك' : '  ·  Your turn') : ''}
-                </Text>
-                {p.isTurn && p.received ? <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color: tok.gold }}>{ar ? 'استلمت' : 'Received'}</Text> : null}
-                {p.payoutPending ? <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color: tok.alertText }}>{ar ? 'لم تستلم' : 'Not received'}</Text> : null}
-                <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color }}>{stateLabel}</Text>
-              </Pressable>
-              {isSel && (
-                <View style={{ gap: 12, paddingVertical: 12, paddingHorizontal: 4 }}>
-                  {p.state !== 'paid' ? (
-                    <>
-                      <REyebrow>{ar ? 'دفعت من' : 'Paid from'}</REyebrow>
-                      {pickRow(accts.map((a) => ({ id: a.id, label: a.name })), acct, setAcct, ar ? 'كاش' : 'Cash')}
-                      <RButton full loading={busy} onPress={() => run('pay', { period: p.period, addTransaction: true, cardId: acct ?? undefined }, ar ? 'تعذّر الحفظ' : 'Could not save')}>
-                        {ar ? 'دفعت، وسجّلها كمعاملة' : 'I paid · log it as a transaction'}
-                      </RButton>
-                      <RButton full variant="ghost" disabled={busy} onPress={() => run('pay', { period: p.period }, ar ? 'تعذّر الحفظ' : 'Could not save')}>
-                        {ar ? 'دفعت، بدون تسجيل معاملة' : 'I paid · just mark it'}
-                      </RButton>
-                    </>
-                  ) : (
-                    <RButton full variant="ghost" disabled={busy} onPress={() => run('unpay', { period: p.period }, ar ? 'تعذّر الحفظ' : 'Could not save')}>
-                      {ar ? 'لم أدفعها (تراجع)' : 'Not paid after all (undo)'}
-                    </RButton>
-                  )}
-                  {p.isTurn && !p.received ? (
-                    <>
-                      <REyebrow>{ar ? 'استلمت في' : 'Received into'}</REyebrow>
-                      {pickRow(accts.map((a) => ({ id: a.id, label: a.name })), acct, setAcct, ar ? 'كاش' : 'Cash')}
-                      {goals.length > 0 ? (
-                        <>
-                          <REyebrow>{ar ? 'وجّهها لهدف؟' : 'Put it toward a goal?'}</REyebrow>
-                          {pickRow(goals.map((g) => ({ id: g._id, label: ar ? g.nameAr : g.nameEn })), goalId, setGoalId, ar ? 'لا' : 'No')}
-                        </>
-                      ) : null}
-                      <RButton full loading={busy} onPress={() => run('payout', { period: p.period, addTransaction: true, cardId: acct ?? undefined, goalId: goalId ?? undefined }, ar ? 'تعذّر الحفظ' : 'Could not save')}>
-                        {ar ? `استلمت ${n0(gam.pot)} ${cur}` : `I received ${n0(gam.pot)} ${cur}`}
-                      </RButton>
-                    </>
-                  ) : null}
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </View>
-      <RButton full variant="ghost" onPress={() => Alert.alert(ar ? 'حذف الجمعية؟' : 'Delete this gam3ya?', ar ? 'تبقى المعاملات المسجّلة.' : 'Entries already logged stay.', [
-        { text: ar ? 'إلغاء' : 'Cancel', style: 'cancel' },
-        { text: ar ? 'حذف' : 'Delete', style: 'destructive', onPress: async () => { await apiFetch(`/gam3ya/${gam.id}`, { method: 'DELETE' }).catch(() => {}); onChanged(); onClose(); } },
-      ])}>{ar ? 'حذف الجمعية' : 'Delete this gam3ya'}</RButton>
     </Sheet>
   );
 }
