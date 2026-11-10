@@ -7,7 +7,7 @@ import { useAppData } from '../lib/appData';
 import { apiFetch, hasToken } from '../lib/api';
 import { fontBody, fontMono } from '../lib/fonts';
 import { RCard, REyebrow, RAmount, RProgress } from './ui';
-import { DailyLimitSheet, type DailyLimitInfo } from './MoneySheets';
+import { DailyBudgetSheet, type DailyBudgetInfo } from './MoneySheets';
 import type { CardSummary } from '../lib/cards';
 import type { DashboardData } from './dashboards';
 
@@ -96,62 +96,69 @@ export function AccountsOverview({ currency }: { currency: string }) {
 
 
 /**
- * The daily limit on Home: how much is left today against the limit you set, and the goal it serves. With no limit
- * yet it is a quiet one-line invitation to set one.
+ * Today's budget on Home, worked out by Seshat from income, spending and goals: how much is left to spend today to
+ * keep the saving target, and why. Nothing to type; tap for the working and the saving rate.
  */
-export function DailyLimitCard() {
+export function DailyBudgetCard() {
   const { tok, lang } = useI18n();
   const { dataVersion } = useAppData();
   const ar = lang === 'ar';
-  const [info, setInfo] = useState<DailyLimitInfo | null>(null);
+  const [info, setInfo] = useState<DailyBudgetInfo | null>(null);
   const [open, setOpen] = useState(false);
 
   const load = () => {
     hasToken().then((ok) => {
       if (!ok) return;
-      apiFetch<{ data: DailyLimitInfo }>('/me/daily-limit').then((r) => setInfo(r.data)).catch(() => {});
+      apiFetch<{ data: DailyBudgetInfo }>('/me/daily-budget').then((r) => setInfo(r.data)).catch(() => {});
     });
   };
   useEffect(load, [dataVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!info) return null;
-  const lim = info.limit;
-  const over = lim ? info.spentToday > lim.amount : false;
-  const daysLeft = lim?.until ? Math.max(0, Math.ceil((new Date(lim.until).getTime() - Date.now()) / 86400000)) : null;
+  const cur = info.currency;
+  const n = (v: number) => Math.round(v).toLocaleString('en-US');
+  const over = info.ready && (info.leftToday ?? 0) < 0;
+  const reason = info.ready
+    ? info.overMonth
+      ? (ar ? 'هذا الشهر تجاوز خطته، لذلك ميزانية اليوم صفر.' : 'This month is already past its plan, so today’s budget is zero.')
+      : info.saveReason === 'goals' && (info.goals ?? []).length > 0
+        ? (ar ? `لتصل إلى ${(info.goals ?? []).map((g) => g.nameAr).join(' و')}.` : `To reach ${(info.goals ?? []).map((g) => g.name).join(' and ')}.`)
+        : (ar ? `هذا ${Math.round(info.savingRate * 100)}٪ من دخلك.` : `That is ${Math.round(info.savingRate * 100)}% of your income.`)
+    : '';
   return (
     <>
       <Pressable onPress={() => setOpen(true)} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
         <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
-          {lim ? (
+          {info.ready ? (
             <>
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <REyebrow>{ar ? 'حدّ اليوم' : "Today's limit"}</REyebrow>
-                {daysLeft !== null ? (
-                  <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted }}>
-                    {ar ? `${daysLeft} يوم متبقٍّ` : `${daysLeft} days left`}
-                  </Text>
-                ) : null}
+                <REyebrow>{ar ? 'ميزانية اليوم' : "Today's budget"}</REyebrow>
+                <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted }}>
+                  {ar ? `${info.daysLeft} يوم متبقٍّ` : `${info.daysLeft} days left`}
+                </Text>
               </View>
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'baseline', gap: 8 }}>
-                <RAmount value={Math.abs(info.leftToday ?? 0)} currency={info.currency} size={26} decimals={0} color={over ? tok.alertText : undefined} />
+                <RAmount value={Math.abs(info.leftToday ?? 0)} currency={cur} size={26} decimals={0} color={over ? tok.alertText : undefined} />
                 <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: over ? tok.alertText : tok.muted }}>
-                  {over ? (ar ? 'فوق الحدّ' : 'over the limit') : (ar ? 'متبقٍّ اليوم' : 'left today')}
+                  {over ? (ar ? 'فوق ميزانية اليوم' : 'over today’s budget') : (ar ? 'متبقٍّ لك اليوم' : 'left to spend today')}
                 </Text>
               </View>
               <View style={{ marginTop: 10 }}>
-                <RProgress value={info.spentToday} max={lim.amount} color={over ? tok.alertText : tok.gold} height={6} />
+                <RProgress value={info.spentToday ?? 0} max={Math.max(1, info.dailyBudget ?? 1)} color={over ? tok.alertText : tok.gold} height={6} />
               </View>
-              <Text style={{ marginTop: 8, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
-                {ar ? 'أنفقت' : 'Spent'} {Math.round(info.spentToday).toLocaleString('en-US')} / {Math.round(lim.amount).toLocaleString('en-US')} {info.currency}
-                {info.goal ? `  ·  ${ar ? info.goal.nameAr : info.goal.name}` : ''}
+              <Text style={{ marginTop: 10, fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
+                {ar
+                  ? `أنفق حتى ${n(info.dailyBudget ?? 0)} ${cur} اليوم لتحتفظ بـ ${n(info.saveTarget ?? 0)} ${cur} بنهاية الشهر.`
+                  : `Spend up to ${n(info.dailyBudget ?? 0)} ${cur} today to keep ${n(info.saveTarget ?? 0)} ${cur} by the end of the month.`}
               </Text>
+              <Text style={{ marginTop: 4, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{reason}</Text>
             </>
           ) : (
             <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flex: 1 }}>
-                <REyebrow style={{ marginBottom: 4, textAlign: ar ? 'right' : 'left' }}>{ar ? 'حدّ الإنفاق اليومي' : 'Daily limit'}</REyebrow>
+                <REyebrow style={{ marginBottom: 4, textAlign: ar ? 'right' : 'left' }}>{ar ? 'ميزانية اليوم' : "Today's budget"}</REyebrow>
                 <Text style={{ fontFamily: fontBody(lang), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
-                  {ar ? 'ضع حدّاً يومياً لتصل إلى هدفك.' : 'Set a limit per day to reach a goal.'}
+                  {ar ? 'أخبر سيشات بدخلك الشهري لتعرف كم تنفق كل يوم.' : 'Tell Seshat your monthly income to see what to spend each day.'}
                 </Text>
               </View>
               <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
@@ -159,7 +166,7 @@ export function DailyLimitCard() {
           )}
         </RCard>
       </Pressable>
-      <DailyLimitSheet visible={open} onClose={() => setOpen(false)} info={info} onDone={load} />
+      <DailyBudgetSheet visible={open} onClose={() => setOpen(false)} info={info} onDone={load} />
     </>
   );
 }
