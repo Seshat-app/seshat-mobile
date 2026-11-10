@@ -766,7 +766,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             <View style={{
               marginHorizontal: 18, marginTop: 4, marginBottom: 8, borderRadius: 14, paddingLeft: lang === 'ar' ? 0 : 14, paddingRight: lang === 'ar' ? 14 : 0,
               backgroundColor: tok.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-              flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', height: 50,
+              flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', height: 58,
             }}>
               <Text style={{
                 fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: lang === 'ar' ? 0 : 1.4,
@@ -777,7 +777,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={{ flex: 1, height: 36 }}
+                style={{ flex: 1, height: 48 }}
                 contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 12, alignItems: 'center' }}
               >
                 {sources.map((c) => (
