@@ -22,6 +22,8 @@ type Goal = {
   savedAmount: number;
   currency: string;
   deadline?: string;
+  progressAmount?: number;
+  linkedSavings?: number;
 };
 
 export default function GoalsScreen() {
@@ -123,7 +125,8 @@ function EmptyState({ text, sub }: { text: string; sub: string }) {
 
 function GoalRow({ goal, onPress }: { goal: Goal; onPress: () => void }) {
   const { tok, lang } = useI18n();
-  const pct = goal.targetAmount > 0 ? Math.min(100, (goal.savedAmount / goal.targetAmount) * 100) : 0;
+  const progress = goal.progressAmount ?? goal.savedAmount;
+  const pct = goal.targetAmount > 0 ? Math.min(100, (progress / goal.targetAmount) * 100) : 0;
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
       <RCard padding={16}>
@@ -145,7 +148,7 @@ function GoalRow({ goal, onPress }: { goal: Goal; onPress: () => void }) {
           marginTop: 4, color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11,
           textAlign: lang === 'ar' ? 'right' : 'left', writingDirection: 'ltr',
         }}>
-          {formatAmount(goal.savedAmount, { decimals: 0 })} / {formatAmount(goal.targetAmount, { decimals: 0 })} {currencyLabel(goal.currency, lang)}
+          {formatAmount(progress, { decimals: 0 })} / {formatAmount(goal.targetAmount, { decimals: 0 })} {currencyLabel(goal.currency, lang)}
         </Text>
         <View style={{ marginTop: 10 }}>
           <RProgress value={pct} max={100} color={tok.gold} height={3} />

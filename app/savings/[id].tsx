@@ -9,6 +9,7 @@ import { fontBody, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RButton, RField } from '../../components/ui';
 import { PlanScreen } from '../../components/PlanShell';
 import { TradeSheet, type Holding } from '../../components/SavingsSheets';
+import { RPill } from '../../components/ui';
 import { emitDataChanged } from '../../lib/dataEvents';
 
 const n0 = (v: number) => Math.round(v).toLocaleString('en-US');
@@ -24,12 +25,14 @@ export default function HoldingScreen() {
   const [trade, setTrade] = useState<'buy' | 'sell' | null>(null);
   const [price, setPrice] = useState('');
   const [premium, setPremium] = useState('');
+  const [goals, setGoals] = useState<Array<{ _id: string; nameEn: string; nameAr: string; savedAmount: number; targetAmount: number }>>([]);
 
   const load = useCallback(async () => {
     try { const r = await apiFetch<{ data: Holding }>(`/savings/${id}`); setH(r.data); setPremium(String(r.data.premiumPct || '')); }
     catch { setH(null); }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { apiFetch<{ data: typeof goals }>('/goals').then((r) => setGoals(r.data)).catch(() => {}); }, []);
 
   if (h === undefined) return <PlanScreen title="">{null}</PlanScreen>;
   if (h === null) return <PlanScreen title={ar ? 'ادخار' : 'Saving'}><View style={{ padding: 24, alignItems: 'center' }}><Text style={{ color: tok.muted }}>{ar ? 'غير موجود.' : 'Not found.'}</Text></View></PlanScreen>;
@@ -77,6 +80,16 @@ export default function HoldingScreen() {
           <RCard padding={16}>
             <RField label={ar ? 'سعر الوحدة الحالي' : 'Current price per unit'} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
             <View style={{ marginTop: 10 }}><RButton full variant="ghost" disabled={!(parseFloat(price) > 0)} onPress={() => { void patch({ manualPrice: parseFloat(price) }); setPrice(''); }}>{ar ? 'حدّث السعر' : 'Update the price'}</RButton></View>
+          </RCard>
+        )}
+
+        {goals.length > 0 && (
+          <RCard padding={16}>
+            <REyebrow style={{ marginBottom: 10, textAlign: ar ? 'right' : 'left' }}>{ar ? 'يُحتسب لهدف' : 'Counts toward a goal'}</REyebrow>
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
+              <RPill active={!(h as Holding & { goalId?: string | null }).goalId} onPress={() => patch({ goalId: '' })}>{ar ? 'لا' : 'None'}</RPill>
+              {goals.map((g) => <RPill key={g._id} active={(h as Holding & { goalId?: string | null }).goalId === g._id} onPress={() => patch({ goalId: g._id })}>{ar ? g.nameAr : g.nameEn}</RPill>)}
+            </View>
           </RCard>
         )}
 

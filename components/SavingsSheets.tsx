@@ -10,7 +10,7 @@ import { emitDataChanged } from '../lib/dataEvents';
 export type Holding = {
   id: string; type: 'gold' | 'currency' | 'crypto' | 'other'; name: string; symbol: string | null; karat: number | null; unit: string; premiumPct: number;
   currency: string; quantity: number; cost: number; avgPrice: number; realized: number; unitPrice: number | null; priceSource: 'feed' | 'manual' | 'none'; priceAt: string | null;
-  value: number | null; gain: number | null; gainPct: number | null;
+  value: number | null; gain: number | null; gainPct: number | null; goalId?: string | null;
   lots: Array<{ kind: 'buy' | 'sell'; date: string; quantity: number; unitPrice: number; fees: number }>;
 };
 type Acct = { id: string; name: string };
