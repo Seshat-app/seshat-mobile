@@ -615,6 +615,22 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                 <Sparkles size={18} color={tok.gold} />
               </Pressable>
             )}
+            {!seshatMode && (
+              <Pressable
+                onPress={() => { hapticLight(); setShowNotes((v) => !v); }}
+                style={({ pressed }) => ({
+                  position: 'absolute', right: 20, top: '50%', marginTop: -19,
+                  borderWidth: StyleSheet.hairlineWidth, borderColor: notes.trim() ? tok.gold : tok.border, borderRadius: 10,
+                  width: 38, height: 38, alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: pressed ? tok.surface : 'transparent',
+                  zIndex: 10,
+                })}
+                accessibilityLabel={lang === 'ar' ? 'ملاحظة' : 'Note'}
+              >
+                <NotebookPen size={17} color={notes.trim() || showNotes ? tok.gold : tok.muted} />
+                {notes.trim() ? <View style={{ position: 'absolute', top: 5, right: 5, width: 7, height: 7, borderRadius: 3.5, backgroundColor: tok.gold }} /> : null}
+              </Pressable>
+            )}
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 22, marginRight: 8 }}>
                 {type === 'expense' ? '−' : '+'}
@@ -628,12 +644,12 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                 keyboardType="decimal-pad"
                 inputMode="decimal"
                 selectionColor={tok.gold}
-                maxLength={12}
+                maxLength={10}
                 accessibilityLabel={lang === 'ar' ? 'المبلغ' : 'Amount'}
                 style={{
-                  color: amountColor, fontFamily: fontMono('medium'), fontSize: (amount.length > 9 ? 30 : amount.length > 7 ? 38 : 46), letterSpacing: -1.5,
+                  color: amountColor, fontFamily: fontMono('medium'), fontSize: (amount.length > 8 ? 30 : amount.length > 6 ? 38 : 46), letterSpacing: -1.5,
                   writingDirection: 'ltr', textAlign: 'center', padding: 0,
-                  width: Math.max(48, (amount === '0' ? 1 : amount.length) * (amount.length > 9 ? 30 : amount.length > 7 ? 38 : 46) * 0.62 + 6),
+                  width: Math.max(48, (amount === '0' ? 1 : amount.length) * (amount.length > 8 ? 30 : amount.length > 6 ? 38 : 46) * 0.62 + 6),
                 }}
               />
               <Pressable onPress={() => { hapticLight(); setShowCurrencies((v) => !v); }} hitSlop={10} style={{ marginLeft: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -929,8 +945,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
 
           </ScrollView>
 
-          {/* Note: a full-width field row above Save (same height as the other controls), not a floating pill. */}
-          <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
+          {/* Note: opened from the icon beside the amount; takes no room until then. */}
+          <View style={{ paddingHorizontal: 18, paddingTop: showNotes || type === 'income' ? 8 : 0 }}>
             {showNotes ? (
               <RField
                 value={notes}
@@ -940,20 +956,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                 minHeight={64}
                 autoFocus
               />
-            ) : (
-              <Pressable
-                onPress={() => setShowNotes(true)}
-                style={({ pressed }) => ({
-                  height: 48, borderRadius: 14, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
-                  backgroundColor: pressed ? tok.elevated : tok.surface, flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 10,
-                })}
-              >
-                <NotebookPen size={16} color={notes.trim() ? tok.gold : tok.muted} />
-                <Text numberOfLines={1} style={{ flex: 1, color: notes.trim() ? tok.bone : tok.muted, fontFamily: fontBody(lang), fontSize: 14, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-                  {notes.trim() || (lang === 'ar' ? 'أضف ملاحظة (اختياري)' : 'Add a note (optional)')}
-                </Text>
-              </Pressable>
-            )}
+            ) : null}
             {type === 'income' && (
               <View style={{ marginTop: 8, flexDirection: lang === 'ar' ? 'row-reverse' : 'row' }}>
                 <RPill
