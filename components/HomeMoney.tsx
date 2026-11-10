@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight, Landmark, CreditCard, Wallet, Banknote } from 'lucide-react-native';
+import { ChevronRight, Landmark, CreditCard, Wallet, Banknote, Users } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { apiFetch, hasToken } from '../lib/api';
@@ -61,8 +61,12 @@ export function AccountsOverview({ currency }: { currency: string }) {
   }, [dataVersion]);
 
   const total = useMemo(() => (cards ?? []).reduce((a, c) => a + (c.balance ?? 0), 0), [cards]);
-  if (!cards || cards.length === 0) return null;
-  const top = [...cards].sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)).slice(0, 4);
+  // Only the default Cash? Nothing to overview yet: the card appears once a real account exists.
+  if (!cards || !cards.some((c) => c.kind !== 'cash')) return null;
+  // Most used first (entries this month, then overall), then the biggest balance; five rows at most.
+  const top = [...cards]
+    .sort((a, b) => (b.month?.count ?? 0) - (a.month?.count ?? 0) || (b.total?.count ?? 0) - (a.total?.count ?? 0) || Math.abs(b.balance) - Math.abs(a.balance))
+    .slice(0, 5);
 
   return (
     <Pressable onPress={() => router.push('/cards')} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
@@ -94,6 +98,55 @@ export function AccountsOverview({ currency }: { currency: string }) {
   );
 }
 
+
+type CircleRow = {
+  id: string; name: string; frequency: 'monthly' | 'weekly'; currency: string; archived?: boolean; paymentPerPeriod: number;
+  paidCount: number; members: number; overdue: number; finished: boolean; nextDue: { due: string } | null;
+};
+
+/** The user's gam3yas at a glance: progress and what is due. Not shown at all when there are none. */
+export function Gam3yaOverview() {
+  const { tok, lang } = useI18n();
+  const { dataVersion } = useAppData();
+  const router = useRouter();
+  const ar = lang === 'ar';
+  const [rows, setRows] = useState<CircleRow[]>([]);
+  useEffect(() => {
+    let alive = true;
+    hasToken().then((ok) => {
+      if (!ok) return;
+      apiFetch<{ data: CircleRow[] }>('/gam3ya').then((r) => { if (alive) setRows(r.data.filter((g) => !g.archived)); }).catch(() => {});
+    });
+    return () => { alive = false; };
+  }, [dataVersion]);
+  if (rows.length === 0) return null;
+  const list = [...rows].sort((a, b) => b.overdue - a.overdue).slice(0, 5);
+  return (
+    <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
+      <Pressable onPress={() => router.push('/gam3ya' as never)} style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <REyebrow>{ar ? 'جمعياتك' : 'Your gam3yas'}</REyebrow>
+        <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
+      </Pressable>
+      <View style={{ gap: 14 }}>
+        {list.map((g) => (
+          <Pressable key={g.id} onPress={() => router.push(`/gam3ya/${g.id}` as never)} style={{ gap: 6 }}>
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
+              <Users size={15} color={tok.gold} />
+              <Text numberOfLines={1} style={{ flex: 1, fontFamily: fontBody(lang), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{g.name}</Text>
+              <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: g.overdue > 0 ? tok.alertText : tok.muted }}>
+                {g.overdue > 0 ? (ar ? `${g.overdue} مستحق` : `${g.overdue} due`) : g.finished ? (ar ? 'انتهت' : 'Finished') : g.nextDue ? g.nextDue.due.slice(5, 10) : ''}
+              </Text>
+            </View>
+            <RProgress value={g.paidCount} max={g.members} color={tok.gold} height={3} />
+            <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+              {g.paidCount}/{g.members} · {Math.round(g.paymentPerPeriod).toLocaleString('en-US')} {g.currency} / {g.frequency === 'weekly' ? (ar ? 'أسبوع' : 'week') : (ar ? 'شهر' : 'month')}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </RCard>
+  );
+}
 
 /**
  * Today's budget on Home, worked out by Seshat from income, spending and goals: how much is left to spend today to
