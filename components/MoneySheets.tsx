@@ -15,7 +15,7 @@ import type { CardSummary } from '../lib/cards';
 const ICON = { card: CreditCard, account: Landmark, wallet: Wallet, cash: Banknote } as const;
 
 /** Bottom sheet shell shared by the money-source sheets. */
-function Sheet({ visible, onClose, title, hint, children }: {
+export function Sheet({ visible, onClose, title, hint, children }: {
   visible: boolean; onClose: () => void; title: string; hint?: string; children: React.ReactNode;
 }) {
   const { tok, lang } = useI18n();

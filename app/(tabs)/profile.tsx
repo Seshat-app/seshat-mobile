@@ -7,7 +7,7 @@ import { FrostedHeader } from '../../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, ScanFace, Fingerprint, Sparkles } from 'lucide-react-native';
+import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, ScanFace, Fingerprint, Sparkles, Users } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
@@ -383,6 +383,12 @@ export default function ProfileScreen() {
               title={lang === 'ar' ? 'الأهداف' : 'Goals'}
               hint={lang === 'ar' ? 'ما الذي تدّخر له' : 'What you are saving toward'}
               onPress={() => router.push('/goals')}
+            />
+            <PlanRow
+              icon={Users}
+              title={lang === 'ar' ? 'الجمعيات' : 'Gam3yas'}
+              hint={lang === 'ar' ? 'ما تدفعه وموعد دورك' : 'What you pay and when you collect'}
+              onPress={() => router.push('/gam3ya')}
             />
             <PlanRow
               icon={CreditCard}
