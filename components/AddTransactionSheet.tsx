@@ -500,7 +500,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           }}
         >
           {/* Handle */}
-          <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+          <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 0 }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: tok.borderHi, opacity: 0.6 }} />
           </View>
 
@@ -539,7 +539,14 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                 }}>{lang === 'ar' ? 'لوحة' : 'keypad'}</Text>
               </Pressable>
             ) : (
-              <REyebrow>{t('addTransaction')}</REyebrow>
+              <RSegmented
+                value={type}
+                onChange={setType as any}
+                options={[
+                  { value: 'expense', label: t('expense') },
+                  { value: 'income', label: t('earned') },
+                ]}
+              />
             )}
             <View style={{
               flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
@@ -571,22 +578,24 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </View>
           </View>
 
-          {/* Type toggle */}
-          <View style={{ alignItems: 'center', paddingVertical: 6 }}>
-            <RSegmented
-              value={type}
-              onChange={setType as any}
-              options={[
-                { value: 'expense', label: t('expense') },
-                { value: 'income', label: t('earned') },
-              ]}
-            />
-          </View>
+          {/* Type toggle (Seshat mode only: in keypad mode it lives in the top bar) */}
+          {seshatMode ? (
+            <View style={{ alignItems: 'center', paddingVertical: 4 }}>
+              <RSegmented
+                value={type}
+                onChange={setType as any}
+                options={[
+                  { value: 'expense', label: t('expense') },
+                  { value: 'income', label: t('earned') },
+                ]}
+              />
+            </View>
+          ) : null}
 
           {/* Amount display */}
           <View style={{
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-            paddingHorizontal: 20, paddingTop: 10, paddingBottom: 6,
+            paddingHorizontal: 20, paddingTop: 2, paddingBottom: 2,
             position: 'relative',
           }}>
             {!seshatMode && (
@@ -611,7 +620,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
-                style={{ color: amountColor, fontFamily: fontMono('medium'), fontSize: 58, letterSpacing: -1.5, writingDirection: 'ltr' }}
+                style={{ color: amountColor, fontFamily: fontMono('medium'), fontSize: 52, letterSpacing: -1.5, writingDirection: 'ltr' }}
               >
                 {amount}
               </Text>
@@ -646,18 +655,18 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             bounces={false}
           >
           {/* Detected eyebrow */}
-          <View style={{ height: 16, alignItems: 'center', justifyContent: 'center' }}>
-            {detected && (
+          {detected ? (
+            <View style={{ height: 16, alignItems: 'center', justifyContent: 'center' }}>
               <REyebrow color={tok.gold}>{t('detected')} · {catLabel(selectedCat, lang)}</REyebrow>
-            )}
-          </View>
+            </View>
+          ) : null}
 
           {/* Category icon row — fixed height + flexShrink:0 so a horizontal
               ScrollView inside a flex column doesn't stretch vertically */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0, flexShrink: 0, height: 74 }}
+            style={{ flexGrow: 0, flexShrink: 0, height: 70 }}
             contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 6, alignItems: 'center' }}
           >
             {filteredCats.map((c) => {
@@ -755,20 +764,21 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               preselected; tap another account to change it. */}
           {sources.length > 0 ? (
             <View style={{
-              marginHorizontal: 18, marginTop: 6, marginBottom: 6, paddingVertical: 10, borderRadius: 14,
+              marginHorizontal: 18, marginTop: 4, marginBottom: 8, borderRadius: 14, paddingLeft: lang === 'ar' ? 0 : 14, paddingRight: lang === 'ar' ? 14 : 0,
               backgroundColor: tok.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
+              flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', height: 50,
             }}>
               <Text style={{
-                paddingHorizontal: 14, marginBottom: 8, fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: lang === 'ar' ? 0 : 1.6,
-                color: tok.muted, textAlign: lang === 'ar' ? 'right' : 'left', textTransform: lang === 'ar' ? 'none' : 'uppercase',
+                fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: lang === 'ar' ? 0 : 1.4,
+                color: tok.muted, textTransform: lang === 'ar' ? 'none' : 'uppercase',
               }}>
-                {type === 'income' ? (lang === 'ar' ? 'استلمتُ في' : 'Received in') : (lang === 'ar' ? 'دفعتُ من' : 'Paid from')}
+                {type === 'income' ? (lang === 'ar' ? 'استلمتُ في' : 'Into') : (lang === 'ar' ? 'دفعتُ من' : 'From')}
               </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={{ flexGrow: 0, flexShrink: 0, height: 36 }}
-                contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 14, alignItems: 'center' }}
+                style={{ flex: 1, height: 36 }}
+                contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, paddingHorizontal: 12, alignItems: 'center' }}
               >
                 {sources.map((c) => (
                   <RPill key={c.id} active={cardId === c.id} onPress={() => { setSourceTouched(true); setCardId(c.id); }}>{c.name}</RPill>
@@ -777,39 +787,8 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </View>
           ) : null}
 
-          {/* Body — keypad mode reserves 300px for the 4-row grid; Seshat
-              mode uses natural height so the input sits above the system
-              keyboard without being clipped. */}
-          {!seshatMode ? (
-            <View style={{ height: kbHeight > 0 ? 0 : 300, overflow: 'hidden', paddingHorizontal: 16, paddingTop: kbHeight > 0 ? 0 : 8 }}>
-              <View style={{ flex: 1, gap: 8 }}>
-                {keyRows.map((row, i) => (
-                  <View key={i} style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
-                    {row.map((k) => (
-                      <Pressable
-                        key={k}
-                        onPress={() => { hapticLight(); press(k); }}
-                        onLongPress={k === '⌫' ? () => setAmount('0') : undefined}
-                        style={({ pressed }) => ({
-                          flex: 1,
-                          borderRadius: 16,
-                          backgroundColor: pressed ? 'rgba(201,168,76,0.22)' : tok.surface,
-                          borderWidth: 1, borderColor: pressed ? tok.gold : tok.border,
-                          alignItems: 'center', justifyContent: 'center',
-                        })}
-                      >
-                        {k === '⌫' ? (
-                          <Delete size={22} color={tok.muted} />
-                        ) : (
-                          <Text style={{ color: tok.bone, fontFamily: fontMono('regular'), fontSize: 27 }}>{k}</Text>
-                        )}
-                      </Pressable>
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : (
+          {/* Seshat (talk/type) mode: its body scrolls with the rest. */}
+          {seshatMode ? (
             <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}>
               <Text style={{
                 fontFamily: fontHead(lang),
@@ -934,9 +913,42 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                 </Pressable>
               )}
             </View>
-          )}
+          ) : null}
 
           </ScrollView>
+
+          {/* The keypad is NOT inside the scroll: on a short phone the categories and accounts above shrink and scroll,
+              the keypad, note and Save stay whole. */}
+          {!seshatMode ? (
+            <View style={{ height: kbHeight > 0 ? 0 : 248, overflow: 'hidden', paddingHorizontal: 16, paddingTop: kbHeight > 0 ? 0 : 8 }}>
+              <View style={{ flex: 1, gap: 8 }}>
+                {keyRows.map((row, i) => (
+                  <View key={i} style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
+                    {row.map((k) => (
+                      <Pressable
+                        key={k}
+                        onPress={() => { hapticLight(); press(k); }}
+                        onLongPress={k === '⌫' ? () => setAmount('0') : undefined}
+                        style={({ pressed }) => ({
+                          flex: 1,
+                          borderRadius: 16,
+                          backgroundColor: pressed ? 'rgba(201,168,76,0.22)' : tok.surface,
+                          borderWidth: 1, borderColor: pressed ? tok.gold : tok.border,
+                          alignItems: 'center', justifyContent: 'center',
+                        })}
+                      >
+                        {k === '⌫' ? (
+                          <Delete size={22} color={tok.muted} />
+                        ) : (
+                          <Text style={{ color: tok.bone, fontFamily: fontMono('regular'), fontSize: 27 }}>{k}</Text>
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
 
           {/* Note: a full-width field row above Save (same height as the other controls), not a floating pill. */}
           <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
