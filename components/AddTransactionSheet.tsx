@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Pressable, ScrollView, StyleSheet, Animated, Easing,
-  Modal, Alert, Platform, useWindowDimensions,
+  Modal, Alert, Platform, useWindowDimensions, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, X, Sparkles, Mic, Delete, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers, Plus, ChevronDown } from 'lucide-react-native';
+import { ChevronLeft, X, Sparkles, Mic, Receipt, NotebookPen, Repeat, Zap, Camera, Image as ImageIcon, Layers, Plus, ChevronDown } from 'lucide-react-native';
 import { AddBySeshatPanel } from './AddBySeshatPanel';
 import * as ImagePicker from 'expo-image-picker';
 import { useI18n, currencyLabel, localDateStr } from '../lib/i18n';
@@ -154,7 +154,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     if (catId && !filteredCats.find((c) => c._id === catId) && filteredCats.length) {
       setCatId(filteredCats[0]._id);
     }
-  }, [filteredCats]);
+  }, [filteredCats, visible]);
 
   // Reset on close
   useEffect(() => {
@@ -242,14 +242,26 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   const numericAmount = parseFloat(amount) || 0;
   const canSave = numericAmount > 0 && !!catId && !saving;
 
-  const press = (k: string) => {
-    setAmount((prev) => {
-      if (k === '⌫') return prev.length <= 1 ? '0' : prev.slice(0, -1);
-      if (k === '.') return prev.includes('.') ? prev : prev + '.';
-      if (prev === '0') return k;
-      return prev + k;
-    });
+  // The amount is typed on the phone's own keyboard. Accept Arabic-Indic digits and a comma/Arabic decimal mark,
+  // keep one dot and at most two decimals.
+  const amountRef = useRef<TextInput>(null);
+  const onAmountText = (raw: string) => {
+    const ascii = raw
+      .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+      .replace(/[,\u066B\u060C]/g, '.');
+    let clean = ascii.replace(/[^0-9.]/g, '');
+    const dot = clean.indexOf('.');
+    if (dot !== -1) clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '').slice(0, 2);
+    clean = clean.replace(/^0+(?=\d)/, '');
+    setAmount(clean === '' || clean === '.' ? (clean === '.' ? '0.' : '0') : clean);
   };
+  // Open the keyboard on the amount as soon as the sheet is up (and when coming back from talk-to-Seshat mode).
+  useEffect(() => {
+    if (!visible || seshatMode) return;
+    const id = setTimeout(() => amountRef.current?.focus(), 380);
+    return () => clearTimeout(id);
+  }, [visible, seshatMode]);
 
   const createCategory = async () => {
     const name = newCatName.trim();
@@ -460,16 +472,6 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
     ? ['صرفت ٢٠٠ على أكل', 'أوبر ١٤٢', 'قهوة ٨٥']
     : ['spent 200 on food', 'uber 142', 'coffee 85'];
 
-  // 4 rows × 3 cells. We render row-by-row instead of flex-wrap because RN's
-  // flex-basis + grow combo on a wrap container makes the third cell drop to a
-  // new line on narrower screens.
-  const keyRows: string[][] = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    ['.', '0', '⌫'],
-  ];
-
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={{ flex: 1 }}>
@@ -493,10 +495,10 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             // Without this, when the keyboard pushes the sheet up the top edge
             // (with the × + back chevron) slides into the unsafe area and
             // becomes untappable.
-            paddingTop: kbHeight > 0 ? insets.top : 0,
+            paddingTop: 0,
             marginBottom: kbLift,
             transform: [{ translateY: translate }],
-            maxHeight: kbHeight > 0 ? winHeight - kbLift : '90%',
+            maxHeight: kbHeight > 0 ? winHeight - kbLift - insets.top : '90%',
           }}
         >
           {/* Handle */}
@@ -617,13 +619,23 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
               <Text style={{ color: tok.muted, fontFamily: fontMono('regular'), fontSize: 22, marginRight: 8 }}>
                 {type === 'expense' ? '−' : '+'}
               </Text>
-              <Text
-                adjustsFontSizeToFit
-                numberOfLines={1}
-                style={{ color: amountColor, fontFamily: fontMono('medium'), fontSize: 52, letterSpacing: -1.5, writingDirection: 'ltr' }}
-              >
-                {amount}
-              </Text>
+              <TextInput
+                ref={amountRef}
+                value={amount === '0' ? '' : amount}
+                onChangeText={onAmountText}
+                placeholder="0"
+                placeholderTextColor={tok.muted}
+                keyboardType="decimal-pad"
+                inputMode="decimal"
+                selectionColor={tok.gold}
+                maxLength={12}
+                accessibilityLabel={lang === 'ar' ? 'المبلغ' : 'Amount'}
+                style={{
+                  color: amountColor, fontFamily: fontMono('medium'), fontSize: (amount.length > 9 ? 30 : amount.length > 7 ? 38 : 46), letterSpacing: -1.5,
+                  writingDirection: 'ltr', textAlign: 'center', padding: 0,
+                  width: Math.max(48, (amount === '0' ? 1 : amount.length) * (amount.length > 9 ? 30 : amount.length > 7 ? 38 : 46) * 0.62 + 6),
+                }}
+              />
               <Pressable onPress={() => { hapticLight(); setShowCurrencies((v) => !v); }} hitSlop={10} style={{ marginLeft: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Text style={{ color: entryCurrency !== defaultCurrency ? tok.gold : tok.muted, fontFamily: fontMono('regular'), fontSize: 18 }}>
                   {currencyLabel(entryCurrency, lang)}
@@ -666,7 +678,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0, flexShrink: 0, height: 70 }}
+            style={{ flexGrow: 0, flexShrink: 0, height: 64 }}
             contentContainerStyle={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 6, alignItems: 'center' }}
           >
             {filteredCats.map((c) => {
@@ -680,12 +692,12 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   style={{ alignItems: 'center', gap: 5, paddingHorizontal: 2 }}
                 >
                   <View style={{
-                    width: 44, height: 44, borderRadius: 12,
+                    width: 40, height: 40, borderRadius: 12,
                     backgroundColor: a ? tok.gold : tok.surface,
                     borderWidth: 1, borderColor: a ? tok.gold : tok.border,
                     alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <CategoryIcon cat={id} size={22} color={a ? tok.void : tok.bone} />
+                    <CategoryIcon cat={id} size={20} color={a ? tok.void : tok.bone} />
                   </View>
                   <Text
                     numberOfLines={1}
@@ -916,39 +928,6 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           ) : null}
 
           </ScrollView>
-
-          {/* The keypad is NOT inside the scroll: on a short phone the categories and accounts above shrink and scroll,
-              the keypad, note and Save stay whole. */}
-          {!seshatMode ? (
-            <View style={{ height: kbHeight > 0 ? 0 : 248, overflow: 'hidden', paddingHorizontal: 16, paddingTop: kbHeight > 0 ? 0 : 8 }}>
-              <View style={{ flex: 1, gap: 8 }}>
-                {keyRows.map((row, i) => (
-                  <View key={i} style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
-                    {row.map((k) => (
-                      <Pressable
-                        key={k}
-                        onPress={() => { hapticLight(); press(k); }}
-                        onLongPress={k === '⌫' ? () => setAmount('0') : undefined}
-                        style={({ pressed }) => ({
-                          flex: 1,
-                          borderRadius: 16,
-                          backgroundColor: pressed ? 'rgba(201,168,76,0.22)' : tok.surface,
-                          borderWidth: 1, borderColor: pressed ? tok.gold : tok.border,
-                          alignItems: 'center', justifyContent: 'center',
-                        })}
-                      >
-                        {k === '⌫' ? (
-                          <Delete size={22} color={tok.muted} />
-                        ) : (
-                          <Text style={{ color: tok.bone, fontFamily: fontMono('regular'), fontSize: 27 }}>{k}</Text>
-                        )}
-                      </Pressable>
-                    ))}
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
 
           {/* Note: a full-width field row above Save (same height as the other controls), not a floating pill. */}
           <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
