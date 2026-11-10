@@ -134,7 +134,7 @@ export function OnboardingTour({
                   <RField label={ar ? 'الاسم' : 'Name'} value={name} onChange={setName}
                     placeholder={ar ? 'اسمك' : 'Your name'} autoFocus />
                   <RField label={ar ? 'الاسم بالعربي' : 'Arabic name'} value={nameAr} onChange={setNameAr}
-                    placeholder={ar ? 'للترحيب بالعربية' : 'مؤمن'} />
+                    placeholder={ar ? 'للترحيب بالعربية' : 'Your name in Arabic'} />
                 </View>
                 <Spacer />
                 <CTA label={ar ? 'متابعة' : 'Continue'} onPress={goNext} />
