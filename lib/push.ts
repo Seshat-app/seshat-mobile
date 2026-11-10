@@ -72,6 +72,16 @@ export async function registerForPushNotifications(): Promise<string | null> {
       { identifier: 'spending', buttonTitle: 'No, spending', options: { opensAppToForeground: true } },
     ]).catch(() => {});
 
+    // Gam3ya reminders: answer the question from the notification itself.
+    await Notifications.setNotificationCategoryAsync('gam3ya_pay', [
+      { identifier: 'paid', buttonTitle: 'I paid', options: { opensAppToForeground: true } },
+      { identifier: 'notyet', buttonTitle: 'Not yet', options: { opensAppToForeground: true } },
+    ]).catch(() => {});
+    await Notifications.setNotificationCategoryAsync('gam3ya_payout', [
+      { identifier: 'received', buttonTitle: 'I received it', options: { opensAppToForeground: true } },
+      { identifier: 'notyet', buttonTitle: 'Not yet', options: { opensAppToForeground: true } },
+    ]).catch(() => {});
+
     const { status: existing } = await Notifications.getPermissionsAsync();
     let status = existing;
     if (existing !== 'granted') {
@@ -186,6 +196,21 @@ export function subscribeToNotificationTaps(
       const id = data?.transactionId ?? data?.meta?.transactionId;
       const action = response.actionIdentifier === 'atm' || response.actionIdentifier === 'spending' ? response.actionIdentifier : undefined;
       router.push({ pathname: '/review', params: { ...(id ? { id } : {}), ...(action ? { action } : {}) } });
+      return;
+    }
+    // A gam3ya payment or turn: "I paid" / "I received it" answers it right away, then the circle opens.
+    if (data?.type === 'gam3ya' || data?.meta?.kind === 'gam3ya') {
+      const d = data as unknown as { gam3yaId?: string; period?: number; meta?: { gam3yaId?: string; period?: number } };
+      const gid = d.gam3yaId ?? d.meta?.gam3yaId;
+      const period = d.period ?? d.meta?.period;
+      const act = response.actionIdentifier;
+      const finish = () => router.push(gid ? (`/gam3ya/${gid}` as never) : ('/gam3ya' as never));
+      if (gid && period && (act === 'paid' || act === 'received')) {
+        const path = act === 'paid' ? 'pay' : 'payout';
+        apiFetch(`/gam3ya/${gid}/${path}`, { method: 'POST', body: JSON.stringify({ period, addTransaction: true }) }).catch(() => {}).finally(finish);
+      } else {
+        finish();
+      }
       return;
     }
     // Periodic "anything to log?" reminder: straight to the add sheet.
