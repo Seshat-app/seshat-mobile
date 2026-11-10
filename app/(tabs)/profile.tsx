@@ -47,6 +47,8 @@ type Profile = {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [wa, setWa] = useState<{ configured: boolean; linked: boolean } | null>(null);
+  useEffect(() => { apiFetch<{ data: { configured: boolean; linked: boolean } }>('/me/whatsapp').then((r) => setWa(r.data)).catch(() => {}); }, []);
   const { tok, lang, t, mode, setMode, setLang } = useI18n();
   const { refresh, profile: appProfile, bumpVersion, openWorkspaceSheet } = useAppData();
   const insets = useSafeAreaInsets();
@@ -490,8 +492,27 @@ export default function ProfileScreen() {
                 } catch (e) { /* fall through to plain URL */ }
                 Linking.openURL(url).catch(() => {});
               }}
-              last
+              last={!wa?.configured}
             />
+            {wa?.configured ? (
+              <PlanRow
+                icon={MessageCircle}
+                title={wa.linked ? (lang === 'ar' ? 'محادثة واتساب · مرتبطة' : 'WhatsApp chat · connected') : (lang === 'ar' ? 'محادثة واتساب' : 'WhatsApp chat')}
+                hint={wa.linked ? (lang === 'ar' ? 'اضغط للفصل' : 'Tap to disconnect') : (lang === 'ar' ? 'سجّل وراجع مصاريفك من واتساب' : 'Log and check your money from WhatsApp')}
+                onPress={async () => {
+                  if (wa.linked) {
+                    await apiFetch('/me/whatsapp', { method: 'DELETE' }).catch(() => {});
+                    setWa({ ...wa, linked: false });
+                    return;
+                  }
+                  try {
+                    const r = await apiFetch<{ data: { deepLink: string } }>('/me/whatsapp/link-token', { method: 'POST' });
+                    if (r.data?.deepLink) Linking.openURL(r.data.deepLink).catch(() => {});
+                  } catch { /* not set up on this server */ }
+                }}
+                last
+              />
+            ) : null}
           </RCard>
         </View>
 
