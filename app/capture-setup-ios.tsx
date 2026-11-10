@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Check } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { PlanScreen } from '../components/PlanShell';
 import { RCard, REyebrow, RButton } from '../components/ui';
+import { CaptureStatus } from '../components/CaptureStatus';
 import { useI18n } from '../lib/i18n';
 import { useAccountCurrency, captureKeywordsFor } from '../lib/captureKeywords';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -44,6 +45,7 @@ export default function CaptureSetupIosScreen() {
       subtitle={ar ? 'لـ iOS - مرة واحدة' : 'iOS - one-time setup'}
     >
       <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + S[6], paddingTop: 8 }}>
+        <CaptureStatus />
         <RCard padding={16} style={{ marginBottom: 14 }}>
           <REyebrow style={{ marginBottom: 6, textAlign: ar ? 'right' : 'left' }}>
             {ar ? 'كيف تعمل؟' : 'How it works'}

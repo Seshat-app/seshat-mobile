@@ -1,3 +1,4 @@
+import { CaptureStatus } from '../components/CaptureStatus';
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Platform, Alert } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
@@ -70,6 +71,7 @@ export default function CaptureSetupAndroidScreen() {
       subtitle={lang === 'ar' ? 'لـ Android · موافقة مرّة واحدة' : 'Android · one-time consent'}
     >
       <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, paddingTop: 8 }}>
+        <CaptureStatus permissionOff={status !== 'authorized' && status !== 'unknown'} />
         <RCard padding={18} style={{ marginBottom: 14 }}>
           <View style={{
             flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
