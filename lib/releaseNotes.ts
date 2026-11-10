@@ -13,6 +13,22 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    id: '2026-11-v1.1.2',
+    version: '1.1.2',
+    date: '2026-11-11',
+    title: { en: "Everything connected", ar: "كل شيء مترابط" },
+    items: [
+      { en: "Today's budget: Seshat works out how much you can spend today from your income, goals, bills, debts and gam3yas, and tells you why. There is no number to type.", ar: "ميزانية اليوم: يحسب سيشات كم يمكنك أن تنفق اليوم من دخلك وأهدافك وفواتيرك وديونك وجمعياتك، ويشرح لك السبب. لا يوجد رقم تكتبه." },
+      { en: "One “Needs you today” card replaces the stack of banners: a gam3ya payment, a bill, a debt, a question from Seshat, a budget close to its cap.", ar: "بطاقة «يحتاجك اليوم» واحدة بدل تكدّس التنبيهات: قسط جمعية، فاتورة، دين، سؤال من سيشات، أو ميزانية قاربت حدّها." },
+      { en: "Gam3yas, monthly or weekly: track what you pay and when you collect. Reminders come back until you answer, and you can answer from the notification.", ar: "الجمعيات، شهرية أو أسبوعية: تابع ما تدفعه وموعد قبضك. التذكير يتكرر حتى تردّ، ويمكنك الرد من الإشعار نفسه." },
+      { en: "Savings & investments: gold, dollars, crypto and anything else you bought, valued from live prices with what you gained or lost over time. Buying moves money out of an account without counting as spending.", ar: "المدخرات والاستثمارات: ذهب ودولار وكريبتو وأي شيء اشتريته، بقيمته من الأسعار الحية ومكسبك أو خسارتك مع الوقت. الشراء يخصم من حسابك دون أن يُحسب مصروفاً." },
+      { en: "Goals have deadlines and count the savings you link to them.", ar: "للأهداف مواعيد، وتحتسب المدخرات التي تربطها بها." },
+      { en: "The Add sheet uses your phone's own keyboard, and the note is a small icon beside the amount.", ar: "شاشة الإضافة تستخدم لوحة مفاتيح هاتفك، والملاحظة أيقونة صغيرة بجانب المبلغ." },
+      { en: "Cards from bank notifications are found more reliably (Arabic digits, bank names), and ATM withdrawals are recognised from real bank messages.", ar: "بطاقات إشعارات البنوك تُلتقط بدقة أكبر (أرقام عربية، أسماء البنوك)، وسحب الصراف يُعرَف من رسائل البنوك الحقيقية." },
+      { en: "Home shows one banner at a time, and the accounts and gam3ya cards appear only when there is something to show.", ar: "الرئيسية تعرض تنبيهاً واحداً في كل مرة، وبطاقتا الحسابات والجمعيات تظهران فقط عند وجود ما يُعرض." },
+    ],
+  },
+  {
     id: '2026-11-v1.1.1',
     version: '1.1.1',
     date: '2026-11-07',
