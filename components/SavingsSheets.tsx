@@ -27,8 +27,9 @@ function useAccounts(visible: boolean) {
   return accts;
 }
 
-/** Add something you bought: gold, foreign currency, crypto, or anything priced by hand. */
-export function AddHoldingSheet({ visible, onClose, onDone }: { visible: boolean; onClose: () => void; onDone: () => void }) {
+/** The form for adding something you bought: gold, foreign currency, crypto, or anything priced by hand. Lives on its own screen. */
+export function HoldingForm({ onDone }: { onDone: () => void }) {
+  const visible = true;
   const { lang } = useI18n();
   const ar = lang === 'ar';
   const accts = useAccounts(visible);
@@ -71,8 +72,7 @@ export function AddHoldingSheet({ visible, onClose, onDone }: { visible: boolean
   const typeLabel = (t: string) => ({ gold: ar ? 'ذهب' : 'Gold', currency: ar ? 'عملة' : 'Currency', crypto: ar ? 'كريبتو' : 'Crypto', other: ar ? 'أخرى' : 'Other' } as Record<string, string>)[t];
 
   return (
-    <Sheet visible={visible} onClose={onClose} title={ar ? 'أضف ادخاراً' : 'Add a saving'}
-      hint={ar ? 'ما اشتريته بفلوسك: ذهب أو دولار أو غيره. يتتبّع سيشات قيمته ومكسبك أو خسارتك.' : 'Something you bought with your money. Seshat tracks its value and what you gained or lost.'}>
+    <View style={{ gap: 16 }}>
       <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
         {TYPES.map((t) => <RPill key={t} active={type === t} onPress={() => setType(t)}>{typeLabel(t)}</RPill>)}
       </View>
@@ -122,7 +122,7 @@ export function AddHoldingSheet({ visible, onClose, onDone }: { visible: boolean
         {ar ? `التكلفة ${Math.round(num(qty) * num(price)).toLocaleString('en-US')}` : `Cost ${Math.round(num(qty) * num(price)).toLocaleString('en-US')}`}
       </Text>}
       <RButton full onPress={save} disabled={!ok} loading={busy}>{ar ? 'احفظ' : 'Save'}</RButton>
-    </Sheet>
+    </View>
   );
 }
 

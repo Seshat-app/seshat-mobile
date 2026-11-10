@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline, Line } from 'react-native-svg';
 import { Coins } from 'lucide-react-native';
@@ -10,7 +10,7 @@ import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
 import { RCard, REyebrow, RButton } from '../components/ui';
 import { PlanScreen } from '../components/PlanShell';
-import { AddHoldingSheet, type Holding } from '../components/SavingsSheets';
+import { type Holding } from '../components/SavingsSheets';
 
 type Overview = {
   currency: string; value: number; cost: number; gain: number; gainPct: number | null; realized: number; stale: boolean;
@@ -29,7 +29,6 @@ export default function SavingsScreen() {
   const router = useRouter();
   const [ov, setOv] = useState<Overview | null>(null);
   const [pts, setPts] = useState<Point[]>([]);
-  const [adding, setAdding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (mode?: 'refresh') => {
@@ -42,6 +41,7 @@ export default function SavingsScreen() {
     finally { setRefreshing(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const up = (ov?.gain ?? 0) >= 0;
   const gainColor = up ? '#6FCF97' : tok.alertText;
@@ -55,7 +55,7 @@ export default function SavingsScreen() {
   })();
 
   return (
-    <PlanScreen title={ar ? 'المدخرات' : 'Savings'} subtitle={ar ? 'ما اشتريته وكم كسبت أو خسرت' : 'What you bought, and what it gained or lost'} onAdd={() => setAdding(true)} refreshing={refreshing}>
+    <PlanScreen title={ar ? 'المدخرات' : 'Savings'} subtitle={ar ? 'ما اشتريته وكم كسبت أو خسرت' : 'What you bought, and what it gained or lost'} onAdd={() => router.push('/savings/new' as never)} refreshing={refreshing}>
       <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8, gap: 12 }} showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load('refresh')} tintColor={tok.gold} colors={[tok.gold]} progressBackgroundColor={tok.surface} />}>
         {ov && ov.holdings.length === 0 ? (
@@ -65,7 +65,7 @@ export default function SavingsScreen() {
             <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 13, textAlign: 'center', maxWidth: 290, lineHeight: 19 }}>
               {ar ? 'اشتريت ذهباً أو دولاراً أو استثمرت في شيء؟ أضفه ليتتبّع سيشات قيمته ومكسبك أو خسارتك.' : 'Bought gold or dollars, or invested in something? Add it and Seshat tracks its value and what you gained or lost.'}
             </Text>
-            <RButton onPress={() => setAdding(true)}>{ar ? 'أضف ادخاراً' : 'Add a saving'}</RButton>
+            <RButton onPress={() => router.push('/savings/new' as never)}>{ar ? 'أضف ادخاراً' : 'Add a saving'}</RButton>
           </View>
         ) : ov ? (
           <>
@@ -123,7 +123,6 @@ export default function SavingsScreen() {
           </>
         ) : null}
       </ScreenScroll>
-      <AddHoldingSheet visible={adding} onClose={() => setAdding(false)} onDone={() => { setAdding(false); void load(); }} />
     </PlanScreen>
   );
 }
