@@ -385,6 +385,12 @@ export default function ProfileScreen() {
               onPress={() => router.push('/goals')}
             />
             <PlanRow
+              icon={Banknote}
+              title={lang === 'ar' ? 'المدخرات والاستثمارات' : 'Savings & investments'}
+              hint={lang === 'ar' ? 'ذهب وعملات وغيرها' : 'Gold, currency and more'}
+              onPress={() => router.push('/savings')}
+            />
+            <PlanRow
               icon={Users}
               title={lang === 'ar' ? 'الجمعيات' : 'Gam3yas'}
               hint={lang === 'ar' ? 'ما تدفعه وموعد دورك' : 'What you pay and when you collect'}

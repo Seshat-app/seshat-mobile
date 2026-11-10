@@ -18,7 +18,7 @@ import {
 import { CaptureShortcutBanner } from '../../components/CaptureShortcutBanner';
 import { UpdateBanner } from '../../components/UpdateBanner';
 import { WidgetsAnnouncement } from '../../components/WidgetsAnnouncement';
-import { TodayCard, AccountsOverview, DailyBudgetCard, Gam3yaOverview, TodayNeeds } from '../../components/HomeMoney';
+import { TodayCard, AccountsOverview, DailyBudgetCard, Gam3yaOverview, TodayNeeds, SavingsCard } from '../../components/HomeMoney';
 import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
@@ -144,6 +144,7 @@ export default function HomeScreen() {
                   <DailyBudgetCard />
                   <AccountsOverview currency={currency} />
                   <Gam3yaOverview />
+                  <SavingsCard />
                   <DashboardBody data={data!} currency={currency} />
                 </>
               )}

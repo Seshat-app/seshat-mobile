@@ -99,6 +99,41 @@ export function AccountsOverview({ currency }: { currency: string }) {
 }
 
 
+type SavingsOv = { currency: string; value: number; gain: number; gainPct: number | null; holdings: Array<{ quantity: number }> };
+
+/** What you have saved or invested, and how it is doing. Not shown until you have added something. */
+export function SavingsCard() {
+  const { tok, lang } = useI18n();
+  const { dataVersion } = useAppData();
+  const router = useRouter();
+  const ar = lang === 'ar';
+  const [ov, setOv] = useState<SavingsOv | null>(null);
+  useEffect(() => {
+    let alive = true;
+    hasToken().then((ok) => {
+      if (!ok) return;
+      apiFetch<{ data: SavingsOv }>('/savings').then((r) => { if (alive) setOv(r.data); }).catch(() => {});
+    });
+    return () => { alive = false; };
+  }, [dataVersion]);
+  if (!ov || !ov.holdings.some((h) => h.quantity > 0)) return null;
+  const up = ov.gain >= 0;
+  return (
+    <Pressable onPress={() => router.push('/savings' as never)} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+      <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
+        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <REyebrow>{ar ? 'مدخراتك واستثماراتك' : 'Your savings & investments'}</REyebrow>
+          <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
+        </View>
+        <RAmount value={ov.value} currency={ov.currency} size={26} decimals={0} />
+        <Text style={{ marginTop: 6, fontFamily: fontMono('regular'), fontSize: 12, color: up ? '#6FCF97' : tok.alertText, textAlign: ar ? 'right' : 'left' }}>
+          {up ? (ar ? 'مكسب ' : 'Gain ') : (ar ? 'خسارة ' : 'Loss ')}{up ? '+' : '−'}{Math.round(Math.abs(ov.gain)).toLocaleString('en-US')}{ov.gainPct !== null ? `  (${up ? '+' : '−'}${Math.abs(ov.gainPct)}%)` : ''}
+        </Text>
+      </RCard>
+    </Pressable>
+  );
+}
+
 type TodayRow = { id: string; kind: string; title: string; body: string; screen: 'gam3ya' | 'reminders' | 'debts' | 'review' | 'home'; refId?: string };
 
 /**
