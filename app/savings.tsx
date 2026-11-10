@@ -55,7 +55,7 @@ export default function SavingsScreen() {
   })();
 
   return (
-    <PlanScreen title={ar ? 'المدخرات والاستثمارات' : 'Savings & investments'} subtitle={ar ? 'ما اشتريته وكم كسبت أو خسرت' : 'What you bought and what it gained or lost'} onAdd={() => setAdding(true)} refreshing={refreshing}>
+    <PlanScreen title={ar ? 'المدخرات' : 'Savings'} subtitle={ar ? 'ما اشتريته وكم كسبت أو خسرت' : 'What you bought, and what it gained or lost'} onAdd={() => setAdding(true)} refreshing={refreshing}>
       <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8, gap: 12 }} showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load('refresh')} tintColor={tok.gold} colors={[tok.gold]} progressBackgroundColor={tok.surface} />}>
         {ov && ov.holdings.length === 0 ? (
