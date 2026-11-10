@@ -7,7 +7,7 @@ import { apiFetch } from '../lib/api';
 import { fmtNum } from '../lib/privacy';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
-import { REyebrow, RButton, RField } from './ui';
+import { REyebrow, RButton, RField, RPill } from './ui';
 import { useKeyboardHeight } from './useKeyboardHeight';
 import { emitDataChanged } from '../lib/dataEvents';
 import type { CardSummary } from '../lib/cards';
@@ -325,6 +325,112 @@ export function MergeAccountSheet({ visible, onClose, account, others, onDone }:
         </Text>
       )}
       <RButton full onPress={submit} disabled={!into} loading={busy}>{ar ? 'ادمج الحسابين' : 'Merge accounts'}</RButton>
+    </Sheet>
+  );
+}
+
+
+export type DailyLimitInfo = {
+  limit: { amount: number; until: string | null; goalId: string | null } | null;
+  currency: string;
+  spentToday: number;
+  leftToday: number | null;
+  avgDailySpend: number;
+  goal: { id: string; name: string; nameAr: string; target: number; saved: number; deadline: string | null;
+          remaining: number; daysLeft: number; perDayToSave: number | null; suggestedLimit: number | null } | null;
+};
+type GoalRow = { _id: string; nameEn: string; nameAr: string; targetAmount: number; savedAmount: number; deadline?: string };
+
+/**
+ * A daily spending limit, optionally to reach a savings goal by its date. Pick a goal with a deadline and Seshat says
+ * what has to be set aside each day and suggests the limit that gets you there; the number stays yours to change.
+ */
+export function DailyLimitSheet({ visible, onClose, info, onDone }: {
+  visible: boolean; onClose: () => void; info: DailyLimitInfo | null; onDone?: () => void;
+}) {
+  const { lang } = useI18n();
+  const ar = lang === 'ar';
+  const [value, setValue] = useState('');
+  const [goals, setGoals] = useState<GoalRow[]>([]);
+  const [goalId, setGoalId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setValue(info?.limit ? String(Math.round(info.limit.amount)) : '');
+    setGoalId(info?.limit?.goalId ?? null);
+    apiFetch<{ data: GoalRow[] }>('/goals').then((r) => setGoals(r.data.filter((g) => g.deadline && g.savedAmount < g.targetAmount))).catch(() => setGoals([]));
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const goal = goals.find((g) => g._id === goalId);
+  const plan = useMemo(() => {
+    if (!goal?.deadline) return null;
+    const days = Math.max(0, Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / 86400000));
+    if (days === 0) return null;
+    const perDay = Math.ceil((goal.targetAmount - goal.savedAmount) / days);
+    const avg = info?.avgDailySpend ?? 0;
+    return { days, perDay, suggested: avg > perDay ? Math.floor(avg - perDay) : null };
+  }, [goal, info?.avgDailySpend]);
+
+  const n = parseFloat(value.replace(/,/g, ''));
+  const cur = info?.currency ?? '';
+  const save = async () => {
+    if (!Number.isFinite(n) || n <= 0) return;
+    setBusy(true);
+    try {
+      await apiFetch('/me/daily-limit', { method: 'PUT', body: JSON.stringify({ amount: n, until: goal?.deadline, goalId: goalId ?? undefined }) });
+      emitDataChanged(); onDone?.(); onClose();
+    } catch (err) {
+      Alert.alert(ar ? 'تعذّر الحفظ' : 'Could not save', err instanceof Error ? err.message : undefined);
+    } finally { setBusy(false); }
+  };
+  const remove = async () => {
+    setBusy(true);
+    try { await apiFetch('/me/daily-limit', { method: 'DELETE' }); emitDataChanged(); onDone?.(); onClose(); }
+    catch (err) { Alert.alert(ar ? 'تعذّر الحذف' : 'Could not remove', err instanceof Error ? err.message : undefined); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Sheet
+      visible={visible} onClose={onClose}
+      title={ar ? 'حدّ الإنفاق اليومي' : 'Daily spending limit'}
+      hint={ar ? 'اختر مبلغاً لا تتجاوزه كل يوم. يظهر في الرئيسية كم تبقّى لك اليوم.' : 'Pick an amount you will not pass in a day. Home shows how much is left today.'}
+    >
+      {goals.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <REyebrow>{ar ? 'لهدف (اختياري)' : 'For a goal (optional)'}</REyebrow>
+          <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
+            <RPill active={goalId === null} onPress={() => setGoalId(null)}>{ar ? 'بدون هدف' : 'No goal'}</RPill>
+            {goals.map((g) => (
+              <RPill key={g._id} active={goalId === g._id} onPress={() => setGoalId(g._id)}>{ar ? g.nameAr : g.nameEn}</RPill>
+            ))}
+          </View>
+        </View>
+      )}
+      {plan && goal && (
+        <View style={{ gap: 4 }}>
+          <Text style={{ fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: '#9C9A92', textAlign: ar ? 'right' : 'left' }}>
+            {ar
+              ? `للوصول إلى «${goal.nameAr}» خلال ${plan.days} يوماً تحتاج أن تدّخر ${fmtNum(plan.perDay)} ${cur} كل يوم.`
+              : `To reach “${goal.nameEn}” in ${plan.days} days, set aside ${fmtNum(plan.perDay)} ${cur} a day.`}
+          </Text>
+          {plan.suggested !== null ? (
+            <Pressable onPress={() => setValue(String(plan.suggested))}>
+              <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: '#C9A84C', textAlign: ar ? 'right' : 'left' }}>
+                {ar ? `الحدّ المقترح: ${fmtNum(plan.suggested)} ${cur} (اضغط للاستخدام)` : `Suggested limit: ${fmtNum(plan.suggested)} ${cur} (tap to use)`}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: '#9C9A92', textAlign: ar ? 'right' : 'left' }}>
+              {ar ? 'إنفاقك المعتاد أقل مما يتطلبه الهدف، فالحدّ وحده لا يكفي.' : 'Your usual spending is below what the goal needs, so a limit alone will not get you there.'}
+            </Text>
+          )}
+        </View>
+      )}
+      <RField label={ar ? `الحدّ اليومي (${cur})` : `Limit per day (${cur})`} value={value} onChange={setValue} keyboardType="decimal-pad" mono />
+      <RButton full onPress={save} disabled={!Number.isFinite(n) || n <= 0} loading={busy}>{ar ? 'احفظ' : 'Save'}</RButton>
+      {info?.limit ? <RButton full variant="ghost" onPress={remove} disabled={busy}>{ar ? 'إزالة الحدّ' : 'Remove the limit'}</RButton> : null}
     </Sheet>
   );
 }

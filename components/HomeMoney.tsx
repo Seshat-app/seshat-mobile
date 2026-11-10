@@ -6,7 +6,8 @@ import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { apiFetch, hasToken } from '../lib/api';
 import { fontBody, fontMono } from '../lib/fonts';
-import { RCard, REyebrow, RAmount } from './ui';
+import { RCard, REyebrow, RAmount, RProgress } from './ui';
+import { DailyLimitSheet, type DailyLimitInfo } from './MoneySheets';
 import type { CardSummary } from '../lib/cards';
 import type { DashboardData } from './dashboards';
 
@@ -90,5 +91,75 @@ export function AccountsOverview({ currency }: { currency: string }) {
         )}
       </RCard>
     </Pressable>
+  );
+}
+
+
+/**
+ * The daily limit on Home: how much is left today against the limit you set, and the goal it serves. With no limit
+ * yet it is a quiet one-line invitation to set one.
+ */
+export function DailyLimitCard() {
+  const { tok, lang } = useI18n();
+  const { dataVersion } = useAppData();
+  const ar = lang === 'ar';
+  const [info, setInfo] = useState<DailyLimitInfo | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const load = () => {
+    hasToken().then((ok) => {
+      if (!ok) return;
+      apiFetch<{ data: DailyLimitInfo }>('/me/daily-limit').then((r) => setInfo(r.data)).catch(() => {});
+    });
+  };
+  useEffect(load, [dataVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!info) return null;
+  const lim = info.limit;
+  const over = lim ? info.spentToday > lim.amount : false;
+  const daysLeft = lim?.until ? Math.max(0, Math.ceil((new Date(lim.until).getTime() - Date.now()) / 86400000)) : null;
+  return (
+    <>
+      <Pressable onPress={() => setOpen(true)} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+        <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
+          {lim ? (
+            <>
+              <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <REyebrow>{ar ? 'حدّ اليوم' : "Today's limit"}</REyebrow>
+                {daysLeft !== null ? (
+                  <Text style={{ fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted }}>
+                    {ar ? `${daysLeft} يوم متبقٍّ` : `${daysLeft} days left`}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'baseline', gap: 8 }}>
+                <RAmount value={Math.abs(info.leftToday ?? 0)} currency={info.currency} size={26} decimals={0} color={over ? tok.alertText : undefined} />
+                <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: over ? tok.alertText : tok.muted }}>
+                  {over ? (ar ? 'فوق الحدّ' : 'over the limit') : (ar ? 'متبقٍّ اليوم' : 'left today')}
+                </Text>
+              </View>
+              <View style={{ marginTop: 10 }}>
+                <RProgress value={info.spentToday} max={lim.amount} color={over ? tok.alertText : tok.gold} height={6} />
+              </View>
+              <Text style={{ marginTop: 8, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+                {ar ? 'أنفقت' : 'Spent'} {Math.round(info.spentToday).toLocaleString('en-US')} / {Math.round(lim.amount).toLocaleString('en-US')} {info.currency}
+                {info.goal ? `  ·  ${ar ? info.goal.nameAr : info.goal.name}` : ''}
+              </Text>
+            </>
+          ) : (
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <REyebrow style={{ marginBottom: 4, textAlign: ar ? 'right' : 'left' }}>{ar ? 'حدّ الإنفاق اليومي' : 'Daily limit'}</REyebrow>
+                <Text style={{ fontFamily: fontBody(lang), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
+                  {ar ? 'ضع حدّاً يومياً لتصل إلى هدفك.' : 'Set a limit per day to reach a goal.'}
+                </Text>
+              </View>
+              <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
+            </View>
+          )}
+        </RCard>
+      </Pressable>
+      <DailyLimitSheet visible={open} onClose={() => setOpen(false)} info={info} onDone={load} />
+    </>
   );
 }
