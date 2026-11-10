@@ -10,7 +10,7 @@ import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
-import { RCard, REyebrow, RButton, RProgress, RField } from '../components/ui';
+import { RCard, REyebrow, RButton, RProgress, RField, RPill } from '../components/ui';
 import { PlanScreen } from '../components/PlanShell';
 import { SkeletonRow } from '../components/Skeleton';
 
@@ -45,6 +45,7 @@ export default function GoalsScreen() {
           targetAmount: g.targetAmount,
           savedAmount: g.savedAmount ?? 0,
           currency: g.currency ?? profile?.currency ?? 'EGP',
+          deadline: g.deadline || undefined,
         }),
         idempotencyKey: newIdempotencyKey(),
       });
@@ -149,6 +150,11 @@ function GoalRow({ goal, onPress }: { goal: Goal; onPress: () => void }) {
         <View style={{ marginTop: 10 }}>
           <RProgress value={pct} max={100} color={tok.gold} height={3} />
         </View>
+        {goal.deadline ? (
+          <Text style={{ marginTop: 8, color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {lang === 'ar' ? 'حتى ' : 'By '}{goal.deadline.slice(0, 10)}
+          </Text>
+        ) : null}
       </RCard>
     </Pressable>
   );
@@ -168,6 +174,7 @@ function EditGoalSheet({
   const [name, setName] = useState(initial?.nameEn ?? '');
   const [target, setTarget] = useState(initial ? String(initial.targetAmount) : '');
   const [saved, setSaved] = useState(initial ? String(initial.savedAmount) : '');
+  const [deadline, setDeadline] = useState(initial?.deadline ? initial.deadline.slice(0, 10) : '');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -175,6 +182,7 @@ function EditGoalSheet({
       setName(initial?.nameEn ?? '');
       setTarget(initial ? String(initial.targetAmount) : '');
       setSaved(initial ? String(initial.savedAmount) : '');
+      setDeadline(initial?.deadline ? initial.deadline.slice(0, 10) : '');
     }
   }, [visible, initial]);
 
@@ -189,7 +197,9 @@ function EditGoalSheet({
 
   const targetNum = parseFloat(target) || 0;
   const savedNum = parseFloat(saved) || 0;
-  const canSave = !!name.trim() && targetNum > 0 && !busy;
+  const deadlineOk = deadline === '' || /^\d{4}-\d{2}-\d{2}$/.test(deadline) && !Number.isNaN(new Date(deadline).getTime());
+  const canSave = !!name.trim() && targetNum > 0 && deadlineOk && !busy;
+  const inMonths = (n: number) => { const d = new Date(); d.setMonth(d.getMonth() + n); return d.toISOString().slice(0, 10); };
 
   const submit = async () => {
     if (!canSave) return;
@@ -201,6 +211,7 @@ function EditGoalSheet({
         targetAmount: targetNum,
         savedAmount: savedNum,
         currency: defaultCurrency,
+        deadline: deadline || (initial ? (null as unknown as undefined) : undefined),
       });
     } finally { setBusy(false); }
   };
@@ -240,6 +251,18 @@ function EditGoalSheet({
             <RField label={lang === 'ar' ? 'الاسم' : 'Name'} value={name} onChange={setName} placeholder={lang === 'ar' ? 'مثلاً: سفر' : 'e.g. Trip'} autoFocus />
             <RField label={lang === 'ar' ? 'المبلغ المستهدف' : 'Target amount'} value={target} onChange={(v) => setTarget(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" ltr mono />
             <RField label={lang === 'ar' ? 'المُدخر' : 'Saved so far'} value={saved} onChange={(v) => setSaved(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" ltr mono />
+            <View style={{ gap: 8 }}>
+              <RField label={lang === 'ar' ? 'الموعد المستهدف (اختياري)' : 'Reach it by (optional)'} value={deadline} onChange={(v) => setDeadline(v.replace(/[^0-9-]/g, '').slice(0, 10))} placeholder="YYYY-MM-DD" keyboardType="numeric" ltr mono />
+              <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
+                {[3, 6, 12].map((m) => (
+                  <RPill key={m} active={deadline === inMonths(m)} onPress={() => setDeadline(inMonths(m))}>
+                    {lang === 'ar' ? (m === 12 ? 'سنة' : `${m} أشهر`) : (m === 12 ? '1 year' : `${m} months`)}
+                  </RPill>
+                ))}
+                {deadline !== '' && <RPill onPress={() => setDeadline('')}>{lang === 'ar' ? 'بدون موعد' : 'No date'}</RPill>}
+              </View>
+              {!deadlineOk && <Text style={{ color: tok.alertText, fontFamily: fontBody(lang), fontSize: 12 }}>{lang === 'ar' ? 'اكتب التاريخ هكذا: 2027-03-15' : 'Write the date like 2027-03-15'}</Text>}
+            </View>
           </View>
           <View style={{ paddingHorizontal: 18, paddingTop: 18, gap: 10 }}>
             <RButton full onPress={submit} disabled={!canSave} loading={busy}>
