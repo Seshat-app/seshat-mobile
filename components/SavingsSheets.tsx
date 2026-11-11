@@ -117,8 +117,6 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
             <REyebrow>{ar ? 'العيار' : 'Karat'}</REyebrow>
             <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 8 }}>{[24, 22, 21, 18].map((k) => <RPill key={k} active={karat === k} onPress={() => setKarat(k)}>{`${k}k`}</RPill>)}</View>
           </View>
-          <MakingField value={making} onChange={setMaking} per={makingPer} onPer={setMakingPer} />
-          <RField label={ar ? 'فرق السوق المحلي عن العالمي % (اختياري)' : 'Local price above the world price, % (optional)'} value={premium} onChange={(v) => setPremium(v.replace(/[^0-9.\-]/g, ''))} keyboardType="decimal-pad" mono />
         </View>
       )}
       {type === 'currency' && (
@@ -141,6 +139,7 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
       )}
       {type === 'other' && <RField label={ar ? 'الاسم (شهادة، سهم، صندوق…)' : 'Name (certificate, share, fund...)'} value={name} onChange={setName} />}
       <RField label={ar ? `الكمية (${unitLabel})` : `Quantity (${unitLabel})`} value={qty} onChange={(v) => setQty(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
+      <DateField label={owned ? (ar ? 'تاريخ الشراء تقريباً' : 'Bought on, roughly is fine') : (ar ? 'تاريخ الشراء' : 'Bought on')} value={date} onChange={setDate} maximumDate={new Date()} />
       <View style={{ gap: 6 }}>
         <RField label={type === 'gold' ? (ar ? 'سعر جرام الذهب عند الشراء (بدون المصنعية)' : 'Gold price per gram when you bought (without masna3ya)') : (ar ? `سعر الوحدة عند الشراء` : 'Price per unit when you bought')} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
         {quote !== null && (
@@ -151,7 +150,7 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
           </Pressable>
         )}
       </View>
-      <DateField label={owned ? (ar ? 'تاريخ الشراء تقريباً' : 'Bought on, roughly is fine') : (ar ? 'تاريخ الشراء' : 'Bought on')} value={date} onChange={setDate} maximumDate={new Date()} />
+      {type === 'gold' && <MakingField value={making} onChange={setMaking} per={makingPer} onPer={setMakingPer} />}
       {!owned && <View style={{ gap: 8 }}>
         <REyebrow>{ar ? 'خُصم من' : 'Paid from'}</REyebrow>
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -160,6 +159,9 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
           {accts.filter((a) => a.kind !== 'cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
         </View>
       </View>}
+      {type === 'gold' && (
+        <RField label={ar ? 'فرق السوق المحلي عن العالمي % (اختياري)' : 'Local price above the world price, % (optional)'} value={premium} onChange={(v) => setPremium(v.replace(/[^0-9.\-]/g, ''))} keyboardType="decimal-pad" mono />
+      )}
       {ok && <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: '#9C9A92', textAlign: ar ? 'right' : 'left' }}>
         {ar ? `التكلفة ${Math.round(num(qty) * num(price) + fees).toLocaleString('en-US')}${fees > 0 ? ` · منها مصنعية ${Math.round(fees).toLocaleString('en-US')}` : ''}` : `Cost ${Math.round(num(qty) * num(price) + fees).toLocaleString('en-US')}${fees > 0 ? ` · masna3ya ${Math.round(fees).toLocaleString('en-US')} of it` : ''}`}
       </Text>}
@@ -200,15 +202,14 @@ export function TradeSheet({ visible, kind, holding, onClose, onDone }: { visibl
   return (
     <Sheet visible={visible} onClose={onClose} title={kind === 'buy' ? (ar ? `اشترِ المزيد · ${holding.name}` : `Buy more · ${holding.name}`) : (ar ? `بيع · ${holding.name}` : `Sell · ${holding.name}`)}
       hint={kind === 'sell' ? (ar ? `لديك ${holding.quantity} ${holding.unit}` : `You hold ${holding.quantity} ${holding.unit}`) : undefined}>
-      <RField label={ar ? `الكمية (${holding.unit})` : `Quantity (${holding.unit})`} value={qty} onChange={(v) => setQty(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
       {kind === 'buy' && (
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
           <RPill active={!owned} onPress={() => { setOwned(false); setDate(today()); }}>{ar ? 'أشتريه الآن' : 'Buying now'}</RPill>
           <RPill active={owned} onPress={() => setOwned(true)}>{ar ? 'شراء سابق' : 'An earlier purchase'}</RPill>
         </View>
       )}
+      <RField label={ar ? `الكمية (${holding.unit})` : `Quantity (${holding.unit})`} value={qty} onChange={(v) => setQty(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
       {old && <DateField label={ar ? 'تاريخ الشراء تقريباً' : 'Bought on, roughly is fine'} value={date} onChange={setDate} maximumDate={new Date()} />}
-      {kind === 'buy' && holding.type === 'gold' && <MakingField value={making} onChange={setMaking} per={makingPer} onPer={setMakingPer} />}
       <View style={{ gap: 6 }}>
         <RField label={ar ? 'سعر الوحدة' : 'Price per unit'} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
         {old && pastQuote !== null && (
@@ -217,6 +218,7 @@ export function TradeSheet({ visible, kind, holding, onClose, onDone }: { visibl
           </Pressable>
         )}
       </View>
+      {kind === 'buy' && holding.type === 'gold' && <MakingField value={making} onChange={setMaking} per={makingPer} onPer={setMakingPer} />}
       {!old && <View style={{ gap: 8 }}>
         <REyebrow>{kind === 'buy' ? (ar ? 'خُصم من' : 'Paid from') : (ar ? 'دخل إلى' : 'Received into')}</REyebrow>
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>

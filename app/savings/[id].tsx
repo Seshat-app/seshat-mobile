@@ -8,6 +8,7 @@ import { useI18n } from '../../lib/i18n';
 import { fontBody, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RButton, RField } from '../../components/ui';
 import { PlanScreen } from '../../components/PlanShell';
+import { RangeChart } from '../../components/RangeChart';
 import { TradeSheet, type Holding } from '../../components/SavingsSheets';
 import { RPill } from '../../components/ui';
 import { emitDataChanged } from '../../lib/dataEvents';
@@ -57,6 +58,7 @@ export default function HoldingScreen() {
           <Text style={{ fontFamily: fontMono('medium'), fontSize: 28, color: tok.bone, textAlign: ar ? 'right' : 'left', writingDirection: 'ltr' }}>{h.value !== null ? n0(h.value) : '—'} <Text style={{ fontSize: 14, color: tok.muted }}>{h.currency}</Text></Text>
           {h.gain !== null && <Text style={{ marginTop: 6, fontFamily: fontMono('regular'), fontSize: 15, color: g >= 0 ? '#6FCF97' : tok.alertText, textAlign: ar ? 'right' : 'left' }}>
             {g >= 0 ? (ar ? 'مكسب ' : 'Gain ') : (ar ? 'خسارة ' : 'Loss ')}{g >= 0 ? '+' : '−'}{n0(Math.abs(g))}{h.gainPct !== null ? `  (${g >= 0 ? '+' : '−'}${Math.abs(h.gainPct)}%)` : ''}</Text>}
+          <RangeChart path={`/savings/${h.id}/history`} refreshKey={`${h.cost}-${h.quantity}`} />
           <View style={{ marginTop: 14, gap: 6 }}>
             {row(ar ? 'سعر الوحدة اليوم' : 'Price today', h.unitPrice !== null ? `${n0(h.unitPrice)} ${h.currency}${h.priceSource === 'manual' ? (ar ? ' (يدوي)' : ' (manual)') : ''}` : '—')}
             {row(h.making > 0 ? (ar ? 'متوسط سعر شرائك (بدون المصنعية)' : 'Your average price (without masna3ya)') : (ar ? 'متوسط سعر شرائك' : 'Your average price'), `${n0(h.making > 0 ? h.avgPriceNoFees : h.avgPrice)} ${h.currency}`)}
