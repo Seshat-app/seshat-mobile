@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
-import { useAppData } from '../../lib/appData';
+import { useAppData, useInOrg } from '../../lib/appData';
 import { fontBody } from '../../lib/fonts';
 import { RHomeHeader, type DashView } from '../../components/shell';
 import { ScreenAtmosphere } from '../../components/ScreenAtmosphere';
@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { tok, lang, t } = useI18n();
   const { profile, dataVersion, refresh, bumpVersion } = useAppData();
+  const inOrg = useInOrg();
   const insets = useSafeAreaInsets();
   const [view, setView] = useState<DashView>('bento');
   const [data, setData] = useState<DashboardData | null>(null);
@@ -104,7 +105,7 @@ export default function HomeScreen() {
           // salary baseline exists).
           const banners = (
             <>
-              <TodayNeeds />
+              {!inOrg && <TodayNeeds />}
               <SetupPrompt profile={profile} onChanged={() => { refresh(); bumpVersion(); }} />
               {checkIn.needed && (
                 <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
@@ -141,10 +142,10 @@ export default function HomeScreen() {
                     <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
                   </View>
                   <TodayCard data={data!} currency={currency} />
-                  <DailyBudgetCard />
+                  {!inOrg && <DailyBudgetCard />}
                   <AccountsOverview currency={currency} />
-                  <Gam3yaOverview />
-                  <SavingsCard />
+                  {!inOrg && <Gam3yaOverview />}
+                  {!inOrg && <SavingsCard />}
                   <DashboardBody data={data!} currency={currency} />
                 </>
               )}

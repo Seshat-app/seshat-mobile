@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, RefreshControl, StyleSheet } from 'react-native';
-import { ScrollView as ScreenScroll } from '../components/Scroll';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreditCard, Landmark, Wallet, Banknote, ChevronRight, ArrowLeftRight, Plus } from 'lucide-react-native';
-import { PlanScreen } from '../components/PlanShell';
-import { RCard, REyebrow, RAmount, RButton } from '../components/ui';
-import { MoveMoneySheet, AddSourceSheet } from '../components/MoneySheets';
-import { useI18n } from '../lib/i18n';
-import { useAppData } from '../lib/appData';
-import { apiFetch, hasToken } from '../lib/api';
-import { fontBody, fontHead, fontMono } from '../lib/fonts';
-import { S } from '../lib/theme';
-import type { CardSummary } from '../lib/cards';
+import { PlanScreen } from '../../components/PlanShell';
+import { RCard, REyebrow, RAmount, RButton } from '../../components/ui';
+import { MoveMoneySheet, AddSourceSheet } from '../../components/MoneySheets';
+import { useI18n } from '../../lib/i18n';
+import { useAppData } from '../../lib/appData';
+import { apiFetch, hasToken } from '../../lib/api';
+import { fontBody, fontHead, fontMono } from '../../lib/fonts';
+import { S } from '../../lib/theme';
+import type { CardSummary } from '../../lib/cards';
 
 /**
  * /cards - every card / account Seshat has seen in captured bank messages (or that

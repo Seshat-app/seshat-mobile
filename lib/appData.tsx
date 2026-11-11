@@ -287,6 +287,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** True while an organization workspace is active. Gam3yas, savings, the daily budget and bills belong to the personal profile only. */
+export function useInOrg(): boolean {
+  const { activeLedgerId } = useAppData();
+  return !!activeLedgerId && activeLedgerId.startsWith('o_');
+}
+
 export function useAppData(): Ctx {
   const ctx = useContext(AppDataContext);
   if (!ctx) throw new Error('useAppData must be used inside AppDataProvider');

@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { View, Text, Pressable, Alert, RefreshControl } from 'react-native';
-import { ScrollView as ScreenScroll } from '../components/Scroll';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Users, Lightbulb } from 'lucide-react-native';
-import { apiFetch } from '../lib/api';
-import { useI18n } from '../lib/i18n';
-import { fontBody, fontMono } from '../lib/fonts';
-import { RCard, REyebrow, RButton, RField, RPill, RProgress } from '../components/ui';
-import { PlanScreen } from '../components/PlanShell';
-import { Sheet } from '../components/MoneySheets';
-import { emitDataChanged } from '../lib/dataEvents';
+import { apiFetch } from '../../lib/api';
+import { useI18n } from '../../lib/i18n';
+import { useInOrg } from '../../lib/appData';
+import { PersonalOnly } from '../../components/PersonalOnly';
+import { fontBody, fontMono } from '../../lib/fonts';
+import { RCard, REyebrow, RButton, RField, RPill, RProgress } from '../../components/ui';
+import { PlanScreen } from '../../components/PlanShell';
+import { Sheet } from '../../components/MoneySheets';
+import { emitDataChanged } from '../../lib/dataEvents';
 
 type Period = {
   period: number; due: string; state: 'paid' | 'due' | 'upcoming'; paidAt: string | null;
@@ -21,7 +23,7 @@ type Gam = {
   currency: string; archived: boolean; paymentPerPeriod: number; pot: number; totalToPay: number; paidCount: number; paidTotal: number;
   remainingToPay: number; overdue: number; nextDue: Period | null; nextTurn: Period | null; finished: boolean; schedule: Period[];
 };
-import type { Suggestion } from '../components/Gam3yaForm';
+import type { Suggestion } from '../../components/Gam3yaForm';
 type Acct = { id: string; name: string; kind: string };
 type GoalRow = { _id: string; nameEn: string; nameAr: string; savedAmount: number; targetAmount: number };
 
@@ -29,6 +31,7 @@ const n0 = (v: number) => Math.round(v).toLocaleString('en-US');
 
 export default function Gam3yaScreen() {
   const { tok, lang } = useI18n();
+  const inOrg = useInOrg();
   const ar = lang === 'ar';
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -50,6 +53,8 @@ export default function Gam3yaScreen() {
   useEffect(() => { void load(); }, [load]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   const cur = (g: Gam) => g.currency;
+
+  if (inOrg) return <PersonalOnly title={ar ? 'الجمعيات' : 'Gam3yas'} what={{ en: 'Gam3yas are kept in your personal profile, not in an organization.', ar: 'الجمعيات تُحفظ في ملفك الشخصي وليس في منظمة.' }} />;
 
   return (
     <PlanScreen

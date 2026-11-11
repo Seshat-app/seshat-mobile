@@ -13,7 +13,7 @@ import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetch, hasToken } from '../../lib/api';
 import { signOut } from '../../lib/auth';
 import { useI18n, type Lang, formatAmount, currencyLabel } from '../../lib/i18n';
-import { useAppData } from '../../lib/appData';
+import { useAppData, useInOrg } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RButton, RField, RPill } from '../../components/ui';
 import { ScreenScaffold } from '../../components/Screen';
@@ -51,6 +51,7 @@ export default function ProfileScreen() {
   useEffect(() => { apiFetch<{ data: { configured: boolean; linked: boolean } }>('/me/whatsapp').then((r) => setWa(r.data)).catch(() => {}); }, []);
   const { tok, lang, t, mode, setMode, setLang } = useI18n();
   const { refresh, profile: appProfile, bumpVersion, openWorkspaceSheet } = useAppData();
+  const inOrg = useInOrg();
   const insets = useSafeAreaInsets();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -386,6 +387,7 @@ export default function ProfileScreen() {
               hint={lang === 'ar' ? 'ما الذي تدّخر له' : 'What you are saving toward'}
               onPress={() => router.push('/goals')}
             />
+            {!inOrg && (<>
             <PlanRow
               icon={Banknote}
               title={lang === 'ar' ? 'المدخرات والاستثمارات' : 'Savings & investments'}
@@ -398,6 +400,7 @@ export default function ProfileScreen() {
               hint={lang === 'ar' ? 'ما تدفعه وموعد دورك' : 'What you pay and when you collect'}
               onPress={() => router.push('/gam3ya')}
             />
+            </>)}
             <PlanRow
               icon={CreditCard}
               title={lang === 'ar' ? 'الديون' : 'Debts'}

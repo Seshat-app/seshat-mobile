@@ -4,6 +4,8 @@ import {
   ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { requestPermission } from '../lib/androidNotificationListener';
 import { ArrowRight, Check } from 'lucide-react-native';
 import { useI18n, currencyLabel } from '../lib/i18n';
 import { apiFetch } from '../lib/api';
@@ -24,13 +26,15 @@ import { ScreenAtmosphere } from './ScreenAtmosphere';
 // ─────────────────────────────────────────────────────────────
 // iPhones get one extra scene: installing the bank-SMS capture Shortcut (Apple does not
 // let apps read other apps' notifications, so the Shortcuts app does the capturing).
+// Android gets a step to allow notification access (bank notifications are how it logs for you); both ask what the
+// person already has, so those things are added from the start instead of being discovered later.
 const SCENES = (Platform.OS === 'ios'
-  ? ['gate', 'name', 'salary', 'month', 'capture', 'threshold']
-  : ['gate', 'name', 'salary', 'month', 'threshold']) as readonly ('gate' | 'name' | 'salary' | 'month' | 'capture' | 'threshold')[];
+  ? ['gate', 'name', 'salary', 'month', 'capture', 'have', 'threshold']
+  : ['gate', 'name', 'salary', 'month', 'captureAndroid', 'have', 'threshold']) as readonly ('gate' | 'name' | 'salary' | 'month' | 'capture' | 'captureAndroid' | 'have' | 'threshold')[];
 // The stepper shows for the four numbered scenes (Gate..Month); the threshold
 // is the finale and drops it.
-const RAIL_COUNT = Platform.OS === 'ios' ? 5 : 4;
-const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+const RAIL_COUNT = SCENES.length - 1;
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
 export function OnboardingTour({
   initialName, currency = 'EGP', onDone,
@@ -45,6 +49,9 @@ export function OnboardingTour({
   const [salary, setSalary] = useState('');
   const [monthDay, setMonthDay] = useState(1);
   const [busy, setBusy] = useState(false);
+  // What they already have: each opens its own form after the tour (savings first), and savings also settles the Home question.
+  const [have, setHave] = useState<{ savings: boolean; gam3ya: boolean; debt: boolean }>({ savings: false, gam3ya: false, debt: false });
+  const router = useRouter();
 
   const scene = SCENES[step];
 
@@ -73,11 +80,15 @@ export function OnboardingTour({
       const sal = parseFloat(salary.replace(/,/g, '')) || 0;
       if (sal > 0) body.monthlySalary = sal;
       await apiFetch('/me', { method: 'PATCH', body: JSON.stringify(body) });
+      // They answered the savings question here, so Home will not ask it again.
+      await apiFetch('/me/savings-asked', { method: 'POST', body: JSON.stringify({ answer: have.savings ? 'yes' : 'no' }) }).catch(() => {});
     } catch (err) {
       console.warn('onboarding save failed', err);
     } finally {
       setBusy(false);
       onDone();
+      const next = have.savings ? '/savings/new' : have.gam3ya ? '/gam3ya/new' : have.debt ? '/debts' : null;
+      if (next) setTimeout(() => router.push(next as never), 500);
     }
   };
 
@@ -212,6 +223,52 @@ export function OnboardingTour({
                 </Text>
                 <Spacer />
                 <CTA label={ar ? 'متابعة' : 'Continue'} onPress={goNext} />
+              </SceneBody>
+            )}
+
+            {scene === 'captureAndroid' && (
+              <SceneBody
+                narration={ar
+                  ? 'سيشات يقرأ إشعارات بنكك ليسجّل مشترياتك تلقائياً، ولا يقرأ شيئاً آخر.'
+                  : 'Seshat reads your bank notifications to log your purchases for you, and nothing else.'}
+                l1={ar ? 'الرصد' : 'Auto'} l2={ar ? 'التلقائي' : 'capture'}
+              >
+                <Text style={{ marginTop: 22, textAlign: 'center', fontFamily: fontBody(lang), fontSize: 13.5, lineHeight: 20, color: tok.muted }}>
+                  {ar ? 'اسمح بالوصول إلى الإشعارات من إعدادات أندرويد. يمكنك التراجع عنه في أي وقت.' : 'Allow notification access in Android settings. You can turn it off any time.'}
+                </Text>
+                <Spacer />
+                <CTA label={ar ? 'السماح بالوصول' : 'Allow access'} onPress={() => { requestPermission().catch(() => {}); goNext(); }} />
+                <Pressable onPress={goNext} hitSlop={10} style={{ alignSelf: 'center', marginTop: 16 }}>
+                  <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: tok.muted }}>{ar ? 'ليس الآن' : 'Not now'}</Text>
+                </Pressable>
+              </SceneBody>
+            )}
+
+            {scene === 'have' && (
+              <SceneBody
+                narration={ar ? 'هل لديك شيء من هذه بالفعل؟ اختر ما ينطبق وسنفتح لك نموذجه بعد قليل.' : 'Do you already have any of these? Pick what applies and we will open its form in a moment.'}
+                l1={ar ? 'ماذا' : 'What you'} l2={ar ? 'لديك؟' : 'have'}
+              >
+                <View style={{ marginTop: 22, gap: 12 }}>
+                  {([
+                    ['savings', ar ? 'مدخرات (ذهب، دولار، أسهم)' : 'Savings (gold, dollars, stocks)'],
+                    ['gam3ya', ar ? 'جمعية' : 'A gam3ya'],
+                    ['debt', ar ? 'دين' : 'A debt'],
+                  ] as const).map(([k, label]) => {
+                    const on = have[k];
+                    return (
+                      <Pressable key={k} onPress={() => setHave((h) => ({ ...h, [k]: !h[k] }))}
+                        style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: on ? tok.gold : tok.border, backgroundColor: on ? 'rgba(201,168,76,0.10)' : 'transparent' }}>
+                        <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: on ? tok.gold : tok.border, backgroundColor: on ? tok.gold : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                          {on ? <Check size={14} color={tok.void} strokeWidth={3} /> : null}
+                        </View>
+                        <Text style={{ flex: 1, fontFamily: fontBody(lang, 'medium'), fontSize: 15, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Spacer />
+                <CTA label={have.savings || have.gam3ya || have.debt ? (ar ? 'متابعة' : 'Continue') : (ar ? 'لا شيء الآن' : 'Nothing yet')} onPress={goNext} />
               </SceneBody>
             )}
 

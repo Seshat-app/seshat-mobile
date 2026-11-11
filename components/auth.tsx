@@ -25,12 +25,14 @@ export function AuthChrome({
   // field (the password) sat clipped behind it, and Android (edge-to-edge) does not scroll the focused field
   // into view by itself. Scroll to the end when the keyboard appears so the fields stay visible.
   const scrollRef = useRef<ScrollView>(null);
+  const keyboardUp = useRef(false);
   useEffect(() => {
-    const evt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const sub = Keyboard.addListener(evt, () => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => {
+      keyboardUp.current = true;
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
     });
-    return () => sub.remove();
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => { keyboardUp.current = false; });
+    return () => { show.remove(); hide.remove(); };
   }, []);
   return (
     <KeyboardAvoidingView
@@ -86,6 +88,8 @@ export function AuthChrome({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         style={{ flex: 1 }}
+        // An error line appearing above the fields pushes them down; keep the last field in view while typing.
+        onContentSizeChange={() => { if (keyboardUp.current) scrollRef.current?.scrollToEnd({ animated: true }); }}
       >
         {children}
       </ScrollView>

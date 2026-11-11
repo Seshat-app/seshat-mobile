@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
-import { ScrollView as ScreenScroll } from '../components/Scroll';
+import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Coins } from 'lucide-react-native';
-import { apiFetch } from '../lib/api';
-import { useI18n } from '../lib/i18n';
-import { fontBody, fontMono } from '../lib/fonts';
-import { RCard, REyebrow, RButton } from '../components/ui';
-import { PlanScreen } from '../components/PlanShell';
-import { type Holding } from '../components/SavingsSheets';
-import { RangeChart } from '../components/RangeChart';
+import { apiFetch } from '../../lib/api';
+import { useI18n } from '../../lib/i18n';
+import { useInOrg } from '../../lib/appData';
+import { PersonalOnly } from '../../components/PersonalOnly';
+import { fontBody, fontMono } from '../../lib/fonts';
+import { RCard, REyebrow, RButton } from '../../components/ui';
+import { PlanScreen } from '../../components/PlanShell';
+import { type Holding } from '../../components/SavingsSheets';
+import { RangeChart } from '../../components/RangeChart';
 
 type Overview = {
   currency: string; value: number; cost: number; gain: number; gainPct: number | null; realized: number; stale: boolean;
@@ -23,6 +25,7 @@ export const typeName = (t: string, ar: boolean) => ({ gold: ar ? 'ذهب' : 'Go
 /** Everything you saved or invested, valued today, with what you gained or lost. */
 export default function SavingsScreen() {
   const { tok, lang } = useI18n();
+  const inOrg = useInOrg();
   const ar = lang === 'ar';
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -44,6 +47,8 @@ export default function SavingsScreen() {
 
   const up = (ov?.gain ?? 0) >= 0;
   const gainColor = up ? '#6FCF97' : tok.alertText;
+
+  if (inOrg) return <PersonalOnly title={ar ? 'المدخرات' : 'Savings'} what={{ en: 'Gold, dollars and investments are kept in your personal profile, not in an organization.', ar: 'الذهب والدولار والاستثمارات تُحفظ في ملفك الشخصي وليس في منظمة.' }} />;
 
   return (
     <PlanScreen title={ar ? 'المدخرات' : 'Savings'} subtitle={ar ? 'ما اشتريته وكم كسبت أو خسرت' : 'What you bought, and what it gained or lost'} onAdd={ov && ov.holdings.length === 0 ? undefined : () => router.push('/savings/new' as never)} refreshing={refreshing}>

@@ -6,7 +6,7 @@ import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { apiFetch, hasToken } from '../lib/api';
 import { fontBody, fontMono } from '../lib/fonts';
-import { RCard, REyebrow, RAmount, RProgress } from './ui';
+import { RCard, REyebrow, RAmount, RProgress, RButton } from './ui';
 import { DailyBudgetSheet, type DailyBudgetInfo } from './MoneySheets';
 import type { CardSummary } from '../lib/cards';
 import type { DashboardData } from './dashboards';
@@ -134,7 +134,7 @@ export function SavingsCard() {
   );
 }
 
-type TodayRow = { id: string; kind: string; title: string; body: string; screen: 'gam3ya' | 'reminders' | 'debts' | 'review' | 'goals' | 'home'; refId?: string };
+type TodayRow = { id: string; kind: string; title: string; body: string; screen: 'gam3ya' | 'reminders' | 'debts' | 'review' | 'goals' | 'savings' | 'home'; refId?: string };
 
 /**
  * The few things that need you today, from one list the server builds (a gam3ya payment or payout, a bill coming up, a
@@ -162,11 +162,26 @@ export function TodayNeeds() {
     else if (r.screen === 'review') router.push('/review' as never);
     else if (r.screen === 'goals') router.push('/goals' as never);
   };
+  // The one-time question about savings: "Yes" opens the form to add them, "No" ends it. Either way it is not asked again.
+  const answerSavings = (answer: 'yes' | 'no') => {
+    setRows((rs) => rs.filter((x) => x.kind !== 'ask_savings'));
+    apiFetch('/me/savings-asked', { method: 'POST', body: JSON.stringify({ answer }) }).catch(() => {});
+    if (answer === 'yes') router.push('/savings/new' as never);
+  };
   return (
     <RCard accent padding={16} style={{ marginHorizontal: 16, marginTop: 6, marginBottom: 12 }}>
       <REyebrow style={{ marginBottom: 10, textAlign: ar ? 'right' : 'left' }}>{ar ? 'يحتاجك اليوم' : 'Needs you today'}</REyebrow>
       <View style={{ gap: 12 }}>
-        {rows.map((r, i) => (
+        {rows.map((r, i) => r.kind === 'ask_savings' ? (
+          <View key={r.id} style={{ gap: 8, paddingTop: i === 0 ? 0 : 12, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: tok.border }}>
+            <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{r.title}</Text>
+            <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{r.body}</Text>
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginTop: 4 }}>
+              <View style={{ flex: 1 }}><RButton full onPress={() => answerSavings('yes')}>{ar ? 'نعم، أضفها' : 'Yes, add them'}</RButton></View>
+              <View style={{ flex: 1 }}><RButton full variant="ghost" onPress={() => answerSavings('no')}>{ar ? 'لا' : 'No'}</RButton></View>
+            </View>
+          </View>
+        ) : (
           <Pressable key={r.id} onPress={() => go(r)} disabled={r.screen === 'home'}
             style={{ gap: 2, paddingTop: i === 0 ? 0 : 12, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: tok.border }}>
             <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
