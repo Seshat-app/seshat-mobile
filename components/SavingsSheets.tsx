@@ -5,6 +5,7 @@ import { apiFetch } from '../lib/api';
 import { fontBody, fontMono } from '../lib/fonts';
 import { REyebrow, RButton, RField, RPill } from './ui';
 import { Sheet } from './MoneySheets';
+import { DateField } from './DateField';
 import { emitDataChanged } from '../lib/dataEvents';
 
 export type Holding = {
@@ -150,7 +151,7 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
           </Pressable>
         )}
       </View>
-      <RField label={owned ? (ar ? 'تاريخ الشراء تقريباً (YYYY-MM-DD)' : 'Bought on, roughly is fine (YYYY-MM-DD)') : (ar ? 'تاريخ الشراء (YYYY-MM-DD)' : 'Bought on (YYYY-MM-DD)')} value={date} onChange={(v) => setDate(v.replace(/[^0-9-]/g, '').slice(0, 10))} keyboardType="numeric" mono />
+      <DateField label={owned ? (ar ? 'تاريخ الشراء تقريباً' : 'Bought on, roughly is fine') : (ar ? 'تاريخ الشراء' : 'Bought on')} value={date} onChange={setDate} maximumDate={new Date()} />
       {!owned && <View style={{ gap: 8 }}>
         <REyebrow>{ar ? 'خُصم من' : 'Paid from'}</REyebrow>
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -206,7 +207,7 @@ export function TradeSheet({ visible, kind, holding, onClose, onDone }: { visibl
           <RPill active={owned} onPress={() => setOwned(true)}>{ar ? 'شراء سابق' : 'An earlier purchase'}</RPill>
         </View>
       )}
-      {old && <RField label={ar ? 'تاريخ الشراء تقريباً (YYYY-MM-DD)' : 'Bought on, roughly is fine (YYYY-MM-DD)'} value={date} onChange={(v) => setDate(v.replace(/[^0-9-]/g, '').slice(0, 10))} keyboardType="numeric" mono />}
+      {old && <DateField label={ar ? 'تاريخ الشراء تقريباً' : 'Bought on, roughly is fine'} value={date} onChange={setDate} maximumDate={new Date()} />}
       {kind === 'buy' && holding.type === 'gold' && <MakingField value={making} onChange={setMaking} per={makingPer} onPer={setMakingPer} />}
       <View style={{ gap: 6 }}>
         <RField label={ar ? 'سعر الوحدة' : 'Price per unit'} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />

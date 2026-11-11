@@ -134,7 +134,7 @@ export function SavingsCard() {
   );
 }
 
-type TodayRow = { id: string; kind: string; title: string; body: string; screen: 'gam3ya' | 'reminders' | 'debts' | 'review' | 'home'; refId?: string };
+type TodayRow = { id: string; kind: string; title: string; body: string; screen: 'gam3ya' | 'reminders' | 'debts' | 'review' | 'goals' | 'home'; refId?: string };
 
 /**
  * The few things that need you today, from one list the server builds (a gam3ya payment or payout, a bill coming up, a
@@ -160,6 +160,7 @@ export function TodayNeeds() {
     else if (r.screen === 'reminders') router.push('/reminders' as never);
     else if (r.screen === 'debts') router.push('/debts' as never);
     else if (r.screen === 'review') router.push('/review' as never);
+    else if (r.screen === 'goals') router.push('/goals' as never);
   };
   return (
     <RCard accent padding={16} style={{ marginHorizontal: 16, marginTop: 6, marginBottom: 12 }}>
@@ -253,9 +254,13 @@ export function DailyBudgetCard() {
   const n = (v: number) => Math.round(v).toLocaleString('en-US');
   const over = info.ready && (info.leftToday ?? 0) < 0;
   const reason = info.ready
-    ? info.overMonth
-      ? (ar ? 'هذا الشهر تجاوز خطته، لذلك ميزانية اليوم صفر.' : 'This month is already past its plan, so today’s budget is zero.')
-      : info.saveReason === 'goals' && (info.goals ?? []).length > 0
+    ? info.overIncome
+      ? ''
+      : info.relaxed
+        ? (ar ? 'أنفقت أكثر من خطتك هذا الشهر، فلن يكتمل ادخارك بالكامل.' : 'You have spent more than planned this month, so your saving will fall short.')
+        : info.goalsCapped
+          ? (ar ? 'أهدافك تطلب أكثر مما يتحمّله دخلك، فحسب سيشات جزءاً معقولاً منه.' : 'Your goals ask for more than your income can carry, so Seshat counted a realistic share.')
+          : info.saveReason === 'goals' && (info.goals ?? []).length > 0
         ? (ar ? `لتصل إلى ${(info.goals ?? []).map((g) => g.nameAr).join(' و')}.` : `To reach ${(info.goals ?? []).map((g) => g.name).join(' and ')}.`)
         : (ar ? `هذا ${Math.round(info.savingRate * 100)}٪ من دخلك.` : `That is ${Math.round(info.savingRate * 100)}% of your income.`)
     : '';
@@ -281,9 +286,13 @@ export function DailyBudgetCard() {
                 <RProgress value={info.spentToday ?? 0} max={Math.max(1, info.dailyBudget ?? 1)} color={over ? tok.alertText : tok.gold} height={6} />
               </View>
               <Text style={{ marginTop: 10, fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
-                {ar
-                  ? `أنفق حتى ${n(info.dailyBudget ?? 0)} ${cur} اليوم لتحتفظ بـ ${n(info.saveTarget ?? 0)} ${cur} بنهاية الشهر.`
-                  : `Spend up to ${n(info.dailyBudget ?? 0)} ${cur} today to keep ${n(info.saveTarget ?? 0)} ${cur} by the end of the month.`}
+                {info.overIncome
+                  ? (ar ? 'أنفقت دخل هذا الشهر. اكتفِ بالضروريات حتى يبدأ الشهر الجديد.' : 'This month’s income is spent. Stick to essentials until the new month.')
+                  : info.relaxed
+                    ? (ar ? `أنفق حتى ${n(info.dailyBudget ?? 0)} ${cur} اليوم لتبقى ضمن دخلك.` : `Spend up to ${n(info.dailyBudget ?? 0)} ${cur} today to stay within your income.`)
+                    : ar
+                      ? `أنفق حتى ${n(info.dailyBudget ?? 0)} ${cur} اليوم لتحتفظ بـ ${n(info.saveTarget ?? 0)} ${cur} بنهاية الشهر.`
+                      : `Spend up to ${n(info.dailyBudget ?? 0)} ${cur} today to keep ${n(info.saveTarget ?? 0)} ${cur} by the end of the month.`}
               </Text>
               <Text style={{ marginTop: 4, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{reason}</Text>
             </>

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { DateField } from './DateField';
+import { ScrollView } from './Scroll';
+import { useKeyboardHeight } from './useKeyboardHeight';
 import {
-  View, Text, Modal, Pressable, ScrollView, StyleSheet,
+  View, Text, Modal, Pressable, StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Check, RotateCcw } from 'lucide-react-native';
@@ -136,18 +139,20 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
     onClose();
   };
 
+  const kb = useKeyboardHeight();
+  const { height: winHeight } = useWindowDimensions();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' }} onPress={onClose} />
       <View style={{
-        position: 'absolute', left: 0, right: 0, bottom: 0,
+        position: 'absolute', left: 0, right: 0, bottom: kb,
         backgroundColor: tok.void,
         borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
         borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
         overflow: 'hidden',
         paddingTop: 10,
-        paddingBottom: insets.bottom + 12,
-        maxHeight: '88%',
+        paddingBottom: kb ? 12 : insets.bottom + 12,
+        maxHeight: kb > 0 ? Math.max(260, winHeight - kb - insets.top - 8) : winHeight * 0.88,
       }}>
         {/* Handle */}
         <View style={{ alignItems: 'center', paddingBottom: 8 }}>
@@ -223,20 +228,22 @@ export function TxFiltersSheet({ visible, onClose, initial, categories, onApply 
               flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
               gap: 8, marginTop: 8,
             }}>
-              <RField
+              <DateField
                 label={lang === 'ar' ? 'من' : 'From'}
                 value={draft.from ?? ''}
                 onChange={(v) => setDraft((d) => ({ ...d, from: v || undefined }))}
-                placeholder="YYYY-MM-DD"
-                mono ltr
+                maximumDate={new Date()}
+                clearable
+                placeholder={lang === 'ar' ? 'أي تاريخ' : 'Any date'}
                 style={{ flex: 1 }}
               />
-              <RField
+              <DateField
                 label={lang === 'ar' ? 'إلى' : 'To'}
                 value={draft.to ?? ''}
                 onChange={(v) => setDraft((d) => ({ ...d, to: v || undefined }))}
-                placeholder="YYYY-MM-DD"
-                mono ltr
+                maximumDate={new Date()}
+                clearable
+                placeholder={lang === 'ar' ? 'أي تاريخ' : 'Any date'}
                 style={{ flex: 1 }}
               />
             </View>

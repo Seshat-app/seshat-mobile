@@ -16,6 +16,7 @@ import { CategoryIcon, CatIconAlias } from './icons';
 import { catIdFromName, catLabel, type CatId } from '../lib/categoryMap';
 import { parseNL, parseNLMany } from '../lib/parseNL';
 import { useKeyboardHeight } from './useKeyboardHeight';
+import { ScrollView as KScroll } from './Scroll';
 import { useRecorder } from './useRecorder';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { uploadReceipt } from '../lib/cloudinary';
@@ -676,7 +677,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           )}
 
           {/* The middle scrolls (so the keyboard can never trap it); the top bar and Save stay put. */}
-          <ScrollView
+          <KScroll
             style={{ flexShrink: 1, flexGrow: 0 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -943,7 +944,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
             </View>
           ) : null}
 
-          </ScrollView>
+          </KScroll>
 
           {/* Note: opened from the icon beside the amount; takes no room until then. */}
           <View style={{ paddingHorizontal: 18, paddingTop: showNotes || type === 'income' ? 8 : 0 }}>

@@ -8,7 +8,7 @@ import { Coins } from 'lucide-react-native';
 import { apiFetch } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
-import { RCard, REyebrow, RButton } from '../components/ui';
+import { RCard, REyebrow, RButton, RPill } from '../components/ui';
 import { PlanScreen } from '../components/PlanShell';
 import { type Holding } from '../components/SavingsSheets';
 
@@ -19,6 +19,11 @@ type Overview = {
 type Point = { date: string; value: number; cost: number };
 
 const n0 = (v: number) => Math.round(v).toLocaleString('en-US');
+/** "12 Aug", with the year when it is not this year. */
+const shortDate = (iso: string, ar: boolean) => {
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString(ar ? 'ar-EG' : 'en-GB', d.getFullYear() === new Date().getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
+};
 export const typeName = (t: string, ar: boolean) => ({ gold: ar ? 'ذهب' : 'Gold', currency: ar ? 'عملات' : 'Currency', crypto: ar ? 'كريبتو' : 'Crypto', stock: ar ? 'أسهم' : 'Stocks', other: ar ? 'أخرى' : 'Other' } as Record<string, string>)[t] ?? t;
 
 /** Everything you saved or invested, valued today, with what you gained or lost. */
@@ -29,6 +34,7 @@ export default function SavingsScreen() {
   const router = useRouter();
   const [ov, setOv] = useState<Overview | null>(null);
   const [pts, setPts] = useState<Point[]>([]);
+  const [range, setRange] = useState<'1m' | '3m' | '6m' | '1y' | 'all'>('3m');
   const [alerts, setAlerts] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -37,12 +43,17 @@ export default function SavingsScreen() {
     try {
       const r = await apiFetch<{ data: Overview }>('/savings');
       setOv(r.data);
-      apiFetch<{ data: { points: Point[] } }>('/savings/history/portfolio?weeks=13').then((h) => setPts(h.data.points)).catch(() => setPts([]));
     } catch { setOv((v) => v); }
     finally { setRefreshing(false); }
   }, []);
   useEffect(() => { apiFetch<{ data: { savingsAlerts?: boolean } }>('/me').then((r) => setAlerts(r.data.savingsAlerts !== false)).catch(() => {}); }, []);
   useEffect(() => { void load(); }, [load]);
+  // The chart follows the range chosen above it; it reloads when the range or what you hold changes.
+  useEffect(() => {
+    let alive = true;
+    apiFetch<{ data: { points: Point[] } }>(`/savings/history/portfolio?range=${range}`).then((h) => { if (alive) setPts(h.data.points); }).catch(() => { if (alive) setPts([]); });
+    return () => { alive = false; };
+  }, [range, ov?.cost, ov?.holdings.length]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const up = (ov?.gain ?? 0) >= 0;
@@ -67,7 +78,7 @@ export default function SavingsScreen() {
             <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 13, textAlign: 'center', maxWidth: 290, lineHeight: 19 }}>
               {ar ? 'اشتريت ذهباً أو دولاراً أو استثمرت في شيء؟ أضفه ليتتبّع سيشات قيمته ومكسبك أو خسارتك.' : 'Bought gold or dollars, or invested in something? Add it and Seshat tracks its value and what you gained or lost.'}
             </Text>
-            <RButton onPress={() => router.push('/savings/new' as never)}>{ar ? 'أضف ادخاراً' : 'Add a saving'}</RButton>
+            <View style={{ marginTop: 14, alignSelf: 'center' }}><RButton onPress={() => router.push('/savings/new' as never)}>{ar ? 'أضف ادخاراً' : 'Add a saving'}</RButton></View>
           </View>
         ) : ov ? (
           <>
@@ -80,16 +91,29 @@ export default function SavingsScreen() {
                   <Text style={{ fontFamily: fontMono('regular'), fontSize: 14, color: gainColor }}>{up ? '+' : '−'}{n0(Math.abs(ov.gain))}{ov.gainPct !== null ? `  (${up ? '+' : '−'}${Math.abs(ov.gainPct)}%)` : ''}</Text></View>
                 {ov.realized !== 0 && <View><REyebrow>{ar ? 'محقَّق' : 'Realised'}</REyebrow><Text style={{ fontFamily: fontMono('regular'), fontSize: 14, color: ov.realized >= 0 ? '#6FCF97' : tok.alertText }}>{ov.realized >= 0 ? '+' : '−'}{n0(Math.abs(ov.realized))}</Text></View>}
               </View>
-              {line && (
-                <View style={{ marginTop: 14 }}>
-                  <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-                    <Line x1="0" y1={H - 1} x2={W} y2={H - 1} stroke={tok.border} strokeWidth="1" />
-                    <Polyline points={line.cost} fill="none" stroke={tok.muted} strokeWidth="1.5" strokeDasharray="4 4" />
-                    <Polyline points={line.value} fill="none" stroke={tok.gold} strokeWidth="2.2" />
-                  </Svg>
-                  <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted, marginTop: 4, textAlign: ar ? 'right' : 'left' }}>{ar ? 'آخر ١٣ أسبوعاً · الذهبي القيمة، المنقّط ما دفعت' : 'Last 13 weeks · gold line is its worth, dashed is what you put in'}</Text>
+              <View style={{ marginTop: 14 }}>
+                <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 6, marginBottom: 10 }}>
+                  {(['1m', '3m', '6m', '1y', 'all'] as const).map((r) => (
+                    <RPill key={r} active={range === r} onPress={() => setRange(r)}>{({ '1m': ar ? 'شهر' : '1M', '3m': ar ? '٣ أشهر' : '3M', '6m': ar ? '٦ أشهر' : '6M', '1y': ar ? 'سنة' : '1Y', all: ar ? 'الكل' : 'All' })[r]}</RPill>
+                  ))}
                 </View>
-              )}
+                {line ? (
+                  <>
+                    <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+                      <Line x1="0" y1={H - 1} x2={W} y2={H - 1} stroke={tok.border} strokeWidth="1" />
+                      <Polyline points={line.cost} fill="none" stroke={tok.muted} strokeWidth="1.5" strokeDasharray="4 4" />
+                      <Polyline points={line.value} fill="none" stroke={tok.gold} strokeWidth="2.2" />
+                    </Svg>
+                    <View style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                      <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted }}>{shortDate(pts[0].date, ar)}</Text>
+                      <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted }}>{ar ? 'اليوم' : 'Today'}</Text>
+                    </View>
+                    <Text style={{ fontFamily: fontBody(lang), fontSize: 11, color: tok.muted, marginTop: 6, textAlign: ar ? 'right' : 'left' }}>{ar ? 'الخط الذهبي قيمتها، والمنقّط ما دفعت.' : 'Gold line is what it is worth, dashed is what you put in.'}</Text>
+                  </>
+                ) : (
+                  <Text style={{ fontFamily: fontBody(lang), fontSize: 12, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{ar ? 'لا بيانات كافية لهذه الفترة بعد.' : 'Not enough history for this period yet.'}</Text>
+                )}
+              </View>
               {ov.stale && <Text style={{ marginTop: 8, fontFamily: fontBody(lang), fontSize: 12, color: tok.alertText, textAlign: ar ? 'right' : 'left' }}>{ar ? 'بعض الأسعار غير متاحة الآن، ويُحسب ما دفعته.' : 'Some prices are not available right now; those are counted at what you paid.'}</Text>}
             </RCard>
 

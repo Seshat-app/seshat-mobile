@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, Modal, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, Pressable, Modal, StyleSheet, Alert, useWindowDimensions } from 'react-native';
+import { ScrollView } from './Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Landmark, CreditCard, Wallet, Banknote, ArrowDown, ArrowUpDown, Check } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
@@ -21,13 +22,16 @@ export function Sheet({ visible, onClose, title, hint, children }: {
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
   const kb = useKeyboardHeight();
+  const { height: winHeight } = useWindowDimensions();
   const ar = lang === 'ar';
+  // With the keyboard up the sheet may only be as tall as the room above it, so its top never leaves the screen.
+  const maxH = kb > 0 ? Math.max(260, winHeight - kb - insets.top - 8) : winHeight * 0.92;
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.72)' }} onPress={onClose} />
       <View style={{
         position: 'absolute', left: 0, right: 0, bottom: kb,
-        backgroundColor: tok.void, maxHeight: '92%',
+        backgroundColor: tok.void, maxHeight: maxH,
         borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal,
         paddingHorizontal: 18, paddingTop: 10, paddingBottom: kb ? 14 : insets.bottom + 18,
         borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
@@ -349,6 +353,12 @@ export type DailyBudgetInfo = {
   daysLeft?: number;
   monthRemaining?: number;
   overMonth?: boolean;
+  /** The saving target cannot be kept this month; the budget shown is what the income still allows. */
+  relaxed?: boolean;
+  /** The month's income is already spent. */
+  overIncome?: boolean;
+  /** The goals ask for more than a sensible share of income, so only that share was counted. */
+  goalsCapped?: boolean;
   unrealistic?: boolean;
 };
 

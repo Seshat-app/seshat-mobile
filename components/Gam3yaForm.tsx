@@ -6,7 +6,7 @@ import { fontBody } from '../lib/fonts';
 import { REyebrow, RButton, RField, RPill, RCard } from './ui';
 import { emitDataChanged } from '../lib/dataEvents';
 
-export type Suggestion = { goalName: string; goalNameAr: string; remaining: number; members: number; amount: number; turn: number; pot: number; fits: boolean | null };
+export type Suggestion = { goalName: string; goalNameAr: string; remaining: number; members: number; amount: number; turn: number; pot: number; fits: boolean | null; extendsDeadline?: boolean; endsOn?: string };
 const n0 = (v: number) => Math.round(v).toLocaleString('en-US');
 
 /** The form for a new gam3ya. Lives on its own screen. */

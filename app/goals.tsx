@@ -11,6 +11,7 @@ import { useAppData } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 import { RCard, REyebrow, RButton, RProgress, RField, RPill } from '../components/ui';
+import { DateField } from '../components/DateField';
 import { PlanScreen } from '../components/PlanShell';
 import { SkeletonRow } from '../components/Skeleton';
 
@@ -256,7 +257,7 @@ function EditGoalSheet({
             <RField label={lang === 'ar' ? 'المبلغ المستهدف' : 'Target amount'} value={target} onChange={(v) => setTarget(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" ltr mono />
             <RField label={lang === 'ar' ? 'المُدخر' : 'Saved so far'} value={saved} onChange={(v) => setSaved(v.replace(/[^0-9.]/g, ''))} placeholder="0" keyboardType="decimal-pad" ltr mono />
             <View style={{ gap: 8 }}>
-              <RField label={lang === 'ar' ? 'الموعد المستهدف (اختياري)' : 'Reach it by (optional)'} value={deadline} onChange={(v) => setDeadline(v.replace(/[^0-9-]/g, '').slice(0, 10))} placeholder="YYYY-MM-DD" keyboardType="numeric" ltr mono />
+              <DateField label={lang === 'ar' ? 'الموعد المستهدف (اختياري)' : 'Reach it by (optional)'} value={deadline} onChange={setDeadline} minimumDate={new Date()} clearable />
               <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', gap: 8, flexWrap: 'wrap' }}>
                 {[3, 6, 12].map((m) => (
                   <RPill key={m} active={deadline === inMonths(m)} onPress={() => setDeadline(inMonths(m))}>

@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import { View, Text, Pressable, Animated, Easing } from 'react-native';
+import { View, Text, Pressable, Animated, Easing, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import { LiquidBackdrop } from './LiquidBackdrop';
@@ -67,13 +67,15 @@ export function PlanScreen({
             onPress={onAdd}
             hitSlop={10}
             style={({ pressed }) => ({
-              width: 36, height: 36, borderRadius: radius.btn,
-              backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.goldLight : tok.gold),
-              alignItems: 'center', justifyContent: 'center',
+              // Same family as the workspace chip beside it: a round, gold-tinted control rather than a solid gold block.
+              width: 32, height: 32, borderRadius: 16,
+              backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.goldLight : tok.glowShellBg),
+              borderWidth: StyleSheet.hairlineWidth, borderColor: tok.glowShellBorder,
+              alignItems: 'center', justifyContent: 'center', marginLeft: 2,
             })}
           >
-            <LiquidBackdrop radius={radius.btn} tint={tok.gold} fallback="transparent" />
-            <Plus size={20} color={tok.void} strokeWidth={2.2} />
+            <LiquidBackdrop radius={16} tint={tok.gold} fallback="transparent" />
+            <Plus size={18} color={tok.gold} strokeWidth={2.4} />
           </Pressable>
         )}
       </FrostedHeader>

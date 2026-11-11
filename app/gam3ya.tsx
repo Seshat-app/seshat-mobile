@@ -69,12 +69,14 @@ export default function Gam3yaScreen() {
               <Lightbulb size={18} color={tok.gold} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>
-                  {ar ? `جمعية تناسب هدفك «${s.goalNameAr}»` : `A gam3ya that fits your goal “${s.goalName}”`}
+                  {s.extendsDeadline
+                    ? (ar ? `جمعية يتحمّلها دخلك لهدف «${s.goalNameAr}»` : `A gam3ya your income can carry for “${s.goalName}”`)
+                    : (ar ? `جمعية تناسب هدفك «${s.goalNameAr}»` : `A gam3ya that fits your goal “${s.goalName}”`)}
                 </Text>
                 <Text style={{ marginTop: 4, fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
                   {ar
-                    ? `${s.members} شهور × ${n0(s.amount)} شهرياً، ودورك في الشهر ${s.turn}، فيصلك ${n0(s.pot)} قبل الموعد.${s.fits === false ? ' القسط مرتفع على دخلك.' : ''}`
-                    : `${s.members} months at ${n0(s.amount)} a month, your turn in month ${s.turn}: ${n0(s.pot)} lands before the deadline.${s.fits === false ? ' That is a big share of your income.' : ''}`}
+                    ? `${s.members} شهراً × ${n0(s.amount)} شهرياً، ودورك في الشهر ${s.turn}، فيصلك ${n0(s.pot)}.${s.extendsDeadline ? ` تنتهي نحو ${new Date(s.endsOn ?? '').toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}، أي بعد موعد هدفك، فأجّل موعد الهدف ليناسبها.` : ' يصلك قبل الموعد.'}`
+                    : `${s.members} months at ${n0(s.amount)} a month, your turn in month ${s.turn}: ${n0(s.pot)}.${s.extendsDeadline ? ` It ends around ${new Date(s.endsOn ?? '').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}, after your goal's deadline, so move the goal's deadline to match.` : ' It lands before the deadline.'}`}
                 </Text>
                 <Pressable onPress={() => router.push({ pathname: '/gam3ya/new', params: { goal: s.goalName, goalAr: s.goalNameAr, amount: String(s.amount), members: String(s.members), turn: String(s.turn) } } as never)} style={{ marginTop: 8 }}>
                   <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.gold, textAlign: ar ? 'right' : 'left' }}>{ar ? 'أنشئها كما هي (اقتراح فقط)' : 'Start from this (a suggestion only)'}</Text>
@@ -91,7 +93,7 @@ export default function Gam3yaScreen() {
             <Text style={{ color: tok.muted, fontFamily: fontBody(lang), fontSize: 13, textAlign: 'center', maxWidth: 280, lineHeight: 19 }}>
               {ar ? 'أضف جمعيتك ليذكّرك سيشات بالقسط ويحسب ما دفعته وما تبقّى.' : 'Add yours and Seshat reminds you each payment and keeps count of what you paid and what is left.'}
             </Text>
-            <RButton onPress={() => router.push('/gam3ya/new' as never)}>{ar ? 'أضف جمعية' : 'Add a gam3ya'}</RButton>
+            <View style={{ marginTop: 14, alignSelf: 'center' }}><RButton onPress={() => router.push('/gam3ya/new' as never)}>{ar ? 'أضف جمعية' : 'Add a gam3ya'}</RButton></View>
           </View>
         ) : items.map((g) => {
           const label = g.overdue > 0

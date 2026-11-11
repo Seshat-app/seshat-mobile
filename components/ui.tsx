@@ -10,6 +10,7 @@ import { radius } from '../lib/theme';
 import { DURATION, EASE } from '../lib/motion';
 import { Glass } from './Glass';
 import { pressFeel, hapticLight, hapticSelection } from './press';
+import { useRevealOnFocus } from './Scroll';
 
 // Soft top-down reflection painted inside a card's core. Replaces the old
 // hard `borderTopColor` hairline — gold on focal/glow cards, a faint white
@@ -290,6 +291,8 @@ export function RField({
 }) {
   const { tok, lang, mode } = useI18n();
   const [focused, setFocused] = useState(false);
+  const reveal = useRevealOnFocus();
+  const inputRef = useRef<TextInput>(null);
   const forceLtr = ltr ?? (keyboardType === 'email-address' || keyboardType === 'number-pad' || keyboardType === 'decimal-pad' || keyboardType === 'numeric');
   return (
     <View style={style}>
@@ -325,6 +328,7 @@ export function RField({
           />
           <CardSheen />
           <TextInput
+            ref={inputRef}
             value={value}
             onChangeText={onChange}
             placeholder={placeholder}
@@ -341,7 +345,7 @@ export function RField({
             onSubmitEditing={onSubmitEditing}
             returnKeyType={returnKeyType}
             textAlignVertical={multiline ? 'top' : undefined}
-            onFocus={() => setFocused(true)}
+            onFocus={() => { setFocused(true); reveal?.(inputRef.current); }}
             onBlur={() => setFocused(false)}
             style={{
               backgroundColor: 'transparent',
