@@ -25,11 +25,10 @@ export default function HoldingScreen() {
   const [h, setH] = useState<Holding | null | undefined>(undefined);
   const [trade, setTrade] = useState<'buy' | 'sell' | null>(null);
   const [price, setPrice] = useState('');
-  const [premium, setPremium] = useState('');
   const [goals, setGoals] = useState<Array<{ _id: string; nameEn: string; nameAr: string; savedAmount: number; targetAmount: number }>>([]);
 
   const load = useCallback(async () => {
-    try { const r = await apiFetch<{ data: Holding }>(`/savings/${id}`); setH(r.data); setPremium(String(r.data.premiumPct || '')); }
+    try { const r = await apiFetch<{ data: Holding }>(`/savings/${id}`); setH(r.data); }
     catch { setH(null); }
   }, [id]);
   useEffect(() => { void load(); }, [load]);
@@ -73,12 +72,6 @@ export default function HoldingScreen() {
           <View style={{ flex: 1 }}><RButton full variant="ghost" onPress={() => setTrade('sell')} disabled={h.quantity <= 0}>{ar ? 'بِع' : 'Sell'}</RButton></View>
         </View>
 
-        {h.type === 'gold' && (
-          <RCard padding={16}>
-            <RField label={ar ? 'زيادة سعر المحل عن السعر العالمي %' : 'Shop price above the world price, %'} value={premium} onChange={(v) => setPremium(v.replace(/[^0-9.\-]/g, ''))} keyboardType="decimal-pad" mono />
-            <View style={{ marginTop: 10 }}><RButton full variant="ghost" onPress={() => patch({ premiumPct: parseFloat(premium) || 0 })}>{ar ? 'احفظ' : 'Save'}</RButton></View>
-          </RCard>
-        )}
         {h.type === 'other' && (
           <RCard padding={16}>
             <RField label={ar ? 'سعر الوحدة الحالي' : 'Current price per unit'} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />

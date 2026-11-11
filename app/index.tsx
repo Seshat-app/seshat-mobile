@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, Platform } from 'react-native';
+import { View, Text, Pressable, Platform, Linking } from 'react-native';
+import { Check } from 'lucide-react-native';
+import { SITE_URL } from '../lib/brand';
 import { useRouter } from 'expo-router';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
@@ -60,6 +62,7 @@ export default function AuthRouter() {
   const [pwd2, setPwd2] = useState('');
   // Optional "referred by": a switch that reveals the referrer's code field.
   const [referred, setReferred] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [refCode, setRefCode] = useState('');
   const [code, setCode] = useState('');
   const [sessionId, setSessionId] = useState('');
@@ -151,6 +154,7 @@ export default function AuthRouter() {
   const submitComplete = async () => {
     if (pwd !== pwd2) { setErr('Passwords do not match'); return; }
     if (pwd.length < 8) { setErr('Min. 8 characters'); return; }
+    if (!agreed) { setErr(lang === 'ar' ? 'يرجى الموافقة على الشروط وسياسة الخصوصية للمتابعة' : 'Please accept the Terms and the Privacy Policy to continue'); return; }
     setErr(''); setBusy(true);
     const r = await registerComplete(sessionId, name || email.split('@')[0], pwd, referred ? refCode.trim() : undefined);
     if (r.success) {
@@ -381,14 +385,20 @@ export default function AuthRouter() {
       <AuthChrome
         footer={
           <>
-            <RButton full onPress={submitComplete} disabled={busy || (!!pwd2 && pwd !== pwd2)} loading={busy}>
+            <Pressable onPress={() => setAgreed((v) => !v)} style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+              <View style={{ width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: agreed ? tok.gold : tok.border, backgroundColor: agreed ? tok.gold : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+                {agreed ? <Check size={16} color={tok.void} strokeWidth={3} /> : null}
+              </View>
+              <Text style={{ flex: 1, fontFamily: fontBody(lang), fontSize: 13, lineHeight: 19, color: tok.bone, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+                {lang === 'ar' ? 'أوافق على ' : 'I agree to the '}
+                <Text onPress={() => Linking.openURL(`${SITE_URL}/terms`).catch(() => {})} style={{ color: tok.gold }}>{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</Text>
+                {lang === 'ar' ? ' و' : ' and the '}
+                <Text onPress={() => Linking.openURL(`${SITE_URL}/privacy`).catch(() => {})} style={{ color: tok.gold }}>{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</Text>
+              </Text>
+            </Pressable>
+            <RButton full onPress={submitComplete} disabled={busy || !agreed || (!!pwd2 && pwd !== pwd2)} loading={busy}>
               {busy ? t('pleaseWait') : t('createAccount')}
             </RButton>
-            <Text style={{
-              marginTop: 14,
-              fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 0.4,
-              color: tok.muted, textAlign: 'center', lineHeight: 16,
-            }}>{t('termsCopy')}</Text>
           </>
         }
       >

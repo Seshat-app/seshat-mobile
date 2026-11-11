@@ -65,7 +65,6 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
   const accts = useAccounts(visible);
   const [type, setType] = useState<(typeof TYPES)[number]>('gold');
   const [karat, setKarat] = useState(21);
-  const [premium, setPremium] = useState('');
   const [symbol, setSymbol] = useState('USD');
   const [name, setName] = useState('');
   const [qty, setQty] = useState('');
@@ -79,8 +78,8 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
   const [makingPer, setMakingPer] = useState<'gram' | 'total'>('gram');
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (visible) { setType('gold'); setKarat(21); setPremium(''); setSymbol('USD'); setName(''); setQty(''); setPrice(''); setDate(today()); setAcct(null); setMove(true); setOwned(false); setMaking(''); setMakingPer('gram'); } }, [visible]);
-  const quote = useQuote(type !== 'other', type === 'gold' ? `type=gold&karat=${karat}&premiumPct=${num(premium)}` : `type=${type}&symbol=${symbol}`, owned && isDay(date) ? date : null);
+  useEffect(() => { if (visible) { setType('gold'); setKarat(21); setSymbol('USD'); setName(''); setQty(''); setPrice(''); setDate(today()); setAcct(null); setMove(true); setOwned(false); setMaking(''); setMakingPer('gram'); } }, [visible]);
+  const quote = useQuote(type !== 'other', type === 'gold' ? `type=gold&karat=${karat}` : `type=${type}&symbol=${symbol}`, owned && isDay(date) ? date : null);
 
   const unitLabel = type === 'gold' ? (ar ? 'جرام' : 'grams') : type === 'stock' ? (ar ? 'أسهم' : 'shares') : type === 'other' ? (ar ? 'وحدات' : 'units') : symbol;
   const ok = num(qty) > 0 && num(price) > 0 && (type !== 'other' || !!name.trim()) && (type !== 'stock' || /^[A-Z0-9.^=\-]{1,14}$/.test(symbol)) && /^\d{4}-\d{2}-\d{2}$/.test(date);
@@ -91,7 +90,7 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
     try {
       await apiFetch('/savings', { method: 'POST', body: JSON.stringify({
         type, name: name.trim() || undefined, symbol: type === 'currency' || type === 'crypto' || type === 'stock' ? symbol : undefined, karat: type === 'gold' ? karat : undefined,
-        premiumPct: type === 'gold' && premium ? num(premium) : undefined, quantity: num(qty), unitPrice: num(price), date, fees: fees || undefined, cardId: owned ? undefined : acct ?? undefined, moveMoney: owned ? false : move,
+        quantity: num(qty), unitPrice: num(price), date, fees: fees || undefined, cardId: owned ? undefined : acct ?? undefined, moveMoney: owned ? false : move,
       }) });
       emitDataChanged(); onDone();
     } catch (err) { Alert.alert(ar ? 'تعذّر الحفظ' : 'Could not save', err instanceof Error ? err.message : undefined); }
@@ -159,9 +158,6 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
           {accts.filter((a) => a.kind !== 'cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
         </View>
       </View>}
-      {type === 'gold' && (
-        <RField label={ar ? 'فرق السوق المحلي عن العالمي % (اختياري)' : 'Local price above the world price, % (optional)'} value={premium} onChange={(v) => setPremium(v.replace(/[^0-9.\-]/g, ''))} keyboardType="decimal-pad" mono />
-      )}
       {ok && <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: '#9C9A92', textAlign: ar ? 'right' : 'left' }}>
         {ar ? `التكلفة ${Math.round(num(qty) * num(price) + fees).toLocaleString('en-US')}${fees > 0 ? ` · منها مصنعية ${Math.round(fees).toLocaleString('en-US')}` : ''}` : `Cost ${Math.round(num(qty) * num(price) + fees).toLocaleString('en-US')}${fees > 0 ? ` · masna3ya ${Math.round(fees).toLocaleString('en-US')} of it` : ''}`}
       </Text>}

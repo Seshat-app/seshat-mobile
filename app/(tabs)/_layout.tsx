@@ -13,6 +13,7 @@ import { fontMono } from '../../lib/fonts';
 import * as Haptics from 'expo-haptics';
 import { RFAB, RecordingBanner } from '../../components/shell';
 import { ReleaseNotesGate } from '../../components/ReleaseNotesGate';
+import { TermsGate } from '../../components/TermsGate';
 import { AddTransactionSheet, type AddTxPayload, type AddTxPrefill } from '../../components/AddTransactionSheet';
 import { AddOptionsSheet } from '../../components/AddOptionsSheet';
 import { RToast } from '../../components/ui';
@@ -272,6 +273,7 @@ export default function TabsLayout() {
       />
 
       <Tour visible={tourOpen} onClose={() => setTourOpen(false)} />
+      <TermsGate />
       <ReleaseNotesGate />
     </View>
   );

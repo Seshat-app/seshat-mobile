@@ -101,7 +101,8 @@ export async function registerComplete(sessionId: string, username: string, pass
     const res = await fetch(`${API_BASE}/auth/register/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, username, password, ...(referralCode ? { referralCode } : {}) }),
+      // Creating the account is the agreement to the Terms and Privacy Policy (the button stays off until the box is ticked).
+      body: JSON.stringify({ sessionId, username, password, acceptedTerms: true, ...(referralCode ? { referralCode } : {}) }),
     });
     const json = await res.json();
     if (!res.ok || !json.success) {
