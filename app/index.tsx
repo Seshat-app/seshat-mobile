@@ -300,8 +300,10 @@ export default function AuthRouter() {
           label={t('password')} value={pwd} onChange={setPwd}
           placeholder={t('passwordPlaceholder')} secureTextEntry
           textContentType="password"
-          secondary={<AuthLink gold onPress={() => switchView('forgot')}>{t('forgotIt')}</AuthLink>}
         />
+        <Pressable onPress={() => switchView('forgot')} hitSlop={10} style={{ alignSelf: lang === 'ar' ? 'flex-start' : 'flex-end', marginTop: 10 }}>
+          <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.gold }}>{lang === 'ar' ? 'نسيتِ كلمة المرور؟' : 'Forgot your password?'}</Text>
+        </Pressable>
       </AuthChrome>
     );
   }
