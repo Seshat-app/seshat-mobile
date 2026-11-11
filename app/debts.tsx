@@ -90,7 +90,7 @@ export default function DebtsScreen() {
     <PlanScreen
       title={lang === 'ar' ? 'الديون' : 'Debts'}
       subtitle={lang === 'ar' ? 'ما الذي تدين به' : 'What you still owe'}
-      onAdd={() => setEditing('new')}
+      onAdd={!loading && items.length === 0 && !showArchived ? undefined : () => setEditing('new')}
       refreshing={refreshing}
     >
       <ScreenScroll
@@ -109,7 +109,7 @@ export default function DebtsScreen() {
         {loading ? (
           <RCard padding={18}>{Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}</RCard>
         ) : items.length === 0 ? (
-          <Empty text={showArchived ? (lang === 'ar' ? 'لا توجد ديون مؤرشفة.' : 'No archived debts.') : (lang === 'ar' ? 'لا توجد ديون.' : 'No debts. Stay that way.')} sub={showArchived ? '' : (lang === 'ar' ? 'إذا ظهر دين، سجّله هنا.' : 'If one shows up, log it here.')} />
+          <Empty text={showArchived ? (lang === 'ar' ? 'لا توجد ديون مؤرشفة.' : 'No archived debts.') : (lang === 'ar' ? 'لا توجد ديون.' : 'No debts. Stay that way.')} sub={showArchived ? '' : (lang === 'ar' ? 'إذا ظهر دين، سجّله هنا.' : 'If one shows up, log it here.')} cta={showArchived ? undefined : (lang === 'ar' ? 'أضف ديناً' : 'Add a debt')} onCta={() => setEditing('new')} />
         ) : (
           <View style={{ gap: 10 }}>
             {items.map((d) => <DebtRow key={d._id} debt={d} onPress={() => setEditing(d)} />)}
@@ -138,7 +138,7 @@ export default function DebtsScreen() {
   );
 }
 
-function Empty({ text, sub }: { text: string; sub: string }) {
+function Empty({ text, sub, cta, onCta }: { text: string; sub: string; cta?: string; onCta?: () => void }) {
   const { tok, lang } = useI18n();
   return (
     <View style={{ paddingTop: 40, alignItems: 'center' }}>
@@ -150,6 +150,7 @@ function Empty({ text, sub }: { text: string; sub: string }) {
         marginTop: 6, color: tok.muted, fontFamily: fontBody(lang), fontSize: 13,
         textAlign: 'center', maxWidth: 280, lineHeight: 19,
       }}>{sub}</Text>
+      {cta && onCta ? <View style={{ marginTop: 14 }}><RButton onPress={onCta}>{cta}</RButton></View> : null}
     </View>
   );
 }

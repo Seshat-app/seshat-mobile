@@ -55,7 +55,7 @@ export default function Gam3yaScreen() {
     <PlanScreen
       title={ar ? 'الجمعيات' : 'Gam3yas'}
       subtitle={ar ? 'ما تدفعه وموعد دورك' : 'What you pay and when you collect'}
-      onAdd={() => router.push('/gam3ya/new' as never)}
+      onAdd={items !== null && items.length === 0 ? undefined : () => router.push('/gam3ya/new' as never)}
       refreshing={refreshing}
     >
       <ScreenScroll

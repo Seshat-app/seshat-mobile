@@ -13,7 +13,7 @@ import { loadAppLock, onForeground, unlock, useAppLock } from '../lib/appLock';
  */
 export function AppLockGate() {
   const { tok, lang } = useI18n();
-  const { enabled, locked, loaded } = useAppLock();
+  const { enabled, locked, loaded, signedIn } = useAppLock();
   const [appState, setAppState] = useState(AppState.currentState);
   const backgroundedAt = useRef<number | null>(null);
   const prompting = useRef(false);
@@ -41,12 +41,12 @@ export function AppLockGate() {
 
   // Ask as soon as the lock is showing and the app is in the foreground.
   useEffect(() => {
-    if (enabled && locked && appState === 'active') void tryUnlock();
+    if (enabled && signedIn && locked && appState === 'active') void tryUnlock();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, locked, appState]);
+  }, [enabled, signedIn, locked, appState]);
 
   if (!loaded) return null; // the splash covers the app until the saved choice is read
-  if (!enabled) return null;
+  if (!enabled || !signedIn) return null;
   const covered = locked || appState !== 'active';
   if (!covered) return null;
 

@@ -1,3 +1,4 @@
+import { setLockSession } from './appLock';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
@@ -32,10 +33,12 @@ async function getToken(): Promise<string | null> {
 
 export async function setToken(token: string): Promise<void> {
   await SecureStore.setItemAsync('auth_token', token);
+  setLockSession(true);
 }
 
 export async function clearToken(): Promise<void> {
   await SecureStore.deleteItemAsync('auth_token');
+  setLockSession(false);
   // The capture-only device token (read by the iOS Shortcuts action) goes with the session.
   await SecureStore.deleteItemAsync('capture_config').catch(() => {});
 }

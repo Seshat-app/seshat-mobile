@@ -63,7 +63,7 @@ export default function OrgsListScreen() {
     <PlanScreen
       title={lang === 'ar' ? 'المنظمات' : 'Organizations'}
       subtitle={lang === 'ar' ? 'مساحات العمل المشتركة' : 'Shared workspaces'}
-      onAdd={() => router.push('/orgs/new')}
+      onAdd={!loading && items.length === 0 ? undefined : () => router.push('/orgs/new')}
     >
       <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, paddingTop: 8 }}

@@ -57,7 +57,7 @@ export default function SavingsScreen() {
   })();
 
   return (
-    <PlanScreen title={ar ? 'المدخرات' : 'Savings'} subtitle={ar ? 'ما اشتريته وكم كسبت أو خسرت' : 'What you bought, and what it gained or lost'} onAdd={() => router.push('/savings/new' as never)} refreshing={refreshing}>
+    <PlanScreen title={ar ? 'المدخرات' : 'Savings'} subtitle={ar ? 'ما اشتريته وكم كسبت أو خسرت' : 'What you bought, and what it gained or lost'} onAdd={ov && ov.holdings.length === 0 ? undefined : () => router.push('/savings/new' as never)} refreshing={refreshing}>
       <ScreenScroll contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 96, paddingTop: 8, gap: 12 }} showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load('refresh')} tintColor={tok.gold} colors={[tok.gold]} progressBackgroundColor={tok.surface} />}>
         {ov && ov.holdings.length === 0 ? (

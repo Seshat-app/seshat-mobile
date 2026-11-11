@@ -59,8 +59,9 @@ export default function HoldingScreen() {
             {g >= 0 ? (ar ? 'مكسب ' : 'Gain ') : (ar ? 'خسارة ' : 'Loss ')}{g >= 0 ? '+' : '−'}{n0(Math.abs(g))}{h.gainPct !== null ? `  (${g >= 0 ? '+' : '−'}${Math.abs(h.gainPct)}%)` : ''}</Text>}
           <View style={{ marginTop: 14, gap: 6 }}>
             {row(ar ? 'سعر الوحدة اليوم' : 'Price today', h.unitPrice !== null ? `${n0(h.unitPrice)} ${h.currency}${h.priceSource === 'manual' ? (ar ? ' (يدوي)' : ' (manual)') : ''}` : '—')}
-            {row(ar ? 'متوسط سعر شرائك' : 'Your average price', `${n0(h.avgPrice)} ${h.currency}`)}
+            {row(h.making > 0 ? (ar ? 'متوسط سعر شرائك (بدون المصنعية)' : 'Your average price (without masna3ya)') : (ar ? 'متوسط سعر شرائك' : 'Your average price'), `${n0(h.making > 0 ? h.avgPriceNoFees : h.avgPrice)} ${h.currency}`)}
             {row(ar ? 'ما دفعته' : 'You put in', `${n0(h.cost)} ${h.currency}`)}
+            {h.making > 0 ? row(ar ? 'منها مصنعية (لا تعود عند البيع)' : 'Of it, masna3ya (not recovered when you sell)', `${n0(h.making)} ${h.currency}`) : null}
             {h.realized !== 0 && row(ar ? 'ربح محقَّق من البيع' : 'Realised from sales', `${h.realized >= 0 ? '+' : '−'}${n0(Math.abs(h.realized))}`, h.realized >= 0 ? '#6FCF97' : tok.alertText)}
           </View>
         </RCard>
@@ -100,7 +101,7 @@ export default function HoldingScreen() {
               <View key={i} style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: tok.muted }}>{l.date.slice(0, 10)}</Text>
                 <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: l.kind === 'buy' ? tok.bone : '#6FCF97' }}>
-                  {l.kind === 'buy' ? (ar ? 'شراء' : 'Bought') : (ar ? 'بيع' : 'Sold')} {l.quantity} {h.unit} @ {n0(l.unitPrice)}
+                  {l.kind === 'buy' ? (ar ? 'شراء' : 'Bought') : (ar ? 'بيع' : 'Sold')} {l.quantity} {h.unit} @ {n0(l.unitPrice)}{l.fees > 0 ? ` + ${n0(l.fees)} ${h.type === 'gold' && l.kind === 'buy' ? (ar ? 'مصنعية' : 'masna3ya') : (ar ? 'رسوم' : 'fees')}` : ''}
                 </Text>
               </View>
             ))}

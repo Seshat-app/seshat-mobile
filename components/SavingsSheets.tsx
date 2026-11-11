@@ -8,8 +8,8 @@ import { Sheet } from './MoneySheets';
 import { emitDataChanged } from '../lib/dataEvents';
 
 export type Holding = {
-  id: string; type: 'gold' | 'currency' | 'crypto' | 'other'; name: string; symbol: string | null; karat: number | null; unit: string; premiumPct: number;
-  currency: string; quantity: number; cost: number; avgPrice: number; realized: number; unitPrice: number | null; priceSource: 'feed' | 'manual' | 'none'; priceAt: string | null;
+  id: string; type: 'gold' | 'currency' | 'crypto' | 'stock' | 'other'; name: string; symbol: string | null; karat: number | null; unit: string; premiumPct: number;
+  currency: string; quantity: number; cost: number; avgPrice: number; realized: number; making: number; avgPriceNoFees: number; unitPrice: number | null; priceSource: 'feed' | 'manual' | 'none'; priceAt: string | null;
   value: number | null; gain: number | null; gainPct: number | null; goalId?: string | null;
   lots: Array<{ kind: 'buy' | 'sell'; date: string; quantity: number; unitPrice: number; fees: number }>;
 };
@@ -21,6 +21,34 @@ const CURRENCIES = ['USD', 'EUR', 'SAR', 'AED', 'GBP'];
 const COINS = ['BTC', 'ETH', 'USDT'];
 const today = () => new Date().toISOString().slice(0, 10);
 const num = (s: string) => parseFloat(s.replace(/,/g, '')) || 0;
+const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+/** Gold only: the masna3ya, what the shop charged to shape the gold. Per gram or for the whole piece. */
+function MakingField({ value, onChange, per, onPer }: { value: string; onChange: (v: string) => void; per: 'gram' | 'total'; onPer: (p: 'gram' | 'total') => void }) {
+  const { lang } = useI18n();
+  const ar = lang === 'ar';
+  return (
+    <View style={{ gap: 8 }}>
+      <RField label={ar ? 'المصنعية (اختياري)' : 'Masna3ya, the making charge (optional)'} value={value} onChange={(v) => onChange(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
+      <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 8 }}>
+        <RPill active={per === 'gram'} onPress={() => onPer('gram')}>{ar ? 'للجرام' : 'per gram'}</RPill>
+        <RPill active={per === 'total'} onPress={() => onPer('total')}>{ar ? 'إجمالي' : 'in total'}</RPill>
+      </View>
+    </View>
+  );
+}
+
+/** Today's price, or the price on a past day, for the "tap to use" hint. */
+function useQuote(on: boolean, query: string, day: string | null) {
+  const [q, setQ] = useState<number | null>(null);
+  useEffect(() => {
+    if (!on) { setQ(null); return; }
+    let alive = true;
+    apiFetch<{ data: { unitPrice: number | null } }>(`/savings/quote?${query}${day ? `&date=${day}` : ''}`).then((r) => { if (alive) setQ(r.data.unitPrice); }).catch(() => { if (alive) setQ(null); });
+    return () => { alive = false; };
+  }, [on, query, day]);
+  return q;
+}
 
 function useAccounts(visible: boolean) {
   const [accts, setAccts] = useState<Acct[]>([]);
@@ -44,27 +72,25 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
   const [date, setDate] = useState(today());
   const [acct, setAcct] = useState<string | null>(null);
   const [move, setMove] = useState(true);
-  const [quote, setQuote] = useState<number | null>(null);
+  // Something you already owned before using Seshat: it keeps its real date and never touches an account balance.
+  const [owned, setOwned] = useState(false);
+  const [making, setMaking] = useState('');
+  const [makingPer, setMakingPer] = useState<'gram' | 'total'>('gram');
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (visible) { setType('gold'); setKarat(21); setPremium(''); setSymbol('USD'); setName(''); setQty(''); setPrice(''); setDate(today()); setAcct(null); setMove(true); } }, [visible]);
-  useEffect(() => {
-    if (!visible || type === 'other') { setQuote(null); return; }
-    const q = type === 'gold' ? `type=gold&karat=${karat}&premiumPct=${num(premium)}` : `type=${type}&symbol=${symbol}`;
-    let alive = true;
-    apiFetch<{ data: { unitPrice: number | null } }>(`/savings/quote?${q}`).then((r) => { if (alive) setQuote(r.data.unitPrice); }).catch(() => { if (alive) setQuote(null); });
-    return () => { alive = false; };
-  }, [visible, type, karat, premium, symbol]);
+  useEffect(() => { if (visible) { setType('gold'); setKarat(21); setPremium(''); setSymbol('USD'); setName(''); setQty(''); setPrice(''); setDate(today()); setAcct(null); setMove(true); setOwned(false); setMaking(''); setMakingPer('gram'); } }, [visible]);
+  const quote = useQuote(type !== 'other', type === 'gold' ? `type=gold&karat=${karat}&premiumPct=${num(premium)}` : `type=${type}&symbol=${symbol}`, owned && isDay(date) ? date : null);
 
   const unitLabel = type === 'gold' ? (ar ? 'جرام' : 'grams') : type === 'stock' ? (ar ? 'أسهم' : 'shares') : type === 'other' ? (ar ? 'وحدات' : 'units') : symbol;
   const ok = num(qty) > 0 && num(price) > 0 && (type !== 'other' || !!name.trim()) && (type !== 'stock' || /^[A-Z0-9.^=\-]{1,14}$/.test(symbol)) && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const fees = type === 'gold' ? Math.round((makingPer === 'gram' ? num(making) * num(qty) : num(making)) * 100) / 100 : 0;
   const save = async () => {
     if (!ok) return;
     setBusy(true);
     try {
       await apiFetch('/savings', { method: 'POST', body: JSON.stringify({
         type, name: name.trim() || undefined, symbol: type === 'currency' || type === 'crypto' || type === 'stock' ? symbol : undefined, karat: type === 'gold' ? karat : undefined,
-        premiumPct: type === 'gold' && premium ? num(premium) : undefined, quantity: num(qty), unitPrice: num(price), date, cardId: acct ?? undefined, moveMoney: move,
+        premiumPct: type === 'gold' && premium ? num(premium) : undefined, quantity: num(qty), unitPrice: num(price), date, fees: fees || undefined, cardId: owned ? undefined : acct ?? undefined, moveMoney: owned ? false : move,
       }) });
       emitDataChanged(); onDone();
     } catch (err) { Alert.alert(ar ? 'تعذّر الحفظ' : 'Could not save', err instanceof Error ? err.message : undefined); }
@@ -74,6 +100,13 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
 
   return (
     <View style={{ gap: 16 }}>
+      <View style={{ gap: 8 }}>
+        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
+          <RPill active={!owned} onPress={() => { setOwned(false); setDate(today()); }}>{ar ? 'أشتريه الآن' : 'I am buying it now'}</RPill>
+          <RPill active={owned} onPress={() => { setOwned(true); setPrice(''); }}>{ar ? 'أملكه من قبل' : 'I already own it'}</RPill>
+        </View>
+        {owned && <Text style={{ fontFamily: fontBody(lang), fontSize: 12, color: '#9C9A92', lineHeight: 18, textAlign: ar ? 'right' : 'left' }}>{ar ? 'يُحسب من تاريخ شرائه ولا يتغير أي رصيد حساب. إن اشتريته على دفعات بأسعار مختلفة فأضف كل دفعة على حدة.' : 'It is counted from the date you bought it, and no account balance changes. If you bought it in several parts at different prices, add each part separately.'}</Text>}
+      </View>
       <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
         {TYPES.map((t) => <RPill key={t} active={type === t} onPress={() => { setType(t); if (t === 'stock') setSymbol('COMI.CA'); else if (t === 'crypto') setSymbol('BTC'); else if (t === 'currency') setSymbol('USD'); }}>{typeLabel(t)}</RPill>)}
       </View>
@@ -83,7 +116,8 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
             <REyebrow>{ar ? 'العيار' : 'Karat'}</REyebrow>
             <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 8 }}>{[24, 22, 21, 18].map((k) => <RPill key={k} active={karat === k} onPress={() => setKarat(k)}>{`${k}k`}</RPill>)}</View>
           </View>
-          <RField label={ar ? 'زيادة سعر المحل % (اختياري)' : 'Shop price above the world price, % (optional)'} value={premium} onChange={(v) => setPremium(v.replace(/[^0-9.\-]/g, ''))} keyboardType="decimal-pad" mono />
+          <MakingField value={making} onChange={setMaking} per={makingPer} onPer={setMakingPer} />
+          <RField label={ar ? 'فرق السوق المحلي عن العالمي % (اختياري)' : 'Local price above the world price, % (optional)'} value={premium} onChange={(v) => setPremium(v.replace(/[^0-9.\-]/g, ''))} keyboardType="decimal-pad" mono />
         </View>
       )}
       {type === 'currency' && (
@@ -107,26 +141,26 @@ export function HoldingForm({ onDone }: { onDone: () => void }) {
       {type === 'other' && <RField label={ar ? 'الاسم (شهادة، سهم، صندوق…)' : 'Name (certificate, share, fund...)'} value={name} onChange={setName} />}
       <RField label={ar ? `الكمية (${unitLabel})` : `Quantity (${unitLabel})`} value={qty} onChange={(v) => setQty(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
       <View style={{ gap: 6 }}>
-        <RField label={ar ? `سعر الوحدة عند الشراء` : 'Price per unit when you bought'} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
+        <RField label={type === 'gold' ? (ar ? 'سعر جرام الذهب عند الشراء (بدون المصنعية)' : 'Gold price per gram when you bought (without masna3ya)') : (ar ? `سعر الوحدة عند الشراء` : 'Price per unit when you bought')} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
         {quote !== null && (
           <Pressable onPress={() => setPrice(String(quote))}>
             <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: '#C9A84C', textAlign: ar ? 'right' : 'left' }}>
-              {ar ? `سعر اليوم ${quote.toLocaleString('en-US')} (اضغط للاستخدام)` : `Today's price ${quote.toLocaleString('en-US')} (tap to use)`}
+              {owned ? (ar ? `السعر يوم ${date}: ${quote.toLocaleString('en-US')} (اضغط للاستخدام)` : `Price on ${date}: ${quote.toLocaleString('en-US')} (tap to use)`) : (ar ? `سعر اليوم ${quote.toLocaleString('en-US')} (اضغط للاستخدام)` : `Today's price ${quote.toLocaleString('en-US')} (tap to use)`)}
             </Text>
           </Pressable>
         )}
       </View>
-      <RField label={ar ? 'تاريخ الشراء (YYYY-MM-DD)' : 'Bought on (YYYY-MM-DD)'} value={date} onChange={(v) => setDate(v.replace(/[^0-9-]/g, '').slice(0, 10))} keyboardType="numeric" mono />
-      <View style={{ gap: 8 }}>
+      <RField label={owned ? (ar ? 'تاريخ الشراء تقريباً (YYYY-MM-DD)' : 'Bought on, roughly is fine (YYYY-MM-DD)') : (ar ? 'تاريخ الشراء (YYYY-MM-DD)' : 'Bought on (YYYY-MM-DD)')} value={date} onChange={(v) => setDate(v.replace(/[^0-9-]/g, '').slice(0, 10))} keyboardType="numeric" mono />
+      {!owned && <View style={{ gap: 8 }}>
         <REyebrow>{ar ? 'خُصم من' : 'Paid from'}</REyebrow>
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
           <RPill active={!move} onPress={() => setMove(false)}>{ar ? 'لا تخصم من حساب' : 'Do not deduct'}</RPill>
           <RPill active={move && acct === null} onPress={() => { setMove(true); setAcct(null); }}>{ar ? 'كاش' : 'Cash'}</RPill>
           {accts.filter((a) => a.kind !== 'cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
         </View>
-      </View>
+      </View>}
       {ok && <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: '#9C9A92', textAlign: ar ? 'right' : 'left' }}>
-        {ar ? `التكلفة ${Math.round(num(qty) * num(price)).toLocaleString('en-US')}` : `Cost ${Math.round(num(qty) * num(price)).toLocaleString('en-US')}`}
+        {ar ? `التكلفة ${Math.round(num(qty) * num(price) + fees).toLocaleString('en-US')}${fees > 0 ? ` · منها مصنعية ${Math.round(fees).toLocaleString('en-US')}` : ''}` : `Cost ${Math.round(num(qty) * num(price) + fees).toLocaleString('en-US')}${fees > 0 ? ` · masna3ya ${Math.round(fees).toLocaleString('en-US')} of it` : ''}`}
       </Text>}
       <RButton full onPress={save} disabled={!ok} loading={busy}>{ar ? 'احفظ' : 'Save'}</RButton>
     </View>
@@ -142,14 +176,22 @@ export function TradeSheet({ visible, kind, holding, onClose, onDone }: { visibl
   const [price, setPrice] = useState('');
   const [acct, setAcct] = useState<string | null>(null);
   const [move, setMove] = useState(true);
+  const [owned, setOwned] = useState(false);
+  const [date, setDate] = useState(today());
+  const [making, setMaking] = useState('');
+  const [makingPer, setMakingPer] = useState<'gram' | 'total'>('gram');
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (visible && holding) { setQty(''); setPrice(holding.unitPrice ? String(holding.unitPrice) : ''); setAcct(null); setMove(true); } }, [visible, holding?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (visible && holding) { setQty(''); setPrice(holding.unitPrice ? String(holding.unitPrice) : ''); setAcct(null); setMove(true); setOwned(false); setDate(today()); setMaking(''); setMakingPer('gram'); } }, [visible, holding?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const old = kind === 'buy' && owned;
+  const pastQuote = useQuote(!!holding && old && isDay(date) && holding.type !== 'other',
+    holding ? (holding.type === 'gold' ? `type=gold&karat=${holding.karat ?? 21}&premiumPct=${holding.premiumPct || 0}` : `type=${holding.type}&symbol=${holding.symbol ?? ''}`) : '', old && isDay(date) ? date : null);
   if (!holding) return <Sheet visible={false} onClose={onClose} title="">{null}</Sheet>;
   const ok = num(qty) > 0 && num(price) > 0 && (kind === 'buy' || num(qty) <= holding.quantity);
   const save = async () => {
     setBusy(true);
     try {
-      await apiFetch(`/savings/${holding.id}/${kind}`, { method: 'POST', body: JSON.stringify({ quantity: num(qty), unitPrice: num(price), cardId: acct ?? undefined, moveMoney: move }) });
+      const fees = holding.type === 'gold' && kind === 'buy' ? (makingPer === 'gram' ? num(making) * num(qty) : num(making)) : 0;
+      await apiFetch(`/savings/${holding.id}/${kind}`, { method: 'POST', body: JSON.stringify({ quantity: num(qty), unitPrice: num(price), fees: fees || undefined, date: old ? date : undefined, cardId: old ? undefined : acct ?? undefined, moveMoney: old ? false : move }) });
       emitDataChanged(); onDone();
     } catch (err) { Alert.alert(ar ? 'تعذّر الحفظ' : 'Could not save', err instanceof Error ? err.message : undefined); }
     finally { setBusy(false); }
@@ -158,15 +200,30 @@ export function TradeSheet({ visible, kind, holding, onClose, onDone }: { visibl
     <Sheet visible={visible} onClose={onClose} title={kind === 'buy' ? (ar ? `اشترِ المزيد · ${holding.name}` : `Buy more · ${holding.name}`) : (ar ? `بيع · ${holding.name}` : `Sell · ${holding.name}`)}
       hint={kind === 'sell' ? (ar ? `لديك ${holding.quantity} ${holding.unit}` : `You hold ${holding.quantity} ${holding.unit}`) : undefined}>
       <RField label={ar ? `الكمية (${holding.unit})` : `Quantity (${holding.unit})`} value={qty} onChange={(v) => setQty(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
-      <RField label={ar ? 'سعر الوحدة' : 'Price per unit'} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
-      <View style={{ gap: 8 }}>
+      {kind === 'buy' && (
+        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
+          <RPill active={!owned} onPress={() => { setOwned(false); setDate(today()); }}>{ar ? 'أشتريه الآن' : 'Buying now'}</RPill>
+          <RPill active={owned} onPress={() => setOwned(true)}>{ar ? 'شراء سابق' : 'An earlier purchase'}</RPill>
+        </View>
+      )}
+      {old && <RField label={ar ? 'تاريخ الشراء تقريباً (YYYY-MM-DD)' : 'Bought on, roughly is fine (YYYY-MM-DD)'} value={date} onChange={(v) => setDate(v.replace(/[^0-9-]/g, '').slice(0, 10))} keyboardType="numeric" mono />}
+      {kind === 'buy' && holding.type === 'gold' && <MakingField value={making} onChange={setMaking} per={makingPer} onPer={setMakingPer} />}
+      <View style={{ gap: 6 }}>
+        <RField label={ar ? 'سعر الوحدة' : 'Price per unit'} value={price} onChange={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" mono />
+        {old && pastQuote !== null && (
+          <Pressable onPress={() => setPrice(String(pastQuote))}>
+            <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: '#C9A84C', textAlign: ar ? 'right' : 'left' }}>{ar ? `السعر يوم ${date}: ${pastQuote.toLocaleString('en-US')} (اضغط للاستخدام)` : `Price on ${date}: ${pastQuote.toLocaleString('en-US')} (tap to use)`}</Text>
+          </Pressable>
+        )}
+      </View>
+      {!old && <View style={{ gap: 8 }}>
         <REyebrow>{kind === 'buy' ? (ar ? 'خُصم من' : 'Paid from') : (ar ? 'دخل إلى' : 'Received into')}</REyebrow>
         <View style={{ flexDirection: ar ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
           <RPill active={!move} onPress={() => setMove(false)}>{ar ? 'بدون حساب' : 'No account'}</RPill>
           <RPill active={move && acct === null} onPress={() => { setMove(true); setAcct(null); }}>{ar ? 'كاش' : 'Cash'}</RPill>
           {accts.filter((a) => a.kind !== 'cash').map((a) => <RPill key={a.id} active={move && acct === a.id} onPress={() => { setMove(true); setAcct(a.id); }}>{a.name}</RPill>)}
         </View>
-      </View>
+      </View>}
       <RButton full onPress={save} disabled={!ok} loading={busy}>{kind === 'buy' ? (ar ? 'سجّل الشراء' : 'Record the purchase') : (ar ? 'سجّل البيع' : 'Record the sale')}</RButton>
     </Sheet>
   );

@@ -66,7 +66,7 @@ export default function GoalsScreen() {
     <PlanScreen
       title={lang === 'ar' ? 'الأهداف' : 'Goals'}
       subtitle={lang === 'ar' ? 'ما الذي تدّخر له' : 'What you are saving toward'}
-      onAdd={() => setEditing('new')}
+      onAdd={!loading && items.length === 0 ? undefined : () => setEditing('new')}
       refreshing={refreshing}
     >
       <ScreenScroll
@@ -85,7 +85,7 @@ export default function GoalsScreen() {
         {loading ? (
           <RCard padding={18}>{Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}</RCard>
         ) : items.length === 0 ? (
-          <EmptyState text={lang === 'ar' ? 'لم تُسجَّل أهداف بعد.' : 'No goals yet.'} sub={lang === 'ar' ? 'أضف هدفاً ليبدأ سيشات في التتبع.' : 'Add a goal and Seshat begins tracking.'} />
+          <EmptyState text={lang === 'ar' ? 'لم تُسجَّل أهداف بعد.' : 'No goals yet.'} sub={lang === 'ar' ? 'أضف هدفاً ليبدأ سيشات في التتبع.' : 'Add a goal and Seshat begins tracking.'} cta={lang === 'ar' ? 'أضف هدفاً' : 'Add a goal'} onCta={() => setEditing('new')} />
         ) : (
           <View style={{ gap: 10 }}>
             {items.map((g) => <GoalRow key={g._id} goal={g} onPress={() => setEditing(g)} />)}
@@ -107,7 +107,7 @@ export default function GoalsScreen() {
   );
 }
 
-function EmptyState({ text, sub }: { text: string; sub: string }) {
+function EmptyState({ text, sub, cta, onCta }: { text: string; sub: string; cta?: string; onCta?: () => void }) {
   const { tok, lang } = useI18n();
   return (
     <View style={{ paddingTop: 40, alignItems: 'center' }}>
@@ -119,6 +119,7 @@ function EmptyState({ text, sub }: { text: string; sub: string }) {
         marginTop: 6, color: tok.muted, fontFamily: fontBody(lang), fontSize: 13,
         textAlign: 'center', maxWidth: 280, lineHeight: 19,
       }}>{sub}</Text>
+      {cta && onCta ? <View style={{ marginTop: 14 }}><RButton onPress={onCta}>{cta}</RButton></View> : null}
     </View>
   );
 }

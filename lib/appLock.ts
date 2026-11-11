@@ -14,8 +14,9 @@ const KEY = 'app_lock';
 /** Leaving the app for less than this does not re-lock (a permission dialog, a quick app switch). */
 export const GRACE_MS = 15_000;
 
-type State = { enabled: boolean; locked: boolean; loaded: boolean };
-let state: State = { enabled: false, locked: false, loaded: false };
+/** `signedIn`: the lock only guards a signed-in app. Signed out, there is nothing to protect and the sign-in page must stay reachable. */
+type State = { enabled: boolean; locked: boolean; loaded: boolean; signedIn: boolean };
+let state: State = { enabled: false, locked: false, loaded: false, signedIn: false };
 const subs = new Set<() => void>();
 const set = (patch: Partial<State>) => { state = { ...state, ...patch }; subs.forEach((f) => f()); };
 
@@ -26,11 +27,21 @@ export function useAppLock(): State {
   );
 }
 
-/** Read the saved choice at startup; a lock that is on starts out locked. */
+/** Read the saved choice at startup; a lock that is on starts out locked, but only when someone is signed in. */
 export async function loadAppLock(): Promise<void> {
   let on = false;
+  let signedIn = false;
   try { on = (await SecureStore.getItemAsync(KEY)) === '1'; } catch { /* default off */ }
-  set({ enabled: on, locked: on, loaded: true });
+  try { signedIn = !!(await SecureStore.getItemAsync('auth_token')); } catch { /* treat as signed out */ }
+  set({ enabled: on, locked: on && signedIn, loaded: true, signedIn });
+}
+
+/**
+ * Called when the session starts or ends. Signing out clears a pending lock (the choice to use the lock is kept for the
+ * next sign-in); signing in starts unlocked, since the person has just proved who they are.
+ */
+export function setLockSession(signedIn: boolean): void {
+  set({ signedIn, locked: false });
 }
 
 /** Whether this phone can authenticate at all (biometrics enrolled, or a passcode set). */
