@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { FrostedHeader } from '../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { apiFetch } from '../lib/api';
+import { signOut } from '../lib/auth';
+import { useAppData } from '../lib/appData';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
@@ -24,6 +26,7 @@ const MIN_LEN = 8;
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
+  const { profile: appProfile } = useAppData();
   const { tok, lang } = useI18n();
   const insets = useSafeAreaInsets();
   const kbHeight = useKeyboardHeight();
@@ -147,8 +150,23 @@ export default function ChangePasswordScreen() {
           secureTextEntry
           textContentType="password"
           autoComplete="current-password"
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 8 }}
         />
+        {/* Not remembering the current password is the usual reason to be here: reset it by email instead. */}
+        <Pressable
+          onPress={() => Alert.alert(
+            lang === 'ar' ? 'نسيتِ كلمة السر الحالية؟' : 'Forgot your current password?',
+            lang === 'ar' ? 'سنسجّل خروجك ونرسل رمزاً إلى بريدك لتضع كلمة سر جديدة.' : 'We will sign you out and email you a code to set a new password.',
+            [
+              { text: lang === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
+              { text: lang === 'ar' ? 'متابعة' : 'Continue', onPress: async () => { const to = appProfile?.email ?? ''; await signOut(); router.replace({ pathname: '/', params: { reset: '1', email: to } } as never); } },
+            ],
+          )}
+          hitSlop={10}
+          style={{ alignSelf: lang === 'ar' ? 'flex-start' : 'flex-end', marginBottom: 16 }}
+        >
+          <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.gold }}>{lang === 'ar' ? 'نسيتِ كلمة السر الحالية؟' : 'Forgot your current password?'}</Text>
+        </Pressable>
 
         <RField
           label={lang === 'ar' ? 'كلمة السر الجديدة' : 'NEW PASSWORD'}

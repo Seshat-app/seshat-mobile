@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, Pressable, Platform, Linking } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { SITE_URL } from '../lib/brand';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { hasToken } from '../lib/api';
@@ -52,11 +52,13 @@ type AuthView =
 export default function AuthRouter() {
   const router = useRouter();
   const { tok, lang, t } = useI18n();
-  const [view, setView] = useState<AuthView>('login');
+  // Reached from "Forgot your current password?" in Profile: start on the reset screen with the email filled in.
+  const params = useLocalSearchParams<{ reset?: string; email?: string }>();
+  const [view, setView] = useState<AuthView>(params.reset === '1' ? 'forgot' : 'login');
   const [checking, setChecking] = useState(true);
 
   // Form state
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
   const [pwd, setPwd] = useState('');
   const [name, setName] = useState('');
   const [pwd2, setPwd2] = useState('');
