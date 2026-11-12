@@ -13,6 +13,21 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    id: '2026-11-v1.1.3',
+    version: '1.1.3',
+    date: '2026-11-12',
+    title: { en: "Calmer and clearer", ar: "أهدأ وأوضح" },
+    items: [
+      { en: "Pick dates from a calendar instead of typing them, and fields stay in view above the keyboard.", ar: "اختر التواريخ من تقويم بدل كتابتها، وتبقى الحقول ظاهرة فوق لوحة المفاتيح." },
+      { en: "Savings: chart ranges from 1 month to all time, a chart for each holding, gold with its masna3ya, and a way to add what you already own.", ar: "المدخرات: رسم بياني بفترات من شهر إلى الكل، ورسم لكل أصل، والذهب مع المصنعية، وإمكانية إضافة ما تملكه من قبل." },
+      { en: "Today's budget no longer drops to zero when a goal is out of reach, and gam3ya suggestions stay within what your income can carry.", ar: "ميزانية اليوم لا تنهار إلى صفر عندما يكون هدف بعيد المنال، واقتراحات الجمعيات تبقى في حدود دخلك." },
+      { en: "Gam3yas, savings and the daily budget belong to your personal profile only, so organizations no longer show them.", ar: "الجمعيات والمدخرات وميزانية اليوم للملف الشخصي فقط، فلا تظهر في المنظمات." },
+      { en: "Terms of Use and Privacy Policy are accepted when you sign up, and shown once to existing accounts.", ar: "شروط الاستخدام وسياسة الخصوصية تُقبل عند التسجيل، وتظهر مرة واحدة للحسابات الحالية." },
+      { en: "New accounts say what they already have (savings, a gam3ya, a debt), and Android asks for notification access during setup. Existing accounts are asked once about savings.", ar: "الحسابات الجديدة تحدد ما لديها (مدخرات أو جمعية أو دين)، وأندرويد يطلب الوصول إلى الإشعارات أثناء الإعداد. والحسابات الحالية تُسأل مرة واحدة عن المدخرات." },
+      { en: "Forgot your current password? Reset it by email straight from Change password.", ar: "نسيت كلمة السر الحالية؟ أعد تعيينها بالبريد مباشرة من تغيير كلمة السر." },
+    ],
+  },
+  {
     id: '2026-11-v1.1.2',
     version: '1.1.2',
     date: '2026-11-11',
