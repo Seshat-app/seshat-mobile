@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { LATEST_RELEASE_ID } from '../lib/releaseNotes';
 import { ReleaseNotesModal } from './ReleaseNotesModal';
 import { useAppLock } from '../lib/appLock';
+import { useTermsPending } from '../lib/termsState';
 
 const KEY = 'release_notes_seen';
 
@@ -11,7 +12,9 @@ export function ReleaseNotesGate() {
   const [open, setOpen] = useState(false);
   // Wait for the app lock: the panel is a native modal and would otherwise draw over the lock screen.
   const { loaded, enabled, locked } = useAppLock();
-  const ready = loaded && !(enabled && locked);
+  // ...and for the Terms prompt, so two panels never stack.
+  const termsPending = useTermsPending();
+  const ready = loaded && !(enabled && locked) && termsPending === false;
   useEffect(() => {
     if (!ready) return;
     let alive = true;

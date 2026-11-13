@@ -11,6 +11,7 @@ import { fontBody, fontHead } from '../lib/fonts';
 import { radius } from '../lib/theme';
 import { RButton } from './ui';
 import { useAppLock } from '../lib/appLock';
+import { setTermsPending } from '../lib/termsState';
 
 type Terms = { accepted: string | null; current: string; required: boolean };
 
@@ -34,7 +35,9 @@ export function TermsGate() {
   useEffect(() => {
     if (!ready) return;
     let alive = true;
-    apiFetch<{ data: { terms?: Terms } }>('/me').then((r) => { if (alive && r.data.terms?.required) setTerms(r.data.terms); }).catch(() => {});
+    apiFetch<{ data: { terms?: Terms } }>('/me')
+      .then((r) => { if (!alive) return; if (r.data.terms?.required) { setTerms(r.data.terms); setTermsPending(true); } else setTermsPending(false); })
+      .catch(() => { if (alive) setTermsPending(false); });
     return () => { alive = false; };
   }, [ready]);
 
@@ -44,6 +47,7 @@ export function TermsGate() {
     try {
       await apiFetch('/me/terms', { method: 'POST', body: JSON.stringify({ version: terms.current }) });
       setTerms(null);
+      setTermsPending(false);
     } catch { setErr(ar ? 'تعذّر حفظ اختيارك. حاول مرة أخرى.' : 'Could not save your choice. Try again.'); }
     finally { setBusy(false); }
   };
