@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
@@ -34,7 +35,9 @@ export default function GoalsScreen() {
   const { items, setItems, loading, refreshing, load } = useFetchList<Goal>(
     () => apiFetch<{ data: Goal[] }>('/goals').then((r) => r.data),
   );
-  const [editing, setEditing] = useState<Goal | 'new' | null>(null);
+  // Arriving from the "do you have a goal?" question opens the new-goal form straight away.
+  const params = useLocalSearchParams<{ new?: string }>();
+  const [editing, setEditing] = useState<Goal | 'new' | null>(params.new === '1' ? 'new' : null);
 
   const onSave = async (g: Partial<Goal>) => {
     if (editing && editing !== 'new') {

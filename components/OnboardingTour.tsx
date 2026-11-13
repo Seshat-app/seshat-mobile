@@ -50,7 +50,7 @@ export function OnboardingTour({
   const [monthDay, setMonthDay] = useState(1);
   const [busy, setBusy] = useState(false);
   // What they already have: each opens its own form after the tour (savings first), and savings also settles the Home question.
-  const [have, setHave] = useState<{ savings: boolean; gam3ya: boolean; debt: boolean }>({ savings: false, gam3ya: false, debt: false });
+  const [have, setHave] = useState<{ savings: boolean; goal: boolean; gam3ya: boolean; debt: boolean }>({ savings: false, goal: false, gam3ya: false, debt: false });
   const router = useRouter();
 
   const scene = SCENES[step];
@@ -82,12 +82,13 @@ export function OnboardingTour({
       await apiFetch('/me', { method: 'PATCH', body: JSON.stringify(body) });
       // They answered the savings question here, so Home will not ask it again.
       await apiFetch('/me/savings-asked', { method: 'POST', body: JSON.stringify({ answer: have.savings ? 'yes' : 'no' }) }).catch(() => {});
+      await apiFetch('/me/goals-asked', { method: 'POST', body: JSON.stringify({ answer: have.goal ? 'yes' : 'no' }) }).catch(() => {});
     } catch (err) {
       console.warn('onboarding save failed', err);
     } finally {
       setBusy(false);
       onDone();
-      const next = have.savings ? '/savings/new' : have.gam3ya ? '/gam3ya/new' : have.debt ? '/debts' : null;
+      const next = have.savings ? '/savings/new' : have.goal ? '/goals?new=1' : have.gam3ya ? '/gam3ya/new' : have.debt ? '/debts' : null;
       if (next) setTimeout(() => router.push(next as never), 500);
     }
   };
@@ -252,6 +253,7 @@ export function OnboardingTour({
                 <View style={{ marginTop: 22, gap: 12 }}>
                   {([
                     ['savings', ar ? 'مدخرات (ذهب، دولار، أسهم)' : 'Savings (gold, dollars, stocks)'],
+                    ['goal', ar ? 'هدف أدّخر له' : 'A goal I am saving for'],
                     ['gam3ya', ar ? 'جمعية' : 'A gam3ya'],
                     ['debt', ar ? 'دين' : 'A debt'],
                   ] as const).map(([k, label]) => {
@@ -268,7 +270,7 @@ export function OnboardingTour({
                   })}
                 </View>
                 <Spacer />
-                <CTA label={have.savings || have.gam3ya || have.debt ? (ar ? 'متابعة' : 'Continue') : (ar ? 'لا شيء الآن' : 'Nothing yet')} onPress={goNext} />
+                <CTA label={have.savings || have.goal || have.gam3ya || have.debt ? (ar ? 'متابعة' : 'Continue') : (ar ? 'لا شيء الآن' : 'Nothing yet')} onPress={goNext} />
               </SceneBody>
             )}
 

@@ -163,22 +163,24 @@ export function TodayNeeds() {
     else if (r.screen === 'goals') router.push('/goals' as never);
   };
   // The one-time question about savings: "Yes" opens the form to add them, "No" ends it. Either way it is not asked again.
-  const answerSavings = (answer: 'yes' | 'no') => {
-    setRows((rs) => rs.filter((x) => x.kind !== 'ask_savings'));
-    apiFetch('/me/savings-asked', { method: 'POST', body: JSON.stringify({ answer }) }).catch(() => {});
-    if (answer === 'yes') router.push('/savings/new' as never);
+  const answerAsk = (kind: 'ask_savings' | 'ask_goals', answer: 'yes' | 'no') => {
+    setRows((rs) => rs.filter((x) => x.kind !== kind));
+    apiFetch(kind === 'ask_savings' ? '/me/savings-asked' : '/me/goals-asked', { method: 'POST', body: JSON.stringify({ answer }) }).catch(() => {});
+    if (answer === 'yes') router.push((kind === 'ask_savings' ? '/savings/new' : '/goals?new=1') as never);
+    // The next question (goals after savings) appears once this one is settled.
+    else setTimeout(() => apiFetch<{ data: TodayRow[] }>('/me/today').then((r) => setRows(r.data)).catch(() => {}), 400);
   };
   return (
     <RCard accent padding={16} style={{ marginHorizontal: 16, marginTop: 6, marginBottom: 12 }}>
       <REyebrow style={{ marginBottom: 10, textAlign: ar ? 'right' : 'left' }}>{ar ? 'يحتاجك اليوم' : 'Needs you today'}</REyebrow>
       <View style={{ gap: 12 }}>
-        {rows.map((r, i) => r.kind === 'ask_savings' ? (
+        {rows.map((r, i) => r.kind === 'ask_savings' || r.kind === 'ask_goals' ? (
           <View key={r.id} style={{ gap: 8, paddingTop: i === 0 ? 0 : 12, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: tok.border }}>
             <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{r.title}</Text>
             <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{r.body}</Text>
             <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginTop: 4 }}>
-              <View style={{ flex: 1 }}><RButton full onPress={() => answerSavings('yes')}>{ar ? 'نعم، أضفها' : 'Yes, add them'}</RButton></View>
-              <View style={{ flex: 1 }}><RButton full variant="ghost" onPress={() => answerSavings('no')}>{ar ? 'لا' : 'No'}</RButton></View>
+              <View style={{ flex: 1 }}><RButton full onPress={() => answerAsk(r.kind as 'ask_savings' | 'ask_goals', 'yes')}>{r.kind === 'ask_goals' ? (ar ? 'نعم، أضفه' : 'Yes, add it') : (ar ? 'نعم، أضفها' : 'Yes, add them')}</RButton></View>
+              <View style={{ flex: 1 }}><RButton full variant="ghost" onPress={() => answerAsk(r.kind as 'ask_savings' | 'ask_goals', 'no')}>{ar ? 'لا' : 'No'}</RButton></View>
             </View>
           </View>
         ) : (
