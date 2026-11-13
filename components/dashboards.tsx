@@ -124,30 +124,6 @@ function SeshatInsightCard({ data, currency }: { data: DashboardData; currency: 
         </Text>
       </View>
 
-      {insight.hero ? (
-        <View style={{ marginBottom: 10 }}>
-          <Text style={{
-            fontFamily: fontHead(lang), fontSize: 30, color: tok.gold,
-            letterSpacing: -0.5, lineHeight: 36,
-            textAlign: lang === 'ar' ? 'right' : 'left',
-          }}>
-            {insight.hero.value}
-            <Text style={{ fontFamily: fontMono('regular'), fontSize: 13, color: tok.muted }}>
-              {'  '}{currency}
-            </Text>
-          </Text>
-          {insight.hero.label ? (
-            <Text style={{
-              marginTop: 2,
-              fontFamily: fontBody(lang), fontSize: 12, color: tok.muted,
-              textAlign: lang === 'ar' ? 'right' : 'left',
-            }}>
-              {insight.hero.label}
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-
       <Text style={{
         fontFamily: fontBody(lang),
         fontSize: lang === 'ar' ? 14.5 : 14,

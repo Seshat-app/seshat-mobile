@@ -13,12 +13,12 @@ import { ChartCarousel, DashboardBody, type DashboardData } from '../../componen
 import { SkeletonCard, Skeleton, SkeletonRow } from '../../components/Skeleton';
 import { RCard } from '../../components/ui';
 import {
-  SalaryCheckInBanner, SalaryCheckInSheet, fetchSalaryCheckIn, type CheckInStatus,
+  SalaryCheckInSheet, fetchSalaryCheckIn, type CheckInStatus,
 } from '../../components/SalaryCheckInBanner';
 import { CaptureShortcutBanner } from '../../components/CaptureShortcutBanner';
 import { UpdateBanner } from '../../components/UpdateBanner';
 import { WidgetsAnnouncement } from '../../components/WidgetsAnnouncement';
-import { TodayCard, AccountsOverview, DailyBudgetCard, Gam3yaOverview, TodayNeeds, SavingsCard, NetWorthCard } from '../../components/HomeMoney';
+import { TodayCard, AccountsOverview, DailyBudgetCard, TodayNeeds, NetWorthCard } from '../../components/HomeMoney';
 import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
@@ -105,11 +105,15 @@ export default function HomeScreen() {
           // salary baseline exists).
           const banners = (
             <>
-              {!inOrg && <TodayNeeds />}
-              <SetupPrompt profile={profile} onChanged={() => { refresh(); bumpVersion(); }} />
-              {checkIn.needed && (
-                <SalaryCheckInBanner status={checkIn} onPress={() => setCheckInOpen(true)} />
+              {!inOrg && (
+                <TodayNeeds extra={checkIn.needed ? [{
+                  id: 'salary',
+                  title: lang === 'ar' ? 'هل استلمت راتبك؟' : 'Did you get paid this month?',
+                  body: lang === 'ar' ? 'سجّل الراتب وأنهِ الشهر، أو تخطى.' : "Log it to close the month, or skip if you didn't.",
+                  onPress: () => setCheckInOpen(true),
+                }] : []} />
               )}
+              <SetupPrompt profile={profile} onChanged={() => { refresh(); bumpVersion(); }} />
               <UpdateBanner />
               <WidgetsAnnouncement />
               <CaptureShortcutBanner />
@@ -129,7 +133,7 @@ export default function HomeScreen() {
           return (
             <ScreenScroll
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingTop: 6, paddingBottom: insets.bottom + 24, flexGrow: 1 }}
+              contentContainerStyle={{ paddingTop: 6, paddingBottom: insets.bottom + 100, flexGrow: 1 }}
               refreshControl={refreshCtl}
             >
               {banners}
@@ -142,11 +146,8 @@ export default function HomeScreen() {
                     <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
                   </View>
                   <TodayCard data={data!} currency={currency} />
-                  {!inOrg && <NetWorthCard />}
                   {!inOrg && <DailyBudgetCard />}
-                  <AccountsOverview currency={currency} />
-                  {!inOrg && <Gam3yaOverview />}
-                  {!inOrg && <SavingsCard />}
+                  {inOrg ? <AccountsOverview currency={currency} /> : <NetWorthCard />}
                   <DashboardBody data={data!} currency={currency} />
                 </>
               )}

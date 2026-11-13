@@ -80,6 +80,8 @@ export function RHomeHeader({
               header is just the greeting + date. */}
           <Text
             numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
             style={{
               fontFamily: fontHead(lang),
               fontSize: lang === 'ar' ? 19 : 19, color: tok.bone,

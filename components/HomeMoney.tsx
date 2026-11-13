@@ -37,7 +37,6 @@ export function TodayCard({ data, currency }: { data: DashboardData; currency: s
       <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 14 }}>
         <Col label={ar ? 'صافي اليوم' : 'Today (net)'} value={todayNet} sign />
         <Col label={ar ? 'متوسط اليوم' : 'Per day'} value={-avg} />
-        <Col label={ar ? 'إنفاق الشهر' : 'Month spent'} value={-data.current.expense.total} />
       </View>
     </RCard>
   );
@@ -140,7 +139,9 @@ type TodayRow = { id: string; kind: string; title: string; body: string; screen:
  * The few things that need you today, from one list the server builds (a gam3ya payment or payout, a bill coming up, a
  * debt falling due, questions Seshat has, being over today's budget). Not shown at all when nothing needs you.
  */
-export function TodayNeeds() {
+export type NeedsExtra = { id: string; title: string; body: string; onPress: () => void };
+
+export function TodayNeeds({ extra = [] }: { extra?: NeedsExtra[] } = {}) {
   const { tok, lang } = useI18n();
   const { dataVersion } = useAppData();
   const router = useRouter();
@@ -154,7 +155,7 @@ export function TodayNeeds() {
     });
     return () => { alive = false; };
   }, [dataVersion]);
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && extra.length === 0) return null;
   const go = (r: TodayRow) => {
     if (r.screen === 'gam3ya') router.push(`/gam3ya/${r.refId}` as never);
     else if (r.screen === 'reminders') router.push('/reminders' as never);
@@ -174,7 +175,17 @@ export function TodayNeeds() {
     <RCard accent padding={16} style={{ marginHorizontal: 16, marginTop: 6, marginBottom: 12 }}>
       <REyebrow style={{ marginBottom: 10, textAlign: ar ? 'right' : 'left' }}>{ar ? 'يحتاجك اليوم' : 'Needs you today'}</REyebrow>
       <View style={{ gap: 12 }}>
-        {rows.map((r, i) => r.kind === 'ask_savings' || r.kind === 'ask_goals' ? (
+        {extra.map((x, i) => (
+          <Pressable key={x.id} onPress={x.onPress}
+            style={{ gap: 2, paddingTop: i === 0 ? 0 : 12, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: tok.border }}>
+            <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ flex: 1, fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{x.title}</Text>
+              <ChevronRight size={15} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
+            </View>
+            <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{x.body}</Text>
+          </Pressable>
+        ))}
+        {rows.map((r, i0) => { const i = i0 + extra.length; return r.kind === 'ask_savings' || r.kind === 'ask_goals' ? (
           <View key={r.id} style={{ gap: 8, paddingTop: i === 0 ? 0 : 12, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: tok.border }}>
             <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{r.title}</Text>
             <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{r.body}</Text>
@@ -192,7 +203,7 @@ export function TodayNeeds() {
             </View>
             <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{r.body}</Text>
           </Pressable>
-        ))}
+        ); })}
       </View>
     </RCard>
   );
@@ -333,44 +344,62 @@ export function DailyBudgetCard() {
 
 type NetWorthInfo = { currency: string; total: number; parts: { accounts: number; savings: number; gam3ya: number; debts: number }; approximate: boolean; personalOnly?: boolean };
 
-/** What the person owns, in one number: accounts and cash, plus savings, plus gam3ya money paid in, minus debts. Tap for the breakdown. */
+/**
+ * All the money in one card: what the person owns as one number, split into accounts and cash, savings, gam3yas and
+ * debts, each line opening its own screen. (Replaces separate cards that showed overlapping totals.)
+ */
 export function NetWorthCard() {
   const { tok, lang } = useI18n();
   const { dataVersion } = useAppData();
+  const router = useRouter();
   const ar = lang === 'ar';
   const [nw, setNw] = useState<NetWorthInfo | null>(null);
-  const [open, setOpen] = useState(false);
+  const [gain, setGain] = useState<{ gain: number; gainPct: number | null } | null>(null);
   useEffect(() => {
     let alive = true;
-    hasToken().then((ok) => { if (ok) apiFetch<{ data: NetWorthInfo }>('/me/net-worth').then((r) => { if (alive) setNw(r.data); }).catch(() => {}); });
+    hasToken().then((ok) => {
+      if (!ok) return;
+      apiFetch<{ data: NetWorthInfo }>('/me/net-worth').then((r) => { if (alive) setNw(r.data); }).catch(() => {});
+      apiFetch<{ data: SavingsOv }>('/savings').then((r) => { if (alive && r.data.holdings.some((h) => h.quantity > 0)) setGain({ gain: r.data.gain, gainPct: r.data.gainPct }); }).catch(() => {});
+    });
     return () => { alive = false; };
   }, [dataVersion]);
   if (!nw || nw.personalOnly) return null;
   const n = (v: number) => `${v < 0 ? '−' : ''}${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
-  const rows: Array<[string, number]> = [
-    [ar ? 'الحسابات والكاش' : 'Accounts and cash', nw.parts.accounts],
-    [ar ? 'المدخرات والاستثمارات' : 'Savings and investments', nw.parts.savings],
-    ...(nw.parts.gam3ya !== 0 ? [[ar ? 'في الجمعيات (المدفوع)' : 'In gam3yas (paid in)', nw.parts.gam3ya] as [string, number]] : []),
-    ...(nw.parts.debts !== 0 ? [[ar ? 'ديون عليك' : 'Debts you owe', nw.parts.debts] as [string, number]] : []),
+  const rows: Array<{ key: string; label: string; value: number; to: string; sub?: string; subColor?: string }> = [
+    { key: 'accounts', label: ar ? 'الحسابات والكاش' : 'Accounts and cash', value: nw.parts.accounts, to: '/cards' },
+    ...(nw.parts.savings !== 0 ? [{
+      key: 'savings', label: ar ? 'المدخرات والاستثمارات' : 'Savings and investments', value: nw.parts.savings, to: '/savings',
+      sub: gain ? `${gain.gain >= 0 ? '+' : '−'}${Math.abs(Math.round(gain.gain)).toLocaleString('en-US')}${gain.gainPct !== null ? ` (${gain.gain >= 0 ? '+' : '−'}${Math.abs(gain.gainPct)}%)` : ''}` : undefined,
+      subColor: gain && gain.gain < 0 ? tok.alertText : '#6FCF97',
+    }] : []),
+    ...(nw.parts.gam3ya !== 0 ? [{ key: 'gam3ya', label: ar ? 'في الجمعيات (المدفوع)' : 'In gam3yas (paid in)', value: nw.parts.gam3ya, to: '/gam3ya' }] : []),
+    ...(nw.parts.debts !== 0 ? [{ key: 'debts', label: ar ? 'ديون عليك' : 'Debts you owe', value: nw.parts.debts, to: '/debts' }] : []),
   ];
   return (
-    <Pressable onPress={() => setOpen((v) => !v)} style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}>
-      <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
-        <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'ما أملكه' : 'What I own'}</REyebrow>
-        <RAmount value={nw.total} currency={nw.currency} size={26} decimals={0} />
-        {open && (
-          <View style={{ marginTop: 12, gap: 6 }}>
-            {rows.map(([k, v]) => (
-              <View key={k} style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: tok.muted }}>{k}</Text>
-                <Text style={{ fontFamily: fontMono('regular'), fontSize: 13, color: v < 0 ? tok.alertText : tok.bone }}>{n(v)}</Text>
-              </View>
-            ))}
-            {nw.approximate ? <Text style={{ fontFamily: fontBody(lang), fontSize: 11.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{ar ? 'بعض المدخرات بلا سعر الآن، فتُحسب بما دفعته.' : 'Some savings have no price right now, so they are counted at what you paid.'}</Text> : null}
-          </View>
-        )}
-        {!open ? <Text style={{ marginTop: 6, fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: 0.8, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{ar ? 'اضغط للتفاصيل' : 'TAP FOR THE BREAKDOWN'}</Text> : null}
-      </RCard>
-    </Pressable>
+    <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
+      <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'ما أملكه' : 'What I own'}</REyebrow>
+      <RAmount value={nw.total} currency={nw.currency} size={26} decimals={0} />
+      <View style={{ marginTop: 6 }}>
+        {rows.map((r, i) => (
+          <Pressable
+            key={r.key}
+            onPress={() => router.push(r.to as never)}
+            style={({ pressed }) => ({
+              flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, paddingVertical: 11,
+              borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth, borderTopColor: tok.border, opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: fontBody(lang), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{r.label}</Text>
+              {r.sub ? <Text style={{ marginTop: 2, fontFamily: fontMono('regular'), fontSize: 11, color: r.subColor, textAlign: ar ? 'right' : 'left' }}>{r.sub}</Text> : null}
+            </View>
+            <Text style={{ fontFamily: fontMono('regular'), fontSize: 14, color: r.value < 0 ? tok.alertText : tok.bone }}>{n(r.value)}</Text>
+            <ChevronRight size={15} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
+          </Pressable>
+        ))}
+      </View>
+      {nw.approximate ? <Text style={{ marginTop: 4, fontFamily: fontBody(lang), fontSize: 11.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{ar ? 'بعض المدخرات بلا سعر الآن، فتُحسب بما دفعته.' : 'Some savings have no price right now, so they are counted at what you paid.'}</Text> : null}
+    </RCard>
   );
 }
