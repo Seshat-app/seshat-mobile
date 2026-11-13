@@ -67,14 +67,16 @@ export function PlanScreen({
             onPress={onAdd}
             hitSlop={10}
             style={({ pressed }) => ({
-              // Same family as the workspace chip beside it: a round, gold-tinted control rather than a solid gold block.
+              // Same family as the workspace chip beside it: a round, gold-tinted control (same tint, same border rule),
+              // never a solid gold block - the plus is gold too, so on a solid gold disc it would vanish.
               width: 32, height: 32, borderRadius: 16,
-              backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.goldLight : tok.glowShellBg),
-              borderWidth: StyleSheet.hairlineWidth, borderColor: tok.glowShellBorder,
-              alignItems: 'center', justifyContent: 'center', marginLeft: 2,
+              backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.glowShellBorder : tok.glowShellBg),
+              borderWidth: isLiquid() ? 0 : 1, borderColor: tok.glowShellBorder,
+              alignItems: 'center', justifyContent: 'center', alignSelf: 'center',
+              opacity: pressed ? 0.85 : 1,
             })}
           >
-            <LiquidBackdrop radius={16} tint={tok.gold} fallback="transparent" />
+            <LiquidBackdrop radius={16} tint="rgba(201,168,76,0.22)" fallback="transparent" />
             <Plus size={18} color={tok.gold} strokeWidth={2.4} />
           </Pressable>
         )}

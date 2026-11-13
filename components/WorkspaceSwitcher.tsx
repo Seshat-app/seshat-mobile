@@ -40,7 +40,7 @@ export function WorkspaceChip() {
         borderWidth: isLiquid() ? 0 : 1,
         borderColor: tok.glowShellBorder,
         opacity: pressed ? 0.85 : 1,
-        alignSelf: 'flex-start',
+        alignSelf: 'center',
       })}
     >
       <LiquidBackdrop radius={999} tint="rgba(201,168,76,0.22)" fallback="transparent" />

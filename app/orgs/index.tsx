@@ -182,6 +182,7 @@ function EmptyState({
       </Text>
       <RButton
         variant="primary"
+        style={{ alignSelf: 'center' }}
         onPress={onCreate}
         icon={<Plus size={16} color={tok.void} strokeWidth={2.4} />}
       >

@@ -395,7 +395,7 @@ export default function SeshatSessionsScreen() {
                   </Text>
                   <RButton
                     onPress={startNew}
-                    style={{ marginTop: 4 }}
+                    style={{ marginTop: 4, alignSelf: 'center' }}
                     icon={<Plus size={14} color={tok.void} strokeWidth={2.2} />}
                   >
                     {lang === 'ar' ? 'ابدأ' : 'Start a chat'}
