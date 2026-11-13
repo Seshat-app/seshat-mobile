@@ -14,6 +14,11 @@ module.exports = ({ config }) => {
   //   SESHAT_WIDGETS=1 npx expo prebuild --platform ios
   const withWidgets = process.env.SESHAT_WIDGETS === '1';
 
+  // https://seshat.site links open the app on iPhone too. Needs the Associated Domains capability on the App ID and a
+  // provisioning profile that includes it, so it is opt-in until that profile exists:
+  //   SESHAT_UNIVERSAL_LINKS=1 npx expo prebuild --platform ios
+  const universalLinks = process.env.SESHAT_UNIVERSAL_LINKS === '1';
+
   return {
     ...config,
     plugins: [...(config.plugins ?? []), ...(withWidgets ? ['@bacons/apple-targets'] : [])],
@@ -22,6 +27,7 @@ module.exports = ({ config }) => {
       ...(withWidgets ? { appleTeamId: 'LTYTC93ARN' } : {}),
       entitlements: {
         ...(config.ios?.entitlements ?? {}),
+        ...(universalLinks ? { 'com.apple.developer.associated-domains': ['applinks:seshat.site'] } : {}),
         'aps-environment': apsEnvironment,
       },
     },

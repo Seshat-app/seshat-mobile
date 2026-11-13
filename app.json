@@ -56,6 +56,26 @@
               "scheme": "com.googleusercontent.apps.1051327904371-9i33rhse49f26j14h93jteaq8k68oipg"
             }
           ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "seshat.site",
+              "pathPrefix": "/orgs/accept"
+            },
+            {
+              "scheme": "https",
+              "host": "seshat.site",
+              "pathPrefix": "/app"
+            }
+          ]
         }
       ],
       "googleServicesFile": "./google-services.json"
@@ -66,7 +86,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      ["expo-local-authentication", { "faceIDPermission": "Seshat uses Face ID to keep your finances private when the app lock is on." }],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Seshat uses Face ID to keep your finances private when the app lock is on."
+        }
+      ],
       "expo-web-browser",
       "@react-native-community/datetimepicker",
       [
@@ -84,7 +109,10 @@
             "enableSceneSupport": true
           },
           "android": {
-            "buildArchs": ["arm64-v8a", "armeabi-v7a"],
+            "buildArchs": [
+              "arm64-v8a",
+              "armeabi-v7a"
+            ],
             "extraGradleProperties": {
               "org.gradle.jvmargs": "-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC",
               "kotlin.daemon.jvm.options": "-Xmx2048m",
