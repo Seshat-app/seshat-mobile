@@ -198,6 +198,13 @@ export function subscribeToNotificationTaps(
       router.push({ pathname: '/review', params: { ...(id ? { id } : {}), ...(action ? { action } : {}) } });
       return;
     }
+    // Someone answered your question: open it.
+    if (data?.type === 'community' || data?.meta?.kind === 'community') {
+      const d = data as unknown as { questionId?: string; meta?: { questionId?: string } };
+      const qid = d.questionId ?? d.meta?.questionId;
+      router.push(qid ? (`/community/${qid}` as never) : ('/community' as never));
+      return;
+    }
     // A gam3ya payment or turn: "I paid" / "I received it" answers it right away, then the circle opens.
     if (data?.type === 'gam3ya' || data?.meta?.kind === 'gam3ya') {
       const d = data as unknown as { gam3yaId?: string; period?: number; meta?: { gam3yaId?: string; period?: number } };

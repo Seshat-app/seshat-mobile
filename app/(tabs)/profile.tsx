@@ -417,6 +417,12 @@ export default function ProfileScreen() {
               onPress={() => router.push('/categories')}
             />
             <PlanRow
+              icon={MessagesSquare}
+              title={lang === 'ar' ? 'المجتمع' : 'Community'}
+              hint={lang === 'ar' ? 'اسأل وأجب في أمور المال' : 'Ask and answer money questions'}
+              onPress={() => router.push('/community' as never)}
+            />
+            <PlanRow
               icon={BellRing}
               title={lang === 'ar' ? 'العادات' : 'Habits'}
               hint={lang === 'ar' ? 'الأنماط التي رصدتها سيشات' : 'Spending patterns Seshat noticed'}

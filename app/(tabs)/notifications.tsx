@@ -78,6 +78,11 @@ export default function NotificationsScreen() {
       router.push('/review');
       return;
     }
+    if (kind === 'community') {
+      const qid = typeof meta.questionId === 'string' ? meta.questionId : undefined;
+      router.push((qid ? `/community/${qid}` : '/community') as never);
+      return;
+    }
     if (kind === 'budget_threshold' || n.type === 'budget') {
       router.push('/budgets');
     }
