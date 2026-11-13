@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { hapticLight } from './press';
 import { fontMono } from '../lib/fonts';
 import { useI18n } from '../lib/i18n';
@@ -8,6 +7,7 @@ import { toggleHideNumbers, useHideNumbers } from '../lib/privacy';
 import { RAmount } from './ui';
 import type { ComponentProps } from 'react';
 
+import { secureGet, secureSet } from '../lib/secure';
 const HINT_KEY = 'hide_numbers_hint_seen';
 
 /**
@@ -22,12 +22,12 @@ export function BalanceAmount(props: ComponentProps<typeof RAmount> & { eye?: nu
   const ar = lang === 'ar';
   const [hintSeen, setHintSeen] = useState(true);
   useEffect(() => {
-    SecureStore.getItemAsync(HINT_KEY).then((v) => setHintSeen(!!v)).catch(() => {});
+    secureGet(HINT_KEY).then((v) => setHintSeen(!!v)).catch(() => {});
   }, []);
   const onPress = () => {
     hapticLight();
     toggleHideNumbers();
-    if (!hintSeen) { setHintSeen(true); SecureStore.setItemAsync(HINT_KEY, '1').catch(() => {}); }
+    if (!hintSeen) { setHintSeen(true); secureSet(HINT_KEY, '1').catch(() => {}); }
   };
   const caption = !showCaption ? null : hidden
     ? (ar ? 'اضغط لإظهار الأرقام' : 'Tap to show numbers')

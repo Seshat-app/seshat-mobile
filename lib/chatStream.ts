@@ -1,7 +1,7 @@
 import { fetch as expoFetch } from 'expo/fetch';
-import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 
+import { secureGet } from './secure';
 /**
  * Live streaming client for POST /chat with { stream: true } (React Native).
  *
@@ -99,7 +99,7 @@ export async function streamChat(
   onFrame: (frame: ChatStreamFrame) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const token = await SecureStore.getItemAsync('auth_token');
+  const token = await secureGet('auth_token');
   if (!token) throw new Error('Not authenticated');
 
   const res = await expoFetch(`${API_BASE}/chat`, {

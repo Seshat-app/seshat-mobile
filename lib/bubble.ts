@@ -1,8 +1,8 @@
 import { Alert, Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
 import { SeshatBubble } from '../modules/seshat-bubble';
 
+import { secureGet, secureSet } from './secure';
 // The Android floating chat bubble: the user turns it on in Profile, Android draws the chat
 // head from a notification, and tapping it opens the chat panel (components/ChatPanelRoot).
 const ENABLED_KEY = 'chat_bubble_enabled';
@@ -12,7 +12,7 @@ const SESSION_KEY = 'chat_bubble_session';
 export const bubbleSupported = (): boolean => Platform.OS === 'android' && SeshatBubble.isSupported();
 
 export async function isBubbleEnabled(): Promise<boolean> {
-  return bubbleSupported() && (await SecureStore.getItemAsync(ENABLED_KEY)) === '1';
+  return bubbleSupported() && (await secureGet(ENABLED_KEY)) === '1';
 }
 
 const text = (lang: 'en' | 'ar') => ({
@@ -28,7 +28,7 @@ export async function setBubbleEnabled(on: boolean, lang: 'en' | 'ar'): Promise<
   if (!bubbleSupported()) return false;
   if (!on) {
     SeshatBubble.hide();
-    await SecureStore.setItemAsync(ENABLED_KEY, '0');
+    await secureSet(ENABLED_KEY, '0');
     return false;
   }
   // The bubble is a notification, so Android 13+ needs the notification permission first.
@@ -44,7 +44,7 @@ export async function setBubbleEnabled(on: boolean, lang: 'en' | 'ar'): Promise<
   }
   const { title, hint } = text(lang);
   SeshatBubble.show(title, hint);
-  await SecureStore.setItemAsync(ENABLED_KEY, '1');
+  await secureSet(ENABLED_KEY, '1');
   if (!SeshatBubble.bubblesAllowed()) {
     Alert.alert(
       lang === 'ar' ? 'اسمح بالفقاعات' : 'Allow bubbles',
@@ -65,5 +65,5 @@ export async function restoreBubble(lang: 'en' | 'ar'): Promise<void> {
 }
 
 /** The chat the bubble reopens, so each tap continues the same conversation. */
-export const getBubbleSession = () => SecureStore.getItemAsync(SESSION_KEY);
-export const saveBubbleSession = (id: string) => SecureStore.setItemAsync(SESSION_KEY, id);
+export const getBubbleSession = () => secureGet(SESSION_KEY);
+export const saveBubbleSession = (id: string) => secureSet(SESSION_KEY, id);

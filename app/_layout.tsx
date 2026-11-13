@@ -13,10 +13,13 @@ import { AnimatedSplash, SPLASH_VOID } from '../components/AnimatedSplash';
 import { AppLockGate } from '../components/AppLockGate';
 import { initSentry, Sentry } from '../lib/sentry';
 import { useAppFonts } from '../lib/useAppFonts';
+import { upgradeKeychainAccess } from '../lib/secure';
 
 // Init at module-load so even a crash during font loading is captured.
 // No-op when expoConfig.extra.sentryDsn is unset.
 initSentry();
+// Older builds saved the sign-in token as "readable only while unlocked"; re-save it so background wake-ups can read it.
+void upgradeKeychainAccess();
 
 // Keep the native splash (a plain void) up until the animated one has painted, so the
 // handoff is one continuous screen. The timeout is a safety net if the app never mounts.

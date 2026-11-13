@@ -10,8 +10,8 @@
 // actual capability per turn. `Persona` defaults to 'seshat' everywhere.
 
 import { useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
 
+import { secureGet, secureSet } from './secure';
 export type Persona = 'seshat' | 'maat';
 
 export const DEFAULT_PERSONA: Persona = 'seshat';
@@ -71,7 +71,7 @@ const listeners = new Set<(p: Persona) => void>();
 export async function loadPersona(): Promise<Persona> {
   if (loaded) return cache;
   try {
-    const v = await SecureStore.getItemAsync(STORE_KEY);
+    const v = await secureGet(STORE_KEY);
     if (v === 'seshat' || v === 'maat') cache = v;
   } catch {
     // ignore — fall back to the default.
@@ -91,7 +91,7 @@ export async function setActivePersona(p: Persona): Promise<void> {
   loaded = true;
   listeners.forEach((l) => l(p));
   try {
-    await SecureStore.setItemAsync(STORE_KEY, p);
+    await secureSet(STORE_KEY, p);
   } catch {
     // best-effort persistence — the in-memory value still updates the UI.
   }

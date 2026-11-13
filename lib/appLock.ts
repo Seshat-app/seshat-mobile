@@ -7,9 +7,9 @@
  * so a user can never be locked out of their own data.
  */
 import { useSyncExternalStore } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 
+import { secureGet, secureSet } from './secure';
 const KEY = 'app_lock';
 /** Leaving the app for less than this does not re-lock (a permission dialog, a quick app switch). */
 export const GRACE_MS = 15_000;
@@ -31,8 +31,8 @@ export function useAppLock(): State {
 export async function loadAppLock(): Promise<void> {
   let on = false;
   let signedIn = false;
-  try { on = (await SecureStore.getItemAsync(KEY)) === '1'; } catch { /* default off */ }
-  try { signedIn = !!(await SecureStore.getItemAsync('auth_token')); } catch { /* treat as signed out */ }
+  try { on = (await secureGet(KEY)) === '1'; } catch { /* default off */ }
+  try { signedIn = !!(await secureGet('auth_token')); } catch { /* treat as signed out */ }
   set({ enabled: on, locked: on && signedIn, loaded: true, signedIn });
 }
 
@@ -80,7 +80,7 @@ export async function unlock(promptMessage: string, cancelLabel: string): Promis
 
 async function disableLock(): Promise<void> {
   set({ enabled: false, locked: false });
-  SecureStore.setItemAsync(KEY, '0').catch(() => {});
+  secureSet(KEY, '0').catch(() => {});
 }
 
 /** Turn the lock on or off. Both need the phone's authentication, so a borrowed unlocked phone cannot change it. */
@@ -89,7 +89,7 @@ export async function setAppLockEnabled(next: boolean, promptMessage: string, ca
   const r = await authenticate(promptMessage, cancelLabel);
   if (r !== 'ok') return false;
   set({ enabled: next, locked: false });
-  SecureStore.setItemAsync(KEY, next ? '1' : '0').catch(() => {});
+  secureSet(KEY, next ? '1' : '0').catch(() => {});
   return true;
 }
 

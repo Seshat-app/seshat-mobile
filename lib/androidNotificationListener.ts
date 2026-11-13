@@ -20,6 +20,7 @@
  */
 import { Platform } from 'react-native';
 
+import { secureGet } from './secure';
 export type PermissionStatus = 'authorized' | 'denied' | 'unknown' | 'unavailable';
 
 /**
@@ -198,7 +199,7 @@ export async function handleBackgroundNotification(raw: unknown): Promise<void> 
     if (!isBankTransactionCandidate(body)) return;
 
     const SecureStore = require('expo-secure-store');
-    const stored = await SecureStore.getItemAsync('capture_config');
+    const stored = await secureGet('capture_config');
     if (!stored) return; // not logged in yet / token not minted
     const cfg = JSON.parse(stored) as { token: string; api: string };
     await fetch(`${cfg.api}/capture/auto`, {

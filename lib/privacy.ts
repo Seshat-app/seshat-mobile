@@ -4,8 +4,8 @@
  * anywhere and re-renders subscribers; persisted so it survives a restart.
  */
 import { useSyncExternalStore } from 'react';
-import * as SecureStore from 'expo-secure-store';
 
+import { secureGet, secureSet } from './secure';
 const KEY = 'hide_numbers';
 export const MASK = '••••';
 
@@ -19,7 +19,7 @@ export function setHideNumbers(next: boolean): void {
   if (hidden === next) return;
   hidden = next;
   notify();
-  SecureStore.setItemAsync(KEY, next ? '1' : '0').catch(() => {});
+  secureSet(KEY, next ? '1' : '0').catch(() => {});
 }
 
 export const toggleHideNumbers = (): void => setHideNumbers(!hidden);
@@ -27,7 +27,7 @@ export const toggleHideNumbers = (): void => setHideNumbers(!hidden);
 /** Read the saved choice once at startup. */
 export async function loadHideNumbers(): Promise<void> {
   try {
-    const v = await SecureStore.getItemAsync(KEY);
+    const v = await secureGet(KEY);
     if (v === '1' && !hidden) { hidden = true; notify(); }
   } catch { /* keep the default (shown) */ }
 }

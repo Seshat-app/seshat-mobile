@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, Modal, Animated, Easing } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { SeshatMark } from './SeshatMark';
 import { RButton } from './ui';
 
+import { secureGet, secureSet, secureDelete } from '../lib/secure';
 // First-launch welcome. One calm, premium screen (gold-on-void) that sets the
 // tone and introduces Seshat (the voice you talk to),
 // instead of the old driver.js-style coachmark spotlight that dimmed the app
@@ -16,13 +16,13 @@ import { RButton } from './ui';
 const TOUR_FLAG_KEY = 'tour_v2_seen';
 
 export async function hasTourBeenSeen(): Promise<boolean> {
-  try { return (await SecureStore.getItemAsync(TOUR_FLAG_KEY)) === '1'; } catch { return false; }
+  try { return (await secureGet(TOUR_FLAG_KEY)) === '1'; } catch { return false; }
 }
 export async function markTourSeen(): Promise<void> {
-  try { await SecureStore.setItemAsync(TOUR_FLAG_KEY, '1'); } catch { /* swallow */ }
+  try { await secureSet(TOUR_FLAG_KEY, '1'); } catch { /* swallow */ }
 }
 export async function resetTour(): Promise<void> {
-  try { await SecureStore.deleteItemAsync(TOUR_FLAG_KEY); } catch { /* swallow */ }
+  try { await secureDelete(TOUR_FLAG_KEY); } catch { /* swallow */ }
 }
 
 export function Tour({ visible, onClose }: { visible: boolean; onClose: () => void }) {

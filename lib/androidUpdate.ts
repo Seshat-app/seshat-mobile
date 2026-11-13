@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
-import * as SecureStore from 'expo-secure-store';
 
+import { secureGet, secureSet } from './secure';
 // Android builds are shared as a direct APK download (no Play Store yet). The newest
 // APK sits next to a small manifest on the website; this compares it with the installed
 // build so Home can offer "Get the latest version".
@@ -35,7 +35,7 @@ export function useAndroidUpdate(): { update: AndroidUpdate | null; dismiss: () 
         if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return;
         const m = (await res.json()) as AndroidUpdate;
         if (!m?.versionCode || !m.url || m.versionCode <= installed) return;
-        const dismissed = Number(await SecureStore.getItemAsync(DISMISSED_KEY).catch(() => null));
+        const dismissed = Number(await secureGet(DISMISSED_KEY).catch(() => null));
         if (alive && dismissed !== m.versionCode) setUpdate(m);
       } catch {
         /* offline: try again next time */
@@ -47,7 +47,7 @@ export function useAndroidUpdate(): { update: AndroidUpdate | null; dismiss: () 
   }, []);
 
   const dismiss = () => {
-    if (update) SecureStore.setItemAsync(DISMISSED_KEY, String(update.versionCode)).catch(() => {});
+    if (update) secureSet(DISMISSED_KEY, String(update.versionCode)).catch(() => {});
     setUpdate(null);
   };
   return { update, dismiss };

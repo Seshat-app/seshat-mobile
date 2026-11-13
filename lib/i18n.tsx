@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { isHidden, MASK, useHideNumbers, loadHideNumbers } from './privacy';
 import { I18nManager } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { Mode, tokens, Tokens } from './theme';
 
+import { secureGet, secureSet } from './secure';
 export type Lang = 'en' | 'ar';
 
 type Strings = Record<string, string>;
@@ -244,13 +244,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => { void loadHideNumbers(); }, []);
 
   useEffect(() => {
-    SecureStore.getItemAsync(LANG_KEY).then((v) => { if (v === 'en' || v === 'ar') setLangState(v); });
-    SecureStore.getItemAsync(MODE_KEY).then((v) => { if (v === 'dark' || v === 'light') setModeState(v); });
+    secureGet(LANG_KEY).then((v) => { if (v === 'en' || v === 'ar') setLangState(v); });
+    secureGet(MODE_KEY).then((v) => { if (v === 'dark' || v === 'light') setModeState(v); });
   }, []);
 
   const setLang = (l: Lang) => {
     setLangState(l);
-    SecureStore.setItemAsync(LANG_KEY, l).catch(() => {});
+    secureSet(LANG_KEY, l).catch(() => {});
     // RN's I18nManager.forceRTL changes the entire app's flex direction.
     // Calling it during runtime requires an app reload to take full effect; we
     // achieve the same visual effect via `writingDirection` and per-element
@@ -258,7 +258,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   };
   const setMode = (m: Mode) => {
     setModeState(m);
-    SecureStore.setItemAsync(MODE_KEY, m).catch(() => {});
+    secureSet(MODE_KEY, m).catch(() => {});
   };
 
   const value = useMemo<Ctx>(() => {

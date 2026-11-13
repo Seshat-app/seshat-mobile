@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, apiFetch, hasToken, newIdempotencyKey } from './api';
 
+import { secureGet } from './secure';
 // iOS bank-message capture.
 //
 // The "Log bank message" Shortcuts action (plugins/ios/SeshatAppIntents.swift) logs the
@@ -21,7 +22,7 @@ type Config = { token: string; api: string; savedAt: number };
 export async function ensureDeviceToken(): Promise<void> {
   try {
     if (!(await hasToken())) return;
-    const raw = await SecureStore.getItemAsync(KEY);
+    const raw = await secureGet(KEY);
     if (raw) {
       const c = JSON.parse(raw) as Config;
       if (c.api === API_BASE_URL && Date.now() - c.savedAt < MAX_AGE_MS) return;

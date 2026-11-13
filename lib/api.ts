@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 
+import { secureGet, secureDelete, SECURE_OPTIONS } from './secure';
 // Resolve the API host automatically so it survives the dev machine's LAN IP
 // changing (hotspot, WiFi switch, etc). Order of precedence:
 //   1. EXPO_PUBLIC_API_BASE env var (full URL, no trailing slash)
@@ -28,19 +29,19 @@ const API_BASE = resolveApiBase();
 export const API_BASE_URL = API_BASE;
 
 async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync('auth_token');
+  return secureGet('auth_token');
 }
 
 export async function setToken(token: string): Promise<void> {
-  await SecureStore.setItemAsync('auth_token', token);
+  await SecureStore.setItemAsync('auth_token', token, SECURE_OPTIONS);
   setLockSession(true);
 }
 
 export async function clearToken(): Promise<void> {
-  await SecureStore.deleteItemAsync('auth_token');
+  await secureDelete('auth_token');
   setLockSession(false);
   // The capture-only device token (read by the iOS Shortcuts action) goes with the session.
-  await SecureStore.deleteItemAsync('capture_config').catch(() => {});
+  await secureDelete('capture_config').catch(() => {});
 }
 
 export async function hasToken(): Promise<boolean> {

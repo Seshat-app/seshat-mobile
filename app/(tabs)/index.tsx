@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, Text, RefreshControl, StyleSheet } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
 import { useAppData, useInOrg } from '../../lib/appData';
@@ -22,6 +21,7 @@ import { TodayCard, AccountsOverview, DailyBudgetCard, TodayNeeds, NetWorthCard 
 import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
+import { secureGet, secureSet } from '../../lib/secure';
 const VIEW_KEY = 'seshat.dashboardView';
 
 export default function HomeScreen() {
@@ -61,14 +61,14 @@ export default function HomeScreen() {
 
   // Restore last view choice.
   useEffect(() => {
-    SecureStore.getItemAsync(VIEW_KEY).then((v) => {
+    secureGet(VIEW_KEY).then((v) => {
       if (v === 'numbers' || v === 'hud' || v === 'bento') setView(v);
     });
   }, []);
 
   const onViewChange = useCallback((v: DashView) => {
     setView(v);
-    SecureStore.setItemAsync(VIEW_KEY, v).catch(() => {});
+    secureSet(VIEW_KEY, v).catch(() => {});
   }, []);
 
   // Fetch dashboard on mount and when a tx was added (dataVersion bumps).

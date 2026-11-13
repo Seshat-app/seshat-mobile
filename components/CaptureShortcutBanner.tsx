@@ -2,7 +2,6 @@ import { useBannerSlot } from '../lib/bannerSlot';
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { Zap, X } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
@@ -10,6 +9,7 @@ import { RCard } from './ui';
 import { useAccountCurrency } from '../lib/captureKeywords';
 import { getPermissionStatus } from '../lib/androidNotificationListener';
 
+import { secureGet, secureSet } from '../lib/secure';
 // Home-screen prompt to set up automatic bank capture (existing accounts included — the
 // onboarding scene only reaches new sign-ups). iPhone: install the bank-SMS Shortcut.
 // Android: allow notification access, which nothing else asks for. Gone for good once they
@@ -23,7 +23,7 @@ export function CaptureShortcutBanner() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    SecureStore.getItemAsync(KEY)
+    secureGet(KEY)
       .then(async (v) => {
         if (v) return;
         if (Platform.OS === 'ios') { setShow(true); return; }
@@ -35,7 +35,7 @@ export function CaptureShortcutBanner() {
 
   const active = useBannerSlot('capture', 50, show);
   if (!show || !active) return null;
-  const close = () => { setShow(false); SecureStore.setItemAsync(KEY, 'done').catch(() => {}); };
+  const close = () => { setShow(false); secureSet(KEY, 'done').catch(() => {}); };
   const ar = lang === 'ar';
 
   return (

@@ -1,12 +1,12 @@
 import { useBannerSlot } from '../lib/bannerSlot';
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, Platform, Modal, StyleSheet } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { LayoutGrid, X } from 'lucide-react-native';
 import { useI18n } from '../lib/i18n';
 import { fontBody, fontMono } from '../lib/fonts';
 import { RCard, RButton } from './ui';
 
+import { secureGet, secureSet } from '../lib/secure';
 // One-time "new widgets" announcement on the iPhone home screen, shown to everyone who updates and
 // opens the app. Tapping it opens a short how-to (adding a widget happens in iOS, not in the app, so
 // the app can only explain it). Gone for good once seen or dismissed. Bump the key's suffix to announce
@@ -21,10 +21,10 @@ export function WidgetsAnnouncement() {
   const ar = lang === 'ar';
 
   useEffect(() => {
-    SecureStore.getItemAsync(KEY).then((v) => { if (!v) setShow(true); }).catch(() => {});
+    secureGet(KEY).then((v) => { if (!v) setShow(true); }).catch(() => {});
   }, []);
 
-  const seen = () => { setShow(false); SecureStore.setItemAsync(KEY, 'done').catch(() => {}); };
+  const seen = () => { setShow(false); secureSet(KEY, 'done').catch(() => {}); };
 
   const steps = ANDROID
     ? (ar
