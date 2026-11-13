@@ -13,6 +13,22 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    id: '2026-11-v1.1.4',
+    version: '1.1.4',
+    date: '2026-11-13',
+    title: { en: "More of your money, in one place", ar: "مزيد من مالك في مكان واحد" },
+    items: [
+      { en: "Net worth: one number for everything you hold, your accounts and savings minus what you owe, on Home.", ar: "صافي الثروة: رقم واحد لكل ما تملكه، حساباتك ومدخراتك مطروحاً منها ما عليك، في الرئيسية." },
+      { en: "Price targets: Seshat tells you when gold, the dollar or a stock reaches the price you choose.", ar: "أهداف السعر: ينبّهك سيشات عندما يصل الذهب أو الدولار أو سهم إلى السعر الذي تختاره." },
+      { en: "A zakat estimate for what you hold in savings, with how it is worked out.", ar: "تقدير للزكاة على ما تملكه في المدخرات، مع شرح كيف حُسب." },
+      { en: "Export your transactions as a CSV file from your profile.", ar: "صدّر معاملاتك كملف CSV من ملفك الشخصي." },
+      { en: "The phone app keeps what you log without a connection and sends it when you are back online.", ar: "التطبيق على الهاتف يحفظ ما تسجله بلا اتصال ويرسله عند عودة الإنترنت." },
+      { en: "Share how a goal is going from the goals screen.", ar: "شارك تقدّم هدفك من شاشة الأهداف." },
+      { en: "Usage statistics: Seshat counts which features are used, never your amounts or notes, and you can switch it off in your profile.", ar: "إحصاءات الاستخدام: يعدّ سيشات الميزات المستخدمة فقط، دون مبالغك أو ملاحظاتك، ويمكنك إيقافها من ملفك الشخصي." },
+      { en: "Every screen header now has the same back, workspace and add buttons.", ar: "كل ترويسات الشاشات صارت بنفس أزرار الرجوع ومساحة العمل والإضافة." },
+    ],
+  },
+  {
     id: '2026-11-v1.1.3',
     version: '1.1.3',
     date: '2026-11-12',
