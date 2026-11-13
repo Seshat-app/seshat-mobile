@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'r
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Building2, ChevronRight, Plus, Send } from 'lucide-react-native';
+import { Building2, ChevronRight, Home, Plus, Send } from 'lucide-react-native';
 import { PlanScreen } from '../../components/PlanShell';
 import { RCard, RButton } from '../../components/ui';
 import { SkeletonRow } from '../../components/Skeleton';
@@ -62,7 +62,7 @@ export default function OrgsListScreen() {
 
   return (
     <PlanScreen
-      title={lang === 'ar' ? 'الفرق والعائلات' : 'Teams and families'}
+      title={lang === 'ar' ? 'المساحات' : 'Workspaces'}
       subtitle={lang === 'ar' ? 'مساحات العمل المشتركة' : 'Shared workspaces'}
       onAdd={!loading && items.length === 0 ? undefined : () => router.push('/orgs/new')}
     >
@@ -110,7 +110,7 @@ export default function OrgsListScreen() {
                   borderWidth: StyleSheet.hairlineWidth, borderColor: tok.border,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Building2 size={20} color={tok.gold} strokeWidth={1.6} />
+                  {org.kind === 'family' ? <Home size={20} color={tok.gold} strokeWidth={1.6} /> : <Building2 size={20} color={tok.gold} strokeWidth={1.6} />}
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text

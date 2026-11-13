@@ -491,11 +491,11 @@ export default function OrgDetailScreen() {
             <View style={{ marginTop: 32, gap: 6 }}>
               {!isOwner ? (
                 <RButton variant="danger" full onPress={handleLeave}>
-                  {lang === 'ar' ? 'مغادرة المنظمة' : 'Leave organization'}
+                  {kind === 'family' ? (ar ? 'مغادرة العائلة' : 'Leave household') : (ar ? 'مغادرة الفريق' : 'Leave team')}
                 </RButton>
               ) : (
                 <RButton variant="danger" full onPress={handleDelete}>
-                  {lang === 'ar' ? 'حذف المنظمة' : 'Delete organization'}
+                  {kind === 'family' ? (ar ? 'حذف العائلة' : 'Delete household') : (ar ? 'حذف الفريق' : 'Delete team')}
                 </RButton>
               )}
             </View>

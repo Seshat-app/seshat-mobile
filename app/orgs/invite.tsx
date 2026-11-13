@@ -98,7 +98,7 @@ export default function InviteScreen() {
           label={lang === 'ar' ? 'البريد الإلكتروني' : 'EMAIL'}
           value={email}
           onChange={setEmail}
-          placeholder="teammate@yourteam.com"
+          placeholder="name@example.com"
           autoFocus
           autoCapitalize="none"
           keyboardType="email-address"
