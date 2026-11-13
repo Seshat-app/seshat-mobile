@@ -31,11 +31,8 @@ export function PlanScreen({
   }, [enter]);
   return (
     <ScreenScaffold>
-      <FrostedHeader style={{
-        paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8,
-        flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
-        alignItems: 'center', gap: 12,
-      }}>
+      <FrostedHeader style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
+        <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={10}
@@ -49,16 +46,11 @@ export function PlanScreen({
           <ChevronLeft size={20} color={tok.bone} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={{
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{
             fontFamily: fontHead(lang),
             fontSize: T.h5, color: tok.bone, letterSpacing: -0.4,
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>{title}</Text>
-          {subtitle && (
-            <REyebrow style={{ marginTop: 3, textAlign: lang === 'ar' ? 'right' : 'left' }}>
-              {subtitle}
-            </REyebrow>
-          )}
         </View>
         <WorkspaceChip />
         <RefreshSpinner refreshing={!!refreshing} />
@@ -79,6 +71,12 @@ export function PlanScreen({
             <LiquidBackdrop radius={16} tint="rgba(201,168,76,0.22)" fallback="transparent" />
             <Plus size={18} color={tok.gold} strokeWidth={2.4} />
           </Pressable>
+        )}
+        </View>
+        {subtitle && (
+          <REyebrow style={{ marginTop: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {subtitle}
+          </REyebrow>
         )}
       </FrostedHeader>
       <Animated.View style={{
