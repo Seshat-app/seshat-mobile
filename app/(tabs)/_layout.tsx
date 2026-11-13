@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { trackEvent } from '../../lib/track';
+import { useOfflineSync, enqueue, isNetworkError } from '../../lib/offlineQueue';
+import { useCallback, useEffect, useState } from 'react';
 import { fmtNum } from '../../lib/privacy';
-import { View, Text, StyleSheet, Platform, type ColorValue } from 'react-native';
+import { View, Text, StyleSheet, Platform, type ColorValue, AppState } from 'react-native';
 import { Tabs, useSegments, router } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Home as HomeIcon, List, Sparkles, User, Bell } from 'lucide-react-native';
@@ -81,12 +83,24 @@ export default function TabsLayout() {
     return () => { alive = false; };
   }, []);
 
+  // One "app opened" per launch, and another when the app returns after a long time away.
+  useEffect(() => {
+    trackEvent('app_open');
+    let away = 0;
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'background') away = Date.now(); else if (s === 'active' && away && Date.now() - away > 30 * 60 * 1000) { away = 0; trackEvent('app_open'); } });
+    return () => sub.remove();
+  }, []);
+
+  // Entries made without a connection wait on the phone and are sent as soon as it is back.
+  useOfflineSync(useCallback(() => bumpVersion(), [bumpVersion]));
+
   const onSave = async (p: AddTxPayload) => {
+    const key = newIdempotencyKey();
     try {
       await apiFetch('/transactions', {
         method: 'POST',
         body: JSON.stringify(p),
-        idempotencyKey: newIdempotencyKey(),
+        idempotencyKey: key,
       });
       bumpVersion();
       const cat = categories.find((c) => c._id === p.categoryId);
@@ -98,6 +112,13 @@ export default function TabsLayout() {
       setSheetOpen(false);
       setTimeout(() => setToast(null), 2800);
     } catch (err) {
+      if (isNetworkError(err)) {
+        await enqueue(key, p);
+        setToast(lang === 'ar' ? 'لا اتصال الآن. حُفظ على هاتفك وسيُرسل تلقائياً.' : 'No connection. Saved on your phone and it will send by itself.');
+        setSheetOpen(false);
+        setTimeout(() => setToast(null), 3400);
+        return;
+      }
       console.warn('save tx failed', err);
     }
   };

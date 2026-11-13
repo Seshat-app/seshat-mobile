@@ -18,7 +18,7 @@ import {
 import { CaptureShortcutBanner } from '../../components/CaptureShortcutBanner';
 import { UpdateBanner } from '../../components/UpdateBanner';
 import { WidgetsAnnouncement } from '../../components/WidgetsAnnouncement';
-import { TodayCard, AccountsOverview, DailyBudgetCard, Gam3yaOverview, TodayNeeds, SavingsCard } from '../../components/HomeMoney';
+import { TodayCard, AccountsOverview, DailyBudgetCard, Gam3yaOverview, TodayNeeds, SavingsCard, NetWorthCard } from '../../components/HomeMoney';
 import { SetupPrompt } from '../../components/SetupPrompt';
 import { useRouter } from 'expo-router';
 
@@ -142,6 +142,7 @@ export default function HomeScreen() {
                     <ChartCarousel data={data!} currency={currency} view={view} onViewChange={onViewChange} />
                   </View>
                   <TodayCard data={data!} currency={currency} />
+                  {!inOrg && <NetWorthCard />}
                   {!inOrg && <DailyBudgetCard />}
                   <AccountsOverview currency={currency} />
                   {!inOrg && <Gam3yaOverview />}

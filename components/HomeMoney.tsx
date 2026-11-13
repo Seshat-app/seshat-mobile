@@ -330,3 +330,47 @@ export function DailyBudgetCard() {
     </>
   );
 }
+
+type NetWorthInfo = { currency: string; total: number; parts: { accounts: number; savings: number; gam3ya: number; debts: number }; approximate: boolean; personalOnly?: boolean };
+
+/** What the person owns, in one number: accounts and cash, plus savings, plus gam3ya money paid in, minus debts. Tap for the breakdown. */
+export function NetWorthCard() {
+  const { tok, lang } = useI18n();
+  const { dataVersion } = useAppData();
+  const ar = lang === 'ar';
+  const [nw, setNw] = useState<NetWorthInfo | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    hasToken().then((ok) => { if (ok) apiFetch<{ data: NetWorthInfo }>('/me/net-worth').then((r) => { if (alive) setNw(r.data); }).catch(() => {}); });
+    return () => { alive = false; };
+  }, [dataVersion]);
+  if (!nw || nw.personalOnly) return null;
+  const n = (v: number) => `${v < 0 ? '−' : ''}${Math.abs(Math.round(v)).toLocaleString('en-US')}`;
+  const rows: Array<[string, number]> = [
+    [ar ? 'الحسابات والكاش' : 'Accounts and cash', nw.parts.accounts],
+    [ar ? 'المدخرات والاستثمارات' : 'Savings and investments', nw.parts.savings],
+    ...(nw.parts.gam3ya !== 0 ? [[ar ? 'في الجمعيات (المدفوع)' : 'In gam3yas (paid in)', nw.parts.gam3ya] as [string, number]] : []),
+    ...(nw.parts.debts !== 0 ? [[ar ? 'ديون عليك' : 'Debts you owe', nw.parts.debts] as [string, number]] : []),
+  ];
+  return (
+    <Pressable onPress={() => setOpen((v) => !v)} style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}>
+      <RCard padding={16} style={{ marginHorizontal: 16, marginBottom: 12 }}>
+        <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'ما أملكه' : 'What I own'}</REyebrow>
+        <RAmount value={nw.total} currency={nw.currency} size={26} decimals={0} />
+        {open && (
+          <View style={{ marginTop: 12, gap: 6 }}>
+            {rows.map(([k, v]) => (
+              <View key={k} style={{ flexDirection: ar ? 'row-reverse' : 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: tok.muted }}>{k}</Text>
+                <Text style={{ fontFamily: fontMono('regular'), fontSize: 13, color: v < 0 ? tok.alertText : tok.bone }}>{n(v)}</Text>
+              </View>
+            ))}
+            {nw.approximate ? <Text style={{ fontFamily: fontBody(lang), fontSize: 11.5, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{ar ? 'بعض المدخرات بلا سعر الآن، فتُحسب بما دفعته.' : 'Some savings have no price right now, so they are counted at what you paid.'}</Text> : null}
+          </View>
+        )}
+        {!open ? <Text style={{ marginTop: 6, fontFamily: fontMono('regular'), fontSize: 10.5, letterSpacing: 0.8, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{ar ? 'اضغط للتفاصيل' : 'TAP FOR THE BREAKDOWN'}</Text> : null}
+      </RCard>
+    </Pressable>
+  );
+}

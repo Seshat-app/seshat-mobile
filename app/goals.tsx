@@ -1,10 +1,11 @@
+import { trackEvent } from '../lib/track';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, Pressable, Modal, Animated, Platform, StyleSheet, RefreshControl, Share } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Trash2, X } from 'lucide-react-native';
+import { Trash2, X, Share2 } from 'lucide-react-native';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { useFetchList } from '../lib/hooks/useFetchList';
 import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
@@ -37,6 +38,7 @@ export default function GoalsScreen() {
   );
   // Arriving from the "do you have a goal?" question opens the new-goal form straight away.
   const params = useLocalSearchParams<{ new?: string }>();
+  useEffect(() => { trackEvent('screen_goals'); }, []);
   const [editing, setEditing] = useState<Goal | 'new' | null>(params.new === '1' ? 'new' : null);
 
   const onSave = async (g: Partial<Goal>) => {
@@ -148,6 +150,18 @@ function GoalRow({ goal, onPress }: { goal: Goal; onPress: () => void }) {
           }}>
             {pct.toFixed(0)}%
           </Text>
+          <Pressable
+            hitSlop={10}
+            onPress={() => {
+              // Progress as a sentence to send to a friend: the goal and how far along, never the amounts.
+              const name = lang === 'ar' ? goal.nameAr : goal.nameEn;
+              trackEvent('share_goal');
+              Share.share({ message: lang === 'ar' ? `وصلت ٪${Math.round(pct)} من هدف «${name}» عبر سيشات. seshat.site` : `I am ${Math.round(pct)}% of the way to “${name}”, tracked with Seshat. seshat.site` }).catch(() => {});
+            }}
+            style={{ marginStart: 12, alignSelf: 'center' }}
+          >
+            <Share2 size={16} color={tok.muted} />
+          </Pressable>
         </View>
         <Text style={{
           marginTop: 4, color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11,

@@ -1,3 +1,6 @@
+import { trackEvent } from '../../lib/track';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useState } from 'react';
 import { ReleaseNotesModal } from '../../components/ReleaseNotesModal';
 import { useAppLock, setAppLockEnabled, lockSupport } from '../../lib/appLock';
@@ -10,7 +13,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Sun, Moon, Globe, Wallet, Target, CreditCard, ChevronRight, Banknote, Send, Tags, Camera, LifeBuoy, BellRing, FileText, Zap, CalendarClock, KeyRound, MessageCircle, Mail, Info, ShieldCheck, ScrollText, Copy, Check, MessagesSquare, ScanFace, Fingerprint, Sparkles, Users } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { uploadAvatar } from '../../lib/cloudinary';
-import { apiFetch, hasToken } from '../../lib/api';
+import { apiFetchText, apiFetch, hasToken } from '../../lib/api';
 import { signOut } from '../../lib/auth';
 import { useI18n, type Lang, formatAmount, currencyLabel } from '../../lib/i18n';
 import { useAppData, useInOrg } from '../../lib/appData';
@@ -465,8 +468,9 @@ export default function ProfileScreen() {
                 ? (lang === 'ar' ? 'إعداد اختصار الرسائل البنكية' : 'Set up the bank-SMS Shortcut')
                 : (lang === 'ar' ? 'تفعيل قراءة إشعارات البنوك' : 'Enable bank notification reading')}
               onPress={() => router.push(Platform.OS === 'ios' ? '/capture-setup-ios' : '/capture-setup-android')}
-              last={!bubbleSupported()}
             />
+            <UsageRow />
+            <ExportRow last={!bubbleSupported()} />
             {bubbleSupported() && <BubbleRow />}
           </RCard>
         </View>
@@ -973,6 +977,59 @@ function AppLockRow() {
           thumbColor={enabled ? tok.bone : tok.muted}
         />
       }
+    />
+  );
+}
+
+/** Counts which features are used (never amounts or text). Off means nothing is recorded for this person. */
+function UsageRow() {
+  const { tok, lang } = useI18n();
+  const ar = lang === 'ar';
+  const [on, setOn] = useState(true);
+  useEffect(() => { apiFetch<{ data: { analyticsOptOut?: boolean } }>('/me').then((r) => setOn(r.data.analyticsOptOut !== true)).catch(() => {}); }, []);
+  const toggle = async (next: boolean) => {
+    setOn(next);
+    apiFetch('/me', { method: 'PATCH', body: JSON.stringify({ analyticsOptOut: !next }) }).catch(() => setOn(!next));
+  };
+  return (
+    <PlanRow
+      icon={ShieldCheck}
+      title={ar ? 'مشاركة إحصاءات الاستخدام' : 'Share usage statistics'}
+      hint={ar ? 'تعدّ الميزات المستخدمة فقط، دون مبالغ أو نصوص' : 'Counts which features are used, never amounts or text'}
+      onPress={() => toggle(!on)}
+      trailing={<Switch value={on} onValueChange={toggle} trackColor={{ false: tok.elevated, true: tok.gold }} thumbColor={on ? tok.bone : tok.muted} />}
+    />
+  );
+}
+
+/** Saves every entry of the last year as a CSV file and opens the share sheet (save to Files, send, open in a spreadsheet). */
+function ExportRow({ last }: { last?: boolean }) {
+  const { lang } = useI18n();
+  const ar = lang === 'ar';
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const to = new Date().toISOString().slice(0, 10);
+      const from = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+      const text = await apiFetchText(`/reports/export.csv?from=${from}&to=${to}`);
+      const uri = `${FileSystem.cacheDirectory}seshat-${to}.csv`;
+      await FileSystem.writeAsStringAsync(uri, text);
+      trackEvent('export_csv');
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: ar ? 'تصدير حركاتي' : 'Export my entries' });
+    } catch (err) {
+      Alert.alert(ar ? 'تعذّر التصدير' : 'Could not export', err instanceof Error ? err.message : undefined);
+    } finally { setBusy(false); }
+  };
+  return (
+    <PlanRow
+      icon={FileText}
+      title={ar ? 'تصدير حركاتي (CSV)' : 'Export my entries (CSV)'}
+      hint={ar ? 'آخر سنة من الحركات، لتفتحها في جدول بيانات' : 'The last year of entries, to open in a spreadsheet'}
+      onPress={run}
+      trailing={busy ? <ActivityIndicator size="small" /> : undefined}
+      last={last}
     />
   );
 }

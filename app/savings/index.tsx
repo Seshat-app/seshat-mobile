@@ -13,6 +13,8 @@ import { RCard, REyebrow, RButton } from '../../components/ui';
 import { PlanScreen } from '../../components/PlanShell';
 import { type Holding } from '../../components/SavingsSheets';
 import { RangeChart } from '../../components/RangeChart';
+import { PriceTargets, ZakatCard } from '../../components/SavingsExtras';
+import { trackEvent } from '../../lib/track';
 
 type Overview = {
   currency: string; value: number; cost: number; gain: number; gainPct: number | null; realized: number; stale: boolean;
@@ -31,6 +33,7 @@ export default function SavingsScreen() {
   const router = useRouter();
   const [ov, setOv] = useState<Overview | null>(null);
   const [alerts, setAlerts] = useState(true);
+  useEffect(() => { trackEvent('screen_savings'); }, []);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async (mode?: 'refresh') => {
@@ -102,6 +105,9 @@ export default function SavingsScreen() {
                 </View>
               </Pressable>
             </RCard>
+
+            <PriceTargets />
+            <ZakatCard />
 
             {ov.holdings.filter((h) => h.quantity > 0).map((h) => {
               const g = h.gain ?? 0;
