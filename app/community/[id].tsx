@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronUp, CheckCircle2, MoreHorizontal } from 'lucide-react-native';
+import { ChevronUp, CheckCircle2, Trash2, Flag, Ban } from 'lucide-react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { PlanScreen } from '../../components/PlanShell';
 import { RCard, RButton, RField, REyebrow } from '../../components/ui';
@@ -83,9 +83,24 @@ export default function QuestionScreen() {
     { text: ar ? 'إلغاء' : 'Cancel', style: 'cancel' },
     { text: ar ? 'حظر' : 'Block', style: 'destructive', onPress: async () => { try { await blockAuthorOf(t.type, t.id); if (t.type === 'question') router.back(); else await load(); } catch (e) { Alert.alert(ar ? 'تعذّر' : 'Could not block', e instanceof Error ? e.message : String(e)); } } },
   ]);
-  const menu = (t: Target) => Alert.alert(ar ? 'خيارات' : 'Options', '', t.mine
-    ? [{ text: ar ? 'حذف' : 'Delete', style: 'destructive', onPress: () => remove(t) }, { text: ar ? 'إلغاء' : 'Cancel', style: 'cancel' }]
-    : [{ text: ar ? 'إبلاغ' : 'Report', onPress: () => report(t) }, { text: ar ? 'حظر هذا العضو' : 'Block this member', style: 'destructive', onPress: () => block(t) }, { text: ar ? 'إلغاء' : 'Cancel', style: 'cancel' }]);
+  const Actions = ({ t }: { t: Target }) => {
+    const item = (Icon: typeof Trash2, label: string, onPress: () => void, color: string) => (
+      <Pressable onPress={onPress} hitSlop={8} style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 5 }}>
+        <Icon size={14} color={color} />
+        <Text style={{ fontFamily: fontBody(lang), fontSize: 12.5, color }}>{label}</Text>
+      </Pressable>
+    );
+    return (
+      <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 16 }}>
+        {t.mine ? item(Trash2, ar ? 'حذف' : 'Delete', () => remove(t), tok.alertText) : (
+          <>
+            {item(Flag, ar ? 'إبلاغ' : 'Report', () => report(t), tok.muted)}
+            {item(Ban, ar ? 'حظر' : 'Block', () => block(t), tok.muted)}
+          </>
+        )}
+      </View>
+    );
+  };
 
   const VoteBtn = ({ n, on, onPress, disabled }: { n: number; on: boolean; onPress: () => void; disabled?: boolean }) => (
     <Pressable onPress={onPress} disabled={disabled} hitSlop={8} style={{ alignItems: 'center', gap: 2, minWidth: 40, opacity: disabled ? 0.55 : 1 }}>
@@ -117,8 +132,8 @@ export default function QuestionScreen() {
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: fontHead(lang), fontSize: 20, lineHeight: 27, color: tok.bone, textAlign: qRtl ? 'right' : 'left', writingDirection: qRtl ? 'rtl' : 'ltr' }}>{q.title}</Text>
               {q.body ? <Text style={{ marginTop: 8, fontFamily: fontBody(lang), fontSize: 14.5, lineHeight: 22, color: tok.bone, textAlign: qRtl ? 'right' : 'left', writingDirection: qRtl ? 'rtl' : 'ltr' }}>{q.body}</Text> : null}
+              <View style={{ marginTop: 12 }}><Actions t={{ type: 'question', id: q.id, mine: q.mine }} /></View>
             </View>
-            <Pressable onPress={() => menu({ type: 'question', id: q.id, mine: q.mine })} hitSlop={10}><MoreHorizontal size={20} color={tok.muted} /></Pressable>
           </View>
           {q.status === 'hidden' ? <Text style={{ marginTop: 10, fontFamily: fontBody(lang), fontSize: 12, color: tok.alertText, textAlign: ar ? 'right' : 'left' }}>{ar ? 'مخفي حتى تراجعه الإدارة.' : 'Hidden until the team reviews it.'}</Text> : null}
         </RCard>
@@ -140,13 +155,15 @@ export default function QuestionScreen() {
                   ) : null}
                   <Text style={{ fontFamily: fontBody(lang), fontSize: 14.5, lineHeight: 22, color: tok.bone, textAlign: aRtl ? 'right' : 'left', writingDirection: aRtl ? 'rtl' : 'ltr' }}>{a.body}</Text>
                   <Text style={{ marginTop: 8, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{a.mine ? (ar ? 'أنت' : 'You') : a.authorName} · {timeAgo(a.createdAt, ar)}</Text>
-                  {q.mine ? (
-                    <Pressable onPress={() => markBest(a.id)} style={{ marginTop: 8 }}>
-                      <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.gold, textAlign: ar ? 'right' : 'left' }}>{a.accepted ? (ar ? 'إلغاء اختيارها' : 'Unmark best answer') : (ar ? 'اختر كأفضل إجابة' : 'Mark as best answer')}</Text>
-                    </Pressable>
-                  ) : null}
+                  <View style={{ marginTop: 10, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 8 }}>
+                    {q.mine ? (
+                      <Pressable onPress={() => markBest(a.id)}>
+                        <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 13, color: tok.gold }}>{a.accepted ? (ar ? 'إلغاء اختيارها' : 'Unmark best answer') : (ar ? 'اختر كأفضل إجابة' : 'Mark as best answer')}</Text>
+                      </Pressable>
+                    ) : null}
+                    <Actions t={{ type: 'answer', id: a.id, mine: a.mine }} />
+                  </View>
                 </View>
-                <Pressable onPress={() => menu({ type: 'answer', id: a.id, mine: a.mine })} hitSlop={10}><MoreHorizontal size={20} color={tok.muted} /></Pressable>
               </View>
             </RCard>
           );
