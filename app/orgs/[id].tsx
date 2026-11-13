@@ -13,9 +13,10 @@ import { useAppData } from '../../lib/appData';
 import {
   deleteOrg, getOrg, leaveOrg, listInvites, listMembers,
   mintTelegramOrgLinkToken, removeMember, revokeInvite,
-  setTelegramDefaultProject,
+  setTelegramDefaultProject, setMemberRole,
   type OrgDetail, type OrgInvite, type OrgMember,
 } from '../../lib/orgs';
+import { roleLabel, kindLabel, isManager, canAssignRole, canRemoveMember, invitableRoles, type OrgRole } from '../../lib/orgRoles';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 
 /**
@@ -68,6 +69,23 @@ export default function OrgDetailScreen() {
   useEffect(() => { load(); }, [load]);
 
   const isOwner = org?.role === 'owner';
+  const manage = isManager(org?.role);
+  const kind = org?.kind ?? 'team';
+  const ar = lang === 'ar';
+
+  // Change a member's role: offers only the roles this person may give.
+  const changeRole = (m: OrgMember) => {
+    if (!org || !id) return;
+    const options = invitableRoles(org.role, kind).filter((r) => r !== m.role && canAssignRole(org.role, m.role, r as OrgRole));
+    if (options.length === 0) return;
+    Alert.alert(m.displayName ?? m.email ?? '', ar ? 'اختر الدور' : 'Choose a role', [
+      ...options.map((r) => ({
+        text: roleLabel(r, kind, ar),
+        onPress: async () => { try { await setMemberRole(id, m.userId, r); await load('refresh'); } catch (e) { Alert.alert(ar ? 'فشل' : 'Failed', e instanceof Error ? e.message : String(e)); } },
+      })),
+      { text: ar ? 'إلغاء' : 'Cancel', style: 'cancel' as const },
+    ]);
+  };
 
   const handleLeave = () => {
     Alert.alert(
@@ -163,8 +181,8 @@ export default function OrgDetailScreen() {
 
   return (
     <PlanScreen
-      title={org?.name ?? (lang === 'ar' ? 'منظمة' : 'Organization')}
-      subtitle={org ? `${lang === 'ar' ? (org.role === 'owner' ? 'مالك' : 'عضو') : (org.role === 'owner' ? 'Owner' : 'Member')}  ·  ${org.currency}` : undefined}
+      title={org?.name ?? (ar ? 'مساحة مشتركة' : 'Shared workspace')}
+      subtitle={org ? `${kindLabel(kind, ar)}  ·  ${roleLabel(org.role, kind, ar)}  ·  ${org.currency}` : undefined}
       refreshing={refreshing}
     >
       <ScreenScroll
@@ -195,7 +213,7 @@ export default function OrgDetailScreen() {
               icon={<Users size={14} color={tok.muted} />}
               label={lang === 'ar' ? `الأعضاء (${members.length})` : `MEMBERS (${members.length})`}
               tok={tok} lang={lang}
-              action={isOwner ? {
+              action={manage ? {
                 label: lang === 'ar' ? 'دعوة' : 'Invite',
                 onPress: () => router.push({ pathname: '/orgs/invite', params: { id } }),
               } : undefined}
@@ -251,11 +269,16 @@ export default function OrgDetailScreen() {
                         textAlign: lang === 'ar' ? 'right' : 'left',
                       }}
                     >
-                      {(lang === 'ar' ? (m.role === 'owner' ? 'مالك' : 'عضو') : m.role.toUpperCase())}
+                      {roleLabel(m.role, kind, ar).toUpperCase()}
                       {m.email ? `  ·  ${m.email}` : ''}
                     </Text>
                   </View>
-                  {isOwner && m.role !== 'owner' && (
+                  {manage && org && invitableRoles(org.role, kind).some((r) => r !== m.role && canAssignRole(org.role, m.role, r)) && (
+                    <Pressable onPress={() => changeRole(m)} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+                      <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2, color: tok.gold }}>{ar ? 'الدور' : 'ROLE'}</Text>
+                    </Pressable>
+                  )}
+                  {manage && org && canRemoveMember(org.role, m.role) && (
                     <Pressable
                       onPress={() => promptRemove(m, id!, tok, lang, () => load('refresh'))}
                       hitSlop={8}
@@ -269,7 +292,7 @@ export default function OrgDetailScreen() {
             </RCard>
 
             {/* Pending invites (owner only) */}
-            {isOwner && invites.length > 0 && (
+            {manage && invites.length > 0 && (
               <>
                 <SectionHeader
                   icon={<Mail size={14} color={tok.muted} />}
@@ -342,16 +365,16 @@ export default function OrgDetailScreen() {
 
             {/* Actions */}
             <View style={{ gap: 10, marginTop: 4 }}>
-              {isOwner && (
+              {manage && (
                 <RButton
                   full
                   icon={<UserPlus size={16} color={tok.void} />}
                   onPress={() => router.push({ pathname: '/orgs/invite', params: { id } })}
                 >
-                  {lang === 'ar' ? 'دعوة عضو' : 'Invite member'}
+                  {kind === 'family' ? (ar ? 'دعوة فرد من العائلة' : 'Invite someone') : (lang === 'ar' ? 'دعوة عضو' : 'Invite member')}
                 </RButton>
               )}
-              {isOwner && (
+              {manage && (
                 <RButton
                   variant="secondary"
                   full
@@ -365,6 +388,8 @@ export default function OrgDetailScreen() {
                 </RButton>
               )}
 
+              {kind !== 'family' && (
+              <>
               {/* Manage projects - all members can open; only owners can
                   create/archive (server-enforced is permissive in v1 but
                   we keep the entry point shared so members can browse). */}
@@ -400,10 +425,13 @@ export default function OrgDetailScreen() {
                 </Pressable>
               </RCard>
 
+              </>
+              )}
+
               {/* Default project for the linked Telegram group. Only shown
                   when the group is linked AND the org has at least one
                   active project (loaded into context). */}
-              {isOwner && org.telegramLinked && projects.length > 0 && activeLedgerId === `o_${id}` ? (
+              {manage && kind !== 'family' && org.telegramLinked && projects.length > 0 && activeLedgerId === `o_${id}` ? (
                 <RCard style={{ gap: 8 }}>
                   <View style={{
                     flexDirection: lang === 'ar' ? 'row-reverse' : 'row',

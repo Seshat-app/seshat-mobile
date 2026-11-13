@@ -12,6 +12,7 @@ import { useAppData } from '../../lib/appData';
 import { hasToken } from '../../lib/api';
 import { listOrgs, type OrgSummary } from '../../lib/orgs';
 import { fontBody, fontMono } from '../../lib/fonts';
+import { roleLabel, kindLabel } from '../../lib/orgRoles';
 
 /**
  * /orgs - list of organizations the user belongs to.
@@ -61,7 +62,7 @@ export default function OrgsListScreen() {
 
   return (
     <PlanScreen
-      title={lang === 'ar' ? 'المنظمات' : 'Organizations'}
+      title={lang === 'ar' ? 'الفرق والعائلات' : 'Teams and families'}
       subtitle={lang === 'ar' ? 'مساحات العمل المشتركة' : 'Shared workspaces'}
       onAdd={!loading && items.length === 0 ? undefined : () => router.push('/orgs/new')}
     >
@@ -130,8 +131,8 @@ export default function OrgsListScreen() {
                     }}
                   >
                     {lang === 'ar'
-                      ? `${org.role === 'owner' ? 'مالك' : 'عضو'}  ·  ${org.memberCount} عضو  ·  ${org.currency}`
-                      : `${org.role === 'owner' ? 'OWNER' : 'MEMBER'}  ·  ${org.memberCount} MEMBER${org.memberCount === 1 ? '' : 'S'}  ·  ${org.currency}`}
+                      ? `${kindLabel(org.kind ?? 'team', true)}  ·  ${roleLabel(org.role, org.kind ?? 'team', true)}  ·  ${org.memberCount} عضو  ·  ${org.currency}`
+                      : `${kindLabel(org.kind ?? 'team', false).toUpperCase()}  ·  ${roleLabel(org.role, org.kind ?? 'team', false).toUpperCase()}  ·  ${org.memberCount} MEMBER${org.memberCount === 1 ? '' : 'S'}  ·  ${org.currency}`}
                   </Text>
                 </View>
                 {org.telegramLinked && (
@@ -170,15 +171,15 @@ function EmptyState({
         fontFamily: fontBody(lang, 'semibold'), fontSize: 16, color: tok.bone,
         textAlign: 'center', marginBottom: 8,
       }}>
-        {lang === 'ar' ? 'لا توجد منظمات بعد' : 'No organizations yet'}
+        {lang === 'ar' ? 'لا فرق أو عائلات بعد' : 'No teams or families yet'}
       </Text>
       <Text style={{
         fontFamily: fontBody(lang), fontSize: 13, color: tok.muted, lineHeight: 19,
         textAlign: 'center', marginBottom: 24,
       }}>
         {lang === 'ar'
-          ? 'أنشئ منظمة لتشاركها مع فريقك. ميزانية واحدة، عدة أشخاص، وSeshat تتولى التسجيل.'
-          : 'Create one to share with your team. One ledger, multiple people, Seshat keeps the records.'}
+          ? 'أنشئ فريقاً لشركتك أو عائلة لبيتك. دفتر واحد لعدة أشخاص، وسيشات تتولى التسجيل.'
+          : 'Create a team for your company or a family for your household. One ledger, several people, Seshat keeps the records.'}
       </Text>
       <RButton
         variant="primary"
@@ -186,7 +187,7 @@ function EmptyState({
         onPress={onCreate}
         icon={<Plus size={16} color={tok.void} strokeWidth={2.4} />}
       >
-        {lang === 'ar' ? 'إنشاء منظمة' : 'Create organization'}
+        {lang === 'ar' ? 'إنشاء فريق أو عائلة' : 'Create a team or family'}
       </RButton>
     </View>
   );

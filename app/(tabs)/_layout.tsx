@@ -9,7 +9,7 @@ import { Home as HomeIcon, List, Sparkles, User, Bell } from 'lucide-react-nativ
 import { useNotifications } from '../../lib/notifications';
 import { useI18n } from '../../lib/i18n';
 import { restoreBubble } from '../../lib/bubble';
-import { useAppData } from '../../lib/appData';
+import { useAppData, useWorkspace } from '../../lib/appData';
 import { apiFetch, newIdempotencyKey } from '../../lib/api';
 import { fontMono } from '../../lib/fonts';
 import * as Haptics from 'expo-haptics';
@@ -37,7 +37,10 @@ export default function TabsLayout() {
   useEffect(() => { restoreBubble(lang).catch(() => {}); }, [lang]);
   const segments = useSegments();
   const currentTab = segments[segments.length - 1];
-  const hideFab = currentTab === 'seshat';
+  const ws = useWorkspace();
+  // A viewer cannot add anything, and neither a viewer nor a child can use the chat (it reads and writes the whole workspace).
+  const hideFab = currentTab === 'seshat' || !ws.canWrite;
+  const hideChat = ws.isViewer || ws.isChild;
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -139,7 +142,7 @@ export default function TabsLayout() {
             <NativeTabs.Trigger.Icon sf="list.bullet" />
             <NativeTabs.Trigger.Label>{t('transactions')}</NativeTabs.Trigger.Label>
           </NativeTabs.Trigger>
-          <NativeTabs.Trigger name="seshat">
+          <NativeTabs.Trigger name="seshat" hidden={hideChat}>
             <NativeTabs.Trigger.Icon sf="sparkles" />
             <NativeTabs.Trigger.Label>{t('maat')}</NativeTabs.Trigger.Label>
             {unreadMaatTotal > 0 ? <NativeTabs.Trigger.Badge>{String(unreadMaatTotal)}</NativeTabs.Trigger.Badge> : null}
@@ -190,6 +193,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="seshat"
             options={{
+              href: hideChat ? null : undefined,
               title: t('maat'),
               tabBarIcon: ({ color }) => <Sparkles size={22} color={color} strokeWidth={1.5} />,
               tabBarLabel: ({ focused, color }) => <TabLabel focused={focused} color={color}>{t('maat')}</TabLabel>,
@@ -288,7 +292,8 @@ export default function TabsLayout() {
         onClose={() => { setSheetOpen(false); setSheetPrefill(undefined); }}
         onSave={onSave}
         categories={categories}
-        projects={projects}
+        projects={ws.kind === 'family' || ws.isChild ? [] : projects}
+        expenseOnly={ws.isChild}
         defaultCurrency={profile?.currency ?? 'EGP'}
         prefill={sheetPrefill}
       />

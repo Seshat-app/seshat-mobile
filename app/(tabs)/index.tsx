@@ -4,7 +4,8 @@ import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiFetch, hasToken } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
-import { useAppData, useInOrg } from '../../lib/appData';
+import { useAppData, useInOrg, useWorkspace } from '../../lib/appData';
+import { ChildHome } from '../../components/ChildHome';
 import { fontBody } from '../../lib/fonts';
 import { RHomeHeader, type DashView } from '../../components/shell';
 import { ScreenAtmosphere } from '../../components/ScreenAtmosphere';
@@ -24,7 +25,13 @@ import { useRouter } from 'expo-router';
 import { secureGet, secureSet } from '../../lib/secure';
 const VIEW_KEY = 'seshat.dashboardView';
 
+/** A child in a family workspace gets their own small Home; everyone else the full one. */
 export default function HomeScreen() {
+  const ws = useWorkspace();
+  return ws.isChild ? <ChildHome /> : <FullHome />;
+}
+
+function FullHome() {
   const router = useRouter();
   const { tok, lang, t } = useI18n();
   const { profile, dataVersion, refresh, bumpVersion } = useAppData();

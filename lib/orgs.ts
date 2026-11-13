@@ -3,12 +3,14 @@
 
 import { apiFetch, newIdempotencyKey } from './api';
 
-export type OrgRole = 'owner' | 'member';
+import type { OrgRole, OrgKind } from './orgRoles';
+export type { OrgRole, OrgKind } from './orgRoles';
 
 export type OrgSummary = {
   id: string;
   name: string;
   slug: string;
+  kind: OrgKind;
   currency: string;
   ledgerId: string;
   role: OrgRole;
@@ -47,6 +49,7 @@ export type OrgMember = {
 export type OrgInvite = {
   id: string;
   email: string;
+  role?: OrgRole;
   expiresAt: string;
   createdAt: string;
 };
@@ -59,12 +62,13 @@ export async function listOrgs(): Promise<OrgSummary[]> {
 export async function createOrg(
   name: string,
   currency?: string,
+  kind: OrgKind = 'team',
 ): Promise<{ id: string; ledgerId: string; name: string; slug: string; currency: string }> {
   const r = await apiFetch<{ data: { id: string; ledgerId: string; name: string; slug: string; currency: string } }>(
     '/orgs',
     {
       method: 'POST',
-      body: JSON.stringify({ name, currency }),
+      body: JSON.stringify({ name, currency, kind }),
       idempotencyKey: newIdempotencyKey(),
     },
   );
@@ -101,10 +105,19 @@ export async function leaveOrg(orgId: string): Promise<void> {
   await apiFetch(`/orgs/${orgId}/leave`, { method: 'POST' });
 }
 
-export async function sendInvite(orgId: string, email: string): Promise<OrgInvite> {
+export async function setMemberRole(orgId: string, userId: string, role: OrgRole): Promise<void> {
+  await apiFetch(`/orgs/${orgId}/members/${userId}`, { method: 'PATCH', body: JSON.stringify({ role }) });
+}
+
+export async function setOrgKind(id: string, kind: OrgKind): Promise<OrgDetail> {
+  const r = await apiFetch<{ data: OrgDetail }>(`/orgs/${id}`, { method: 'PATCH', body: JSON.stringify({ kind }) });
+  return r.data;
+}
+
+export async function sendInvite(orgId: string, email: string, role: OrgRole = 'member'): Promise<OrgInvite> {
   const r = await apiFetch<{ data: OrgInvite }>(`/orgs/${orgId}/invites`, {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, role }),
   });
   return r.data;
 }

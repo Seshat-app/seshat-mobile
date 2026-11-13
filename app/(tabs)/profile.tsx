@@ -16,7 +16,7 @@ import { uploadAvatar } from '../../lib/cloudinary';
 import { apiFetchText, apiFetch, hasToken } from '../../lib/api';
 import { signOut } from '../../lib/auth';
 import { useI18n, type Lang, formatAmount, currencyLabel } from '../../lib/i18n';
-import { useAppData, useInOrg } from '../../lib/appData';
+import { useAppData, useInOrg, useWorkspace } from '../../lib/appData';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { RCard, REyebrow, RButton, RField, RPill } from '../../components/ui';
 import { ScreenScaffold } from '../../components/Screen';
@@ -55,6 +55,7 @@ export default function ProfileScreen() {
   const { tok, lang, t, mode, setMode, setLang } = useI18n();
   const { refresh, profile: appProfile, bumpVersion, openWorkspaceSheet } = useAppData();
   const inOrg = useInOrg();
+  const ws = useWorkspace();
   const insets = useSafeAreaInsets();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -356,6 +357,9 @@ export default function ProfileScreen() {
             the app shows when tapped. */}
         <WorkspaceCard onPress={openWorkspaceSheet} />
 
+        {/* A child does not see the household plan: budgets, debts, accounts and reports stay with the adults. */}
+        {!ws.isChild && (
+        <>
         {/* Plan - Budgets / Goals / Debts navigation */}
         <View style={{ marginTop: 18 }}>
           <REyebrow style={{ paddingHorizontal: 4, marginBottom: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
@@ -449,6 +453,9 @@ export default function ProfileScreen() {
             />
           </RCard>
         </View>
+
+        </>
+        )}
 
         {/* Capture — auto-record bank notifications. */}
         <View style={{ marginTop: 18 }}>

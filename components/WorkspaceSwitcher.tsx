@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { View, Text, Modal, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Briefcase, ChevronDown, ChevronRight, Plus, User as UserIcon, X, Check, Building2 } from 'lucide-react-native';
+import { Briefcase, ChevronDown, ChevronRight, Plus, User as UserIcon, X, Check, Building2, Home } from 'lucide-react-native';
+import { roleLabel, kindLabel } from '../lib/orgRoles';
 import { useI18n } from '../lib/i18n';
 import { useAppData, type WorkspaceSummary } from '../lib/appData';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
@@ -237,7 +238,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
                   alignItems: 'center', justifyContent: 'center',
                 }}>
                   {w.kind === 'org'
-                    ? <Building2 size={16} color={isActive ? tok.gold : tok.bone} strokeWidth={1.6} />
+                    ? (w.orgKind === 'family' ? <Home size={16} color={isActive ? tok.gold : tok.bone} strokeWidth={1.6} /> : <Building2 size={16} color={isActive ? tok.gold : tok.bone} strokeWidth={1.6} />)
                     : <UserIcon size={16} color={isActive ? tok.gold : tok.bone} strokeWidth={1.6} />}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -263,8 +264,8 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
                   >
                     {w.kind === 'org'
                       ? (lang === 'ar'
-                        ? `${w.role === 'owner' ? 'مالك' : 'عضو'} · ${w.memberCount ?? 1} عضو`
-                        : `${w.role === 'owner' ? 'Owner' : 'Member'} · ${w.memberCount ?? 1} members`)
+                        ? `${kindLabel(w.orgKind ?? 'team', true)} · ${roleLabel(w.role ?? 'member', w.orgKind ?? 'team', true)} · ${w.memberCount ?? 1} عضو`
+                        : `${kindLabel(w.orgKind ?? 'team', false)} · ${roleLabel(w.role ?? 'member', w.orgKind ?? 'team', false)} · ${w.memberCount ?? 1} members`)
                       : (lang === 'ar' ? 'حسابك الشخصي' : 'Your personal ledger')}
                   </Text>
                 </View>
@@ -288,7 +289,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
             icon={<Plus size={16} color={tok.void} />}
             onPress={() => { onClose(); router.push('/orgs/new'); }}
           >
-            {lang === 'ar' ? 'إنشاء منظمة جديدة' : 'Create new organization'}
+            {lang === 'ar' ? 'إنشاء فريق أو عائلة' : 'Create a team or family'}
           </RButton>
           <RButton
             variant="secondary"
@@ -296,7 +297,7 @@ export function WorkspaceSheet({ visible, onClose }: { visible: boolean; onClose
             icon={<Briefcase size={16} color={tok.bone} />}
             onPress={() => { onClose(); router.push('/orgs'); }}
           >
-            {lang === 'ar' ? 'إدارة المنظمات' : 'Manage organizations'}
+            {lang === 'ar' ? 'إدارة الفرق والعائلات' : 'Manage teams and families'}
           </RButton>
         </View>
       </View>

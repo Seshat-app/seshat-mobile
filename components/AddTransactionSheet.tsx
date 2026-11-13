@@ -83,11 +83,13 @@ type Props = {
   // so the user can tag the entry to a project. Empty/undefined hides
   // the entire row (the personal-ledger case).
   projects?: SheetProject[];
+  /** A child in a family workspace can only log spending: no income toggle, no accounts. */
+  expenseOnly?: boolean;
   // Optional pre-fill for capture / receipt / deep-link flows.
   prefill?: AddTxPrefill;
 };
 
-export function AddTransactionSheet({ visible, onClose, onSave, categories, defaultCurrency, projects, prefill }: Props) {
+export function AddTransactionSheet({ visible, onClose, onSave, categories, defaultCurrency, projects, prefill, expenseOnly }: Props) {
   const { tok, lang, t, dir } = useI18n();
 
   const [amount, setAmount] = useState('0');
@@ -109,7 +111,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
   // Cash is picked for you unless you choose another; an entry with no source would never touch a balance.
   const [sourceTouched, setSourceTouched] = useState(false);
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || expenseOnly) return;
     apiFetch<{ data: Array<{ id: string; name: string; kind: string }> }>('/cards')
       .then((r) => setSources(r.data.map((c) => ({ id: c.id, name: c.name, kind: c.kind }))))
       .catch(() => {});
@@ -541,7 +543,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   letterSpacing: 1.4, textTransform: 'uppercase',
                 }}>{lang === 'ar' ? 'لوحة' : 'keypad'}</Text>
               </Pressable>
-            ) : (
+            ) : expenseOnly ? null : (
               <RSegmented
                 value={type}
                 onChange={setType as any}
@@ -584,6 +586,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
           {/* Type toggle (Seshat mode only: in keypad mode it lives in the top bar) */}
           {seshatMode ? (
             <View style={{ alignItems: 'center', paddingVertical: 4 }}>
+              {expenseOnly ? null : (
               <RSegmented
                 value={type}
                 onChange={setType as any}
@@ -592,6 +595,7 @@ export function AddTransactionSheet({ visible, onClose, onSave, categories, defa
                   { value: 'income', label: t('earned') },
                 ]}
               />
+              )}
             </View>
           ) : null}
 

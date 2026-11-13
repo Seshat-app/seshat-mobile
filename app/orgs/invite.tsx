@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { Text, ScrollView, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Text, View, ScrollView, Alert, Pressable } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PlanScreen } from '../../components/PlanShell';
-import { RButton, RField } from '../../components/ui';
+import { RButton, RField, REyebrow } from '../../components/ui';
 import { useI18n } from '../../lib/i18n';
-import { sendInvite } from '../../lib/orgs';
+import { sendInvite, getOrg } from '../../lib/orgs';
+import { invitableRoles, roleHint, roleLabel, type OrgKind, type OrgRole } from '../../lib/orgRoles';
 import { fontBody, fontMono } from '../../lib/fonts';
 import { useKeyboardHeight } from '../../components/useKeyboardHeight';
 
@@ -32,6 +33,16 @@ export default function InviteScreen() {
   const kbHeight = useKeyboardHeight();
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [kind, setKind] = useState<OrgKind>('team');
+  const [roles, setRoles] = useState<OrgRole[]>(['member']);
+  const [role, setRole] = useState<OrgRole>('member');
+  const ar = lang === 'ar';
+
+  // What roles can be given depends on the kind of workspace and on who is inviting.
+  useEffect(() => {
+    if (!id) return;
+    getOrg(id).then((o) => { setKind(o.kind); setRoles(invitableRoles(o.role, o.kind)); }).catch(() => {});
+  }, [id]);
 
   const submit = async () => {
     if (!id) return;
@@ -44,7 +55,7 @@ export default function InviteScreen() {
     }
     setSubmitting(true);
     try {
-      const invite = await sendInvite(id, email.trim().toLowerCase());
+      const invite = await sendInvite(id, email.trim().toLowerCase(), role);
       Alert.alert(
         lang === 'ar' ? 'تم الإرسال' : 'Invite sent',
         lang === 'ar'
@@ -64,7 +75,7 @@ export default function InviteScreen() {
 
   return (
     <PlanScreen
-      title={lang === 'ar' ? 'دعوة عضو' : 'Invite member'}
+      title={kind === 'family' ? (ar ? 'دعوة فرد من العائلة' : 'Invite someone') : (lang === 'ar' ? 'دعوة عضو' : 'Invite member')}
       subtitle={lang === 'ar' ? 'بالبريد الإلكتروني' : 'By email'}
     >
       <ScreenScroll
@@ -79,8 +90,8 @@ export default function InviteScreen() {
           writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
         }}>
           {lang === 'ar'
-            ? 'سيتلقى عضو الفريق رابطًا في بريده. عند فتحه، سينضمّ تلقائيًا بعد تسجيل الدخول.'
-            : 'Your teammate will get a link in their inbox. Tapping it joins them automatically after sign-in.'}
+            ? 'سيتلقى المدعو رابطًا في بريده. عند فتحه، سينضمّ تلقائيًا بعد تسجيل الدخول.'
+            : 'They will get a link in their inbox. Tapping it joins them automatically after sign-in.'}
         </Text>
 
         <RField
@@ -95,6 +106,23 @@ export default function InviteScreen() {
           ltr
           style={{ marginBottom: 24 }}
         />
+
+        {roles.length > 1 ? (
+          <View style={{ marginBottom: 24 }}>
+            <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'الدور' : 'ROLE'}</REyebrow>
+            <View style={{ gap: 8 }}>
+              {roles.map((r) => {
+                const on = role === r;
+                return (
+                  <Pressable key={r} onPress={() => setRole(r)} style={{ padding: 12, borderRadius: 14, borderWidth: 1, borderColor: on ? tok.gold : tok.border, backgroundColor: on ? tok.glowShellBg : 'transparent' }}>
+                    <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{roleLabel(r, kind, ar)}</Text>
+                    <Text style={{ marginTop: 2, fontFamily: fontBody(lang), fontSize: 12, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{roleHint(r, kind, ar)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
 
         <RButton full onPress={submit} disabled={submitting || !email.trim()} loading={submitting}>
           {submitting

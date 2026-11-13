@@ -3,6 +3,7 @@ import { View, Text, Pressable, Animated, Easing, StyleSheet } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { HeaderBack, HeaderAdd } from './HeaderButtons';
 import { useI18n } from '../lib/i18n';
+import { useWorkspace } from '../lib/appData';
 import { radius, T } from '../lib/theme';
 import { fontHead } from '../lib/fonts';
 import { REyebrow } from './ui';
@@ -19,6 +20,7 @@ export function PlanScreen({
 }: { title: string; subtitle?: string; onAdd?: () => void; refreshing?: boolean; children: ReactNode }) {
   const router = useRouter();
   const { tok, lang } = useI18n();
+  const { canWrite } = useWorkspace();
   // Content flows in just after the screen finishes sliding (the delay keeps it
   // from animating while it's still mid-transition). Native-driver, so cheap.
   const enter = useRef(new Animated.Value(0)).current;
@@ -41,7 +43,7 @@ export function PlanScreen({
         </View>
         <WorkspaceChip />
         <RefreshSpinner refreshing={!!refreshing} />
-        {onAdd && <HeaderAdd onPress={onAdd} />}
+        {onAdd && canWrite && <HeaderAdd onPress={onAdd} />}
         </View>
         {subtitle && (
           <REyebrow style={{

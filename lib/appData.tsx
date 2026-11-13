@@ -1,3 +1,4 @@
+import type { OrgRole, OrgKind } from './orgRoles';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
@@ -37,7 +38,9 @@ export type WorkspaceSummary = {
   kind: 'personal' | 'org';
   // Only populated for orgs.
   orgId?: string;
-  role?: 'owner' | 'member';
+  role?: OrgRole;
+  // team or family, for an organization workspace.
+  orgKind?: OrgKind;
   memberCount?: number;
   currency?: string;
 };
@@ -86,9 +89,10 @@ type OrgListItem = {
   id: string;
   name: string;
   slug: string;
+  kind?: OrgKind;
   currency: string;
   ledgerId: string;
-  role: 'owner' | 'member';
+  role: OrgRole;
   memberCount: number;
 };
 
@@ -139,6 +143,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       kind: 'org',
       orgId: o.id,
       role: o.role,
+      orgKind: o.kind ?? 'team',
       memberCount: o.memberCount,
       currency: o.currency,
     }));
@@ -285,6 +290,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       {children}
     </AppDataContext.Provider>
   );
+}
+
+/**
+ * What the person is allowed to do in the workspace that is open: their role and what kind of workspace it is. In a
+ * personal ledger everything is allowed. (The server enforces it; this decides what to show.)
+ */
+export function useWorkspace(): { inOrg: boolean; role?: OrgRole; kind?: OrgKind; canWrite: boolean; isChild: boolean; isViewer: boolean; canManage: boolean } {
+  const { activeLedgerId, workspaces } = useAppData();
+  const inOrg = !!activeLedgerId && activeLedgerId.startsWith('o_');
+  const w = inOrg ? workspaces.find((x) => x.ledgerId === activeLedgerId) : undefined;
+  const role = w?.role;
+  return {
+    inOrg, role, kind: w?.orgKind,
+    canWrite: !inOrg || role !== 'viewer',
+    isChild: inOrg && role === 'child',
+    isViewer: inOrg && role === 'viewer',
+    canManage: !inOrg || role === 'owner' || role === 'admin',
+  };
 }
 
 /** True while an organization workspace is active. Gam3yas, savings, the daily budget and bills belong to the personal profile only. */

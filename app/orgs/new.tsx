@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import { View, Text, ScrollView, Alert, Pressable } from 'react-native';
+import { Building2, Home } from 'lucide-react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +11,7 @@ import { useAppData } from '../../lib/appData';
 import { createOrg } from '../../lib/orgs';
 import { fontBody, fontMono } from '../../lib/fonts';
 import { useKeyboardHeight } from '../../components/useKeyboardHeight';
+import type { OrgKind } from '../../lib/orgRoles';
 
 const CURRENCIES = ['EGP', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
 
@@ -37,6 +39,8 @@ export default function NewOrgScreen() {
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState<string>(profile?.currency ?? 'EGP');
   const [submitting, setSubmitting] = useState(false);
+  const [kind, setKind] = useState<OrgKind>('team');
+  const ar = lang === 'ar';
 
   const submit = async () => {
     if (!name.trim()) {
@@ -48,7 +52,7 @@ export default function NewOrgScreen() {
     }
     setSubmitting(true);
     try {
-      const org = await createOrg(name.trim(), currency);
+      const org = await createOrg(name.trim(), currency, kind);
       await switchLedger(org.ledgerId);
       await refresh();
       router.replace({ pathname: '/orgs/[id]', params: { id: org.id } });
@@ -64,30 +68,41 @@ export default function NewOrgScreen() {
 
   return (
     <PlanScreen
-      title={lang === 'ar' ? 'منظمة جديدة' : 'New organization'}
-      subtitle={lang === 'ar' ? 'مساحة مشتركة لفريقكِ' : 'A shared space for your team'}
+      title={kind === 'family' ? (ar ? 'عائلة جديدة' : 'New family') : (ar ? 'فريق جديد' : 'New team')}
+      subtitle={kind === 'family' ? (ar ? 'ميزانية مشتركة للبيت' : 'One shared household ledger') : (ar ? 'مساحة مشتركة لفريقك' : 'A shared space for your team')}
     >
       <ScreenScroll
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 + kbHeight + insets.bottom }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'نوع المساحة' : 'WHAT IS IT FOR'}</REyebrow>
+        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 10, marginBottom: 12 }}>
+          {([['team', Building2, ar ? 'فريق' : 'Team', ar ? 'شركة أو مشروع. أدوار وصلاحيات.' : 'A company or project. Roles and permissions.'], ['family', Home, ar ? 'عائلة' : 'Family', ar ? 'بيت واحد. ميزانية مشتركة، ويمكن إضافة الأولاد.' : 'One household. A shared ledger; kids can join.']] as const).map(([k, Icon, label, hint]) => {
+            const on = kind === k;
+            return (
+              <Pressable key={k} onPress={() => setKind(k)} style={{ flex: 1, padding: 14, borderRadius: 16, borderWidth: 1, borderColor: on ? tok.gold : tok.border, backgroundColor: on ? tok.glowShellBg : 'transparent', gap: 6 }}>
+                <Icon size={20} color={on ? tok.gold : tok.muted} strokeWidth={1.7} />
+                <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 15, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{label}</Text>
+                <Text style={{ fontFamily: fontBody(lang), fontSize: 12, lineHeight: 17, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{hint}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
         <Text style={{
-          fontFamily: fontBody(lang), fontSize: 13, color: tok.muted, lineHeight: 19,
-          marginBottom: 24,
-          textAlign: lang === 'ar' ? 'right' : 'left',
-          writingDirection: lang === 'ar' ? 'rtl' : 'ltr',
+          fontFamily: fontBody(lang), fontSize: 13, color: tok.muted, lineHeight: 19, marginBottom: 20,
+          textAlign: ar ? 'right' : 'left', writingDirection: ar ? 'rtl' : 'ltr',
         }}>
-          {lang === 'ar'
-            ? 'بعد الإنشاء، يمكنكِ دعوة فريقكِ بالبريد الإلكتروني وربطها بمجموعة تيليجرام لتسجيل المصاريف من المحادثة.'
-            : 'After creating, invite your team by email and link a Telegram group so anyone can log expenses by chatting.'}
+          {kind === 'family'
+            ? (ar ? 'بعد الإنشاء، ادعُ أفراد العائلة بالبريد وحدّد دور كلٍّ منهم: ولي أمر، بالغ، أو طفل يسجّل مصروفه فقط.' : 'After creating, invite your family by email and choose each person’s role: parent, adult, or a child who only logs their own spending.')
+            : (ar ? 'بعد الإنشاء، ادعُ فريقك بالبريد وحدّد دور كلٍّ منهم، وصِل مجموعة تيليجرام لتسجيل المصاريف من المحادثة.' : 'After creating, invite your team by email, choose each person’s role, and link a Telegram group so anyone can log expenses by chatting.')}
         </Text>
 
         <RField
-          label={lang === 'ar' ? 'اسم المنظمة' : 'ORGANIZATION NAME'}
+          label={kind === 'family' ? (ar ? 'اسم العائلة' : 'FAMILY NAME') : (ar ? 'اسم الفريق' : 'TEAM NAME')}
           value={name}
           onChange={setName}
-          placeholder={lang === 'ar' ? 'مثل: شركة أكمي' : 'e.g. Acme Corp'}
+          placeholder={kind === 'family' ? (ar ? 'مثل: بيت أحمد' : 'e.g. The Hassan household') : (ar ? 'مثل: شركة أكمي' : 'e.g. Acme Corp')}
           autoFocus
           autoCapitalize="words"
           maxLength={80}
@@ -111,7 +126,7 @@ export default function NewOrgScreen() {
         <RButton full onPress={submit} disabled={submitting || !name.trim()} loading={submitting}>
           {submitting
             ? (lang === 'ar' ? 'جارٍ الإنشاء...' : 'Creating...')
-            : (lang === 'ar' ? 'إنشاء المنظمة' : 'Create organization')}
+            : (kind === 'family' ? (ar ? 'إنشاء العائلة' : 'Create family') : (ar ? 'إنشاء الفريق' : 'Create team'))}
         </RButton>
 
         <Text style={{
@@ -120,8 +135,8 @@ export default function NewOrgScreen() {
           textAlign: 'center', lineHeight: 16,
         }}>
           {lang === 'ar'
-            ? 'تنشأ مع 11 تصنيفًا افتراضيًا · يمكنكِ التخصيص لاحقًا'
-            : 'CREATED WITH 11 DEFAULT CATEGORIES · CUSTOMIZE LATER'}
+            ? 'تنشأ بتصنيفات جاهزة تناسبها · يمكنك التخصيص لاحقًا'
+            : 'CREATED WITH READY-MADE CATEGORIES · CUSTOMIZE LATER'}
         </Text>
       </ScreenScroll>
     </PlanScreen>
