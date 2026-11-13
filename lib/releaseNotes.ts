@@ -13,6 +13,18 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    id: '2026-11-v1.1.5',
+    version: '1.1.5',
+    date: '2026-11-14',
+    title: { en: "Ask, answer, and a calmer Home", ar: "اسأل وأجب، ورئيسية أهدأ" },
+    items: [
+      { en: "Community: ask money questions and answer other members, with upvotes and a best answer. Find it in Profile. You can report any post and block any member.", ar: "المجتمع: اطرح أسئلة المال وأجب أعضاء آخرين، مع تصويت وأفضل إجابة. تجده في الملف الشخصي. يمكنك الإبلاغ عن أي منشور وحظر أي عضو." },
+      { en: "A calmer Home: one “What I own” card whose lines add up and open their screens, the pay-day question inside “Needs you today”, and no repeated numbers.", ar: "شاشة رئيسية أهدأ: بطاقة «ما أملكه» واحدة تجمع بنودها وتفتح شاشاتها، وسؤال الراتب داخل «يحتاجك اليوم»، دون أرقام مكررة." },
+      { en: "Links from emails and seshat.site open the app on Android (iPhone is coming).", ar: "الروابط من البريد ومن seshat.site تفتح التطبيق على أندرويد (وعلى آيفون قريباً)." },
+      { en: "Fixes: sign-in stays readable when the iPhone is locked and the app wakes in the background, and deleting an organization no longer leaves the website stuck.", ar: "إصلاحات: يبقى تسجيل الدخول مقروءاً عندما يكون الآيفون مقفلاً ويستيقظ التطبيق في الخلفية، وحذف منظمة لم يعد يعلّق الموقع." },
+    ],
+  },
+  {
     id: '2026-11-v1.1.4',
     version: '1.1.4',
     date: '2026-11-13',
