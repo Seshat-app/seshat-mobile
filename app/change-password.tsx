@@ -4,7 +4,6 @@ import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { FrostedHeader } from '../components/FrostedHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
 import { apiFetch } from '../lib/api';
 import { signOut } from '../lib/auth';
 import { useAppData } from '../lib/appData';
@@ -13,6 +12,7 @@ import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 import { RButton, REyebrow, RField, RToast } from '../components/ui';
 import { ScreenScaffold } from '../components/Screen';
+import { HeaderBack } from '../components/HeaderButtons';
 import { useKeyboardHeight } from '../components/useKeyboardHeight';
 
 // Change-password screen. Three secure fields (current, new, confirm) with
@@ -85,20 +85,7 @@ export default function ChangePasswordScreen() {
         flexDirection: lang === 'ar' ? 'row-reverse' : 'row',
         alignItems: 'center', gap: 12,
       }}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={lang === 'ar' ? 'رجوع' : 'Back'}
-          style={({ pressed }) => ({
-            width: 36, height: 36, borderRadius: radius.btn,
-            backgroundColor: pressed ? tok.elevated : tok.shellBg,
-            borderWidth: 1, borderColor: tok.shellBorder,
-            alignItems: 'center', justifyContent: 'center',
-          })}
-        >
-          <ChevronLeft size={20} color={tok.bone} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
-        </Pressable>
+        <HeaderBack onPress={() => router.back()} />
         <View style={{ flex: 1 }}>
           <Text style={{
             fontFamily: fontHead(lang),

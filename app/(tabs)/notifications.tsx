@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { FrostedHeader } from '../../components/FrostedHeader';
+import { HeaderPill } from '../../components/HeaderButtons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -119,23 +120,13 @@ export default function NotificationsScreen() {
           </REyebrow>
         </View>
         {unreadCount > 0 && (
-          <Pressable
+          <HeaderPill
             onPress={() => { void markAllRead(); }}
-            hitSlop={10}
-            accessibilityLabel={lang === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all read'}
-            style={({ pressed }) => ({
-              flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 12, height: 36, borderRadius: radius.btn,
-              backgroundColor: pressed ? tok.elevated : tok.surface,
-              borderWidth: 1, borderColor: tok.border,
-            })}
+            label={lang === 'ar' ? 'تحديد الكل كمقروء' : 'Mark all read'}
+            icon={<CheckCheck size={15} color={tok.gold} />}
           >
-            <CheckCheck size={15} color={tok.gold} />
-            <Text style={{
-              fontFamily: fontMono('regular'), fontSize: 10, color: tok.gold,
-              letterSpacing: 1.2, textTransform: 'uppercase',
-            }}>{lang === 'ar' ? 'الكل' : 'All'}</Text>
-          </Pressable>
+            {lang === 'ar' ? 'الكل' : 'All'}
+          </HeaderPill>
         )}
       </FrostedHeader>
 

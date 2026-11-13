@@ -4,10 +4,11 @@ import {
 } from 'react-native';
 import { FlatList as ScreenFlatList } from './Scroll';
 import { FrostedHeader, FrostedFooter } from './FrostedHeader';
+import { HeaderBack } from './HeaderButtons';
 import { LiquidBackdrop } from './LiquidBackdrop';
 import { isLiquid } from './Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowUp, ChevronLeft, ImagePlus, Square } from 'lucide-react-native';
+import { ArrowUp, ImagePlus, Square } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { apiFetch, hasToken } from '../lib/api';
 import { streamChat, friendlyChatError } from '../lib/chatStream';
@@ -557,19 +558,7 @@ export function ChatThread({ sessionId: sessionIdProp, text, persona: personaPro
         alignItems: 'center', gap: 10,
         paddingHorizontal: 14, paddingVertical: 10,
       }}>
-        <Pressable
-          onPress={onBack}
-          hitSlop={10}
-          style={({ pressed }) => ({
-            width: 34, height: 34, borderRadius: radius.btn,
-            backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.elevated : tok.shellBg),
-            borderWidth: isLiquid() ? 0 : 1, borderColor: tok.shellBorder,
-            alignItems: 'center', justifyContent: 'center',
-          })}
-        >
-          <LiquidBackdrop radius={radius.btn} fallback="transparent" />
-          <ChevronLeft size={18} color={tok.bone} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
-        </Pressable>
+        <HeaderBack onPress={onBack} />
         <View style={{ flex: 1 }}>
           <Text
             numberOfLines={1}

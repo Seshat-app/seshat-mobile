@@ -1,9 +1,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { View, Text, Pressable, Animated, Easing, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Plus } from 'lucide-react-native';
-import { LiquidBackdrop } from './LiquidBackdrop';
-import { isLiquid } from './Glass';
+import { HeaderBack, HeaderAdd } from './HeaderButtons';
 import { useI18n } from '../lib/i18n';
 import { radius, T } from '../lib/theme';
 import { fontHead } from '../lib/fonts';
@@ -33,18 +31,7 @@ export function PlanScreen({
     <ScreenScaffold>
       <FrostedHeader style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
         <View style={{ flexDirection: lang === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={10}
-          style={({ pressed }) => ({
-            width: 36, height: 36, borderRadius: radius.btn,
-            backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.elevated : tok.surface),
-            alignItems: 'center', justifyContent: 'center',
-          })}
-        >
-          <LiquidBackdrop radius={radius.btn} fallback="transparent" />
-          <ChevronLeft size={20} color={tok.bone} style={{ transform: [{ scaleX: lang === 'ar' ? -1 : 1 }] }} />
-        </Pressable>
+        <HeaderBack onPress={() => router.back()} />
         <View style={{ flex: 1 }}>
           <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{
             fontFamily: fontHead(lang),
@@ -54,27 +41,14 @@ export function PlanScreen({
         </View>
         <WorkspaceChip />
         <RefreshSpinner refreshing={!!refreshing} />
-        {onAdd && (
-          <Pressable
-            onPress={onAdd}
-            hitSlop={10}
-            style={({ pressed }) => ({
-              // Same family as the workspace chip beside it: a round, gold-tinted control (same tint, same border rule),
-              // never a solid gold block - the plus is gold too, so on a solid gold disc it would vanish.
-              width: 32, height: 32, borderRadius: 16,
-              backgroundColor: isLiquid() ? 'transparent' : (pressed ? tok.glowShellBorder : tok.glowShellBg),
-              borderWidth: isLiquid() ? 0 : 1, borderColor: tok.glowShellBorder,
-              alignItems: 'center', justifyContent: 'center', alignSelf: 'center',
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <LiquidBackdrop radius={16} tint="rgba(201,168,76,0.22)" fallback="transparent" />
-            <Plus size={18} color={tok.gold} strokeWidth={2.4} />
-          </Pressable>
-        )}
+        {onAdd && <HeaderAdd onPress={onAdd} />}
         </View>
         {subtitle && (
-          <REyebrow style={{ marginTop: 8, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+          <REyebrow style={{
+            // Lines up with the title: back button (36) + the gap (12) from the edge.
+            marginTop: 4, ...(lang === 'ar' ? { marginRight: 48 } : { marginLeft: 48 }),
+            textAlign: lang === 'ar' ? 'right' : 'left',
+          }}>
             {subtitle}
           </REyebrow>
         )}

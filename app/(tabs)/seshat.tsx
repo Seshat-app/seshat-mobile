@@ -6,6 +6,7 @@ import {
 // The search box sits between the header and this list, so it must clip (not slide under it).
 import { ScrollView as ScreenScroll } from 'react-native';
 import { FrostedHeader } from '../../components/FrostedHeader';
+import { HeaderAdd } from '../../components/HeaderButtons';
 import { ScreenScaffold } from '../../components/Screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -247,7 +248,7 @@ export default function SeshatSessionsScreen() {
       }}>
         <View style={{ flexShrink: 1, flex: 1 }}>
           <Text style={{
-            fontFamily: fontHead(lang), fontSize: 24, color: tok.bone, letterSpacing: -0.4,
+            fontFamily: fontHead(lang), fontSize: 22, color: tok.bone, letterSpacing: -0.4,
             textAlign: lang === 'ar' ? 'right' : 'left',
           }}>
             {lang === 'ar' ? 'المحادثات' : 'Chats'}
@@ -256,12 +257,7 @@ export default function SeshatSessionsScreen() {
             {lang === 'ar' ? 'محادثاتك' : 'Your conversations'}
           </REyebrow>
         </View>
-        <RButton
-          onPress={startNew}
-          icon={<Plus size={16} color={tok.void} strokeWidth={2.2} />}
-        >
-          {lang === 'ar' ? 'محادثة جديدة' : 'New chat'}
-        </RButton>
+        <HeaderAdd onPress={startNew} label={lang === 'ar' ? 'محادثة جديدة' : 'New chat'} />
       </FrostedHeader>
 
       {/* Search */}
