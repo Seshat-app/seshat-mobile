@@ -13,6 +13,17 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    id: '2026-11-v1.1.6',
+    version: '1.1.6',
+    date: '2026-11-14',
+    title: { en: "Families and teams, each their own way", ar: "العائلات والفرق، لكلٍّ طريقته" },
+    items: [
+      { en: "Family and team workspaces are now different: families get Parent, Adult and Child roles; teams get Owner, Admin, Member and Viewer.", ar: "مساحات العائلة والفريق صارت مختلفة: للعائلة أدوار ولي أمر وبالغ وطفل، وللفريق أدوار مالك ومشرف وعضو ومشاهد." },
+      { en: "Families: private accounts only you can see, shared goals with each person's contributions, household bills that remind everyone, and an allowance budget for children.", ar: "العائلات: حسابات خاصة لا يراها غيرك، وأهداف مشتركة تظهر مساهمة كل شخص، وفواتير منزلية تذكّر الجميع، وميزانية مصروف للأطفال." },
+      { en: "Teams: spending approvals and monthly limits per member, projects open only to the people you choose, and an accountant-ready export.", ar: "الفرق: موافقات على المصروفات وحدود شهرية لكل عضو، ومشاريع مفتوحة فقط للأشخاص الذين تختارهم، وتصدير جاهز للمحاسب." },
+    ],
+  },
+  {
     id: '2026-11-v1.1.5',
     version: '1.1.5',
     date: '2026-11-14',
