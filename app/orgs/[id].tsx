@@ -18,6 +18,8 @@ import {
 } from '../../lib/orgs';
 import { roleLabel, kindLabel, isManager, canAssignRole, canRemoveMember, invitableRoles, type OrgRole } from '../../lib/orgRoles';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
+import { NumberSheet } from '../../components/NumberSheet';
+import { setApprovalThreshold, setMemberLimit, listAllowances, setAllowance, removeAllowance, type ChildAllowance } from '../../lib/orgExtras';
 
 /**
  * /orgs/[id] - organization detail.
@@ -44,6 +46,12 @@ export default function OrgDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [linking, setLinking] = useState(false);
+  // Sheets for the team and family settings (approval limit, a member's limit, a child's allowance).
+  const [approvalSheet, setApprovalSheet] = useState(false);
+  const [limitFor, setLimitFor] = useState<OrgMember | null>(null);
+  const [allowFor, setAllowFor] = useState<OrgMember | null>(null);
+  const [allowPeriod, setAllowPeriod] = useState<'week' | 'month'>('week');
+  const [allowances, setAllowances] = useState<ChildAllowance[]>([]);
   // Full-screen preview for a tapped member avatar.
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
@@ -59,6 +67,7 @@ export default function OrgDetailScreen() {
       setOrg(o);
       setMembers(m);
       setInvites(inv);
+      if (o.kind === 'family' && isManager(o.role)) listAllowances(id).then(setAllowances).catch(() => setAllowances([]));
     } catch (err) {
       console.warn('load org failed', err);
     } finally {
@@ -270,12 +279,24 @@ export default function OrgDetailScreen() {
                       }}
                     >
                       {roleLabel(m.role, kind, ar).toUpperCase()}
+                      {m.monthlyLimit ? `  ·  ${ar ? 'حدّ' : 'LIMIT'} ${Math.round(m.monthlyLimit).toLocaleString('en-US')}` : ''}
+                      {(() => { const a = allowances.find((x) => x.childId === m.userId); return a ? `  ·  ${Math.round(a.left).toLocaleString('en-US')} ${ar ? 'متبقٍّ' : 'LEFT'}/${a.period === 'week' ? (ar ? 'أسبوع' : 'WK') : (ar ? 'شهر' : 'MO')}` : ''; })()}
                       {m.email ? `  ·  ${m.email}` : ''}
                     </Text>
                   </View>
                   {manage && org && invitableRoles(org.role, kind).some((r) => r !== m.role && canAssignRole(org.role, m.role, r)) && (
                     <Pressable onPress={() => changeRole(m)} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
                       <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2, color: tok.gold }}>{ar ? 'الدور' : 'ROLE'}</Text>
+                    </Pressable>
+                  )}
+                  {manage && kind === 'team' && m.role === 'member' && (
+                    <Pressable onPress={() => setLimitFor(m)} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+                      <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2, color: tok.gold }}>{ar ? 'الحد' : 'LIMIT'}</Text>
+                    </Pressable>
+                  )}
+                  {manage && kind === 'family' && m.role === 'child' && (
+                    <Pressable onPress={() => { setAllowPeriod(allowances.find((a) => a.childId === m.userId)?.period ?? 'week'); setAllowFor(m); }} hitSlop={8} style={{ paddingHorizontal: 8, paddingVertical: 6 }}>
+                      <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2, color: tok.gold }}>{ar ? 'المصروف' : 'ALLOWANCE'}</Text>
                     </Pressable>
                   )}
                   {manage && org && canRemoveMember(org.role, m.role) && (
@@ -359,6 +380,29 @@ export default function OrgDetailScreen() {
                       </Pressable>
                     </View>
                   ))}
+                </RCard>
+              </>
+            )}
+
+            {/* Approvals (teams): expenses above a limit wait for an owner or admin. */}
+            {manage && kind === 'team' && (
+              <>
+                <SectionHeader icon={<Target size={14} color={tok.muted} />} label={ar ? 'الموافقات' : 'APPROVALS'} tok={tok} lang={lang} />
+                <RCard padding={0} style={{ paddingHorizontal: 16, marginBottom: 18 }}>
+                  <Pressable onPress={() => setApprovalSheet(true)} style={{ paddingVertical: 14, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tok.border }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: fontBody(lang, 'medium'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{ar ? 'حدّ الموافقة' : 'Approval limit'}</Text>
+                      <Text style={{ marginTop: 2, fontFamily: fontBody(lang), fontSize: 12, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+                        {org?.approvalThreshold ? (ar ? `مصاريف الأعضاء من ${Math.round(org.approvalThreshold).toLocaleString('en-US')} فأكثر تنتظر موافقتك` : `Member expenses of ${Math.round(org.approvalThreshold).toLocaleString('en-US')} or more wait for your approval`) : (ar ? 'متوقف. حدّد مبلغاً لتفعيله.' : 'Off. Set an amount to turn it on.')}
+                      </Text>
+                    </View>
+                    <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2, color: tok.gold }}>{ar ? 'تغيير' : 'CHANGE'}</Text>
+                  </Pressable>
+                  <Pressable onPress={() => router.push({ pathname: '/orgs/[id]/approvals', params: { id: id! } })} style={{ paddingVertical: 14, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
+                    <Text style={{ flex: 1, fontFamily: fontBody(lang, 'medium'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{ar ? 'بانتظار الموافقة' : 'Waiting for approval'}</Text>
+                    <Text style={{ fontFamily: fontMono('regular'), fontSize: 12, color: (org?.pendingApprovals ?? 0) > 0 ? tok.gold : tok.muted }}>{org?.pendingApprovals ?? 0}</Text>
+                    <ChevronRight size={16} color={tok.muted} style={{ transform: [{ scaleX: ar ? -1 : 1 }] }} />
+                  </Pressable>
                 </RCard>
               </>
             )}
@@ -503,6 +547,44 @@ export default function OrgDetailScreen() {
         )}
       </ScreenScroll>
       <ImageViewer visible={viewerUri !== null} uri={viewerUri} onClose={() => setViewerUri(null)} />
+      <NumberSheet
+        visible={approvalSheet}
+        title={ar ? 'حدّ الموافقة' : 'Approval limit'}
+        hint={ar ? 'أي مصروف يسجّله عضو بهذا المبلغ أو أكثر ينتظر موافقتك أو رفضك. المالك والمديرون لا ينتظرون.' : 'An expense a member logs for this amount or more waits for you to approve or reject it. Owners and admins are never held up.'}
+        initial={org?.approvalThreshold} unit={org?.currency}
+        clearLabel={ar ? 'إيقاف الموافقات' : 'Turn approvals off'}
+        onClose={() => setApprovalSheet(false)}
+        onSave={async (v) => { try { await setApprovalThreshold(id!, v); setApprovalSheet(false); await load('refresh'); } catch (e) { Alert.alert(ar ? 'تعذّر' : 'Failed', e instanceof Error ? e.message : String(e)); } }}
+      />
+      <NumberSheet
+        visible={!!limitFor}
+        title={ar ? `الحدّ الشهري: ${limitFor?.displayName ?? ''}` : `Monthly limit: ${limitFor?.displayName ?? ''}`}
+        hint={ar ? 'عندما يتجاوز إنفاقه هذا الشهر هذا المبلغ، يصلك تنبيه.' : 'You are told when their spending this month passes this amount.'}
+        initial={limitFor?.monthlyLimit} unit={org?.currency}
+        clearLabel={ar ? 'إزالة الحدّ' : 'Remove the limit'}
+        onClose={() => setLimitFor(null)}
+        onSave={async (v) => { try { await setMemberLimit(id!, limitFor!.userId, v); setLimitFor(null); await load('refresh'); } catch (e) { Alert.alert(ar ? 'تعذّر' : 'Failed', e instanceof Error ? e.message : String(e)); } }}
+      />
+      <NumberSheet
+        visible={!!allowFor}
+        title={ar ? `مصروف ${allowFor?.displayName ?? ''}` : `Allowance: ${allowFor?.displayName ?? ''}`}
+        hint={ar ? 'ميزانية يراها الطفل وتنقص مع ما يسجّله. لا تُنقل نقود، وتُبلَّغ عند نفادها.' : 'A budget the child sees, going down as they log spending. No money moves, and you are told when it runs out.'}
+        initial={allowances.find((a) => a.childId === allowFor?.userId)?.amount} unit={org?.currency}
+        clearLabel={ar ? 'إزالة المصروف' : 'Remove the allowance'}
+        extra={(
+          <View style={{ flexDirection: ar ? 'row-reverse' : 'row', gap: 8 }}>
+            <RPill active={allowPeriod === 'week'} onPress={() => setAllowPeriod('week')}>{ar ? 'أسبوعياً' : 'Per week'}</RPill>
+            <RPill active={allowPeriod === 'month'} onPress={() => setAllowPeriod('month')}>{ar ? 'شهرياً' : 'Per month'}</RPill>
+          </View>
+        )}
+        onClose={() => setAllowFor(null)}
+        onSave={async (v) => {
+          try {
+            if (v === null) await removeAllowance(id!, allowFor!.userId); else await setAllowance(id!, allowFor!.userId, v, allowPeriod);
+            setAllowFor(null); await load('refresh');
+          } catch (e) { Alert.alert(ar ? 'تعذّر' : 'Failed', e instanceof Error ? e.message : String(e)); }
+        }}
+      />
     </PlanScreen>
   );
 }

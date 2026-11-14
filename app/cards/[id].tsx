@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, Alert, RefreshControl } from 'react-native';
+import { View, Text, Pressable, Alert, RefreshControl, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../components/Scroll';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import { PlanScreen } from '../../components/PlanShell';
 import { RCard, REyebrow, RAmount, RField, RButton } from '../../components/ui';
 import { RTxRow, type TxRowData } from '../../components/shell';
 import { useI18n } from '../../lib/i18n';
-import { useAppData } from '../../lib/appData';
+import { useAppData, useWorkspace } from '../../lib/appData';
 import { apiFetch, hasToken } from '../../lib/api';
 import { fontBody, fontHead, fontMono } from '../../lib/fonts';
 import { S } from '../../lib/theme';
@@ -25,6 +25,7 @@ export default function CardDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const ar = lang === 'ar';
+  const ws = useWorkspace();
   const currency = profile?.currency ?? 'EGP';
   const [card, setCard] = useState<CardDetail | null>(null);
   const [txs, setTxs] = useState<TxRowData[]>([]);
@@ -177,6 +178,25 @@ export default function CardDetailScreen() {
                 })}
               </RCard>
             )}
+
+            {ws.inOrg && card.kind !== 'cash' && card.mine ? (
+              <RCard padding={16} style={{ marginBottom: 12 }}>
+                <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: fontHead(lang), fontSize: 15, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{ar ? 'حساب خاص' : 'Private account'}</Text>
+                    <Text style={[para, { marginTop: 3 }]}>{ar ? 'أنت وحدك ترى هذا الحساب وما يُسجَّل عليه. لا يراه بقية أفراد العائلة.' : 'Only you see this account and what is logged on it. Nobody else in the household does.'}</Text>
+                  </View>
+                  <Switch
+                    value={card.visibility === 'private'}
+                    onValueChange={async (on) => {
+                      try { await apiFetch(`/cards/${id}`, { method: 'PATCH', body: JSON.stringify({ visibility: on ? 'private' : 'shared' }) }); await load(); }
+                      catch (e) { Alert.alert(ar ? 'تعذّر' : 'Could not change it', e instanceof Error ? e.message : String(e)); }
+                    }}
+                    trackColor={{ true: tok.gold, false: tok.border }}
+                  />
+                </View>
+              </RCard>
+            ) : null}
 
             <RCard padding={16} style={{ marginBottom: 12 }}>
               <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between' }}>

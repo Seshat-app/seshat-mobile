@@ -9,7 +9,9 @@ import { Trash2, X, Share2 } from 'lucide-react-native';
 import { apiFetch, newIdempotencyKey } from '../lib/api';
 import { useFetchList } from '../lib/hooks/useFetchList';
 import { useI18n, currencyLabel, formatAmount } from '../lib/i18n';
-import { useAppData } from '../lib/appData';
+import { useAppData, useWorkspace } from '../lib/appData';
+import { NumberSheet } from '../components/NumberSheet';
+import { Alert } from 'react-native';
 import { fontBody, fontHead, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
 import { RCard, REyebrow, RButton, RProgress, RField, RPill } from '../components/ui';
@@ -40,6 +42,8 @@ export default function GoalsScreen() {
   const params = useLocalSearchParams<{ new?: string }>();
   useEffect(() => { trackEvent('screen_goals'); }, []);
   const [editing, setEditing] = useState<Goal | 'new' | null>(params.new === '1' ? 'new' : null);
+  const [adding, setAdding] = useState<Goal | null>(null);
+  const ws = useWorkspace();
 
   const onSave = async (g: Partial<Goal>) => {
     if (editing && editing !== 'new') {
@@ -94,10 +98,23 @@ export default function GoalsScreen() {
           <EmptyState text={lang === 'ar' ? 'لم تُسجَّل أهداف بعد.' : 'No goals yet.'} sub={lang === 'ar' ? 'أضف هدفاً ليبدأ سيشات في التتبع.' : 'Add a goal and Seshat begins tracking.'} cta={lang === 'ar' ? 'أضف هدفاً' : 'Add a goal'} onCta={() => setEditing('new')} />
         ) : (
           <View style={{ gap: 10 }}>
-            {items.map((g) => <GoalRow key={g._id} goal={g} onPress={() => setEditing(g)} />)}
+            {items.map((g) => <GoalRow key={g._id} goal={g} onPress={() => setEditing(g)} onAdd={ws.canWrite ? () => setAdding(g) : undefined} shared={ws.inOrg} version={items.length + ':' + g.savedAmount} />)}
           </View>
         )}
       </ScreenScroll>
+
+      <NumberSheet
+        visible={!!adding}
+        title={lang === 'ar' ? `أضف إلى «${adding ? (lang === 'ar' ? adding.nameAr : adding.nameEn) : ''}»` : `Add to “${adding?.nameEn ?? ''}”`}
+        hint={ws.inOrg ? (lang === 'ar' ? 'يظهر اسمك بين من ساهموا في هذا الهدف.' : 'Your name shows among the people who put money toward this goal.') : undefined}
+        unit={adding?.currency}
+        onClose={() => setAdding(null)}
+        onSave={async (v) => {
+          if (!v || !adding) { setAdding(null); return; }
+          try { await apiFetch(`/goals/${adding._id}/contribute`, { method: 'POST', body: JSON.stringify({ amount: v }) }); setAdding(null); await load(); }
+          catch (e) { Alert.alert(lang === 'ar' ? 'تعذّر' : 'Could not add', e instanceof Error ? e.message : String(e)); }
+        }}
+      />
 
       {editing && (
         <EditGoalSheet
@@ -130,8 +147,13 @@ function EmptyState({ text, sub, cta, onCta }: { text: string; sub: string; cta?
   );
 }
 
-function GoalRow({ goal, onPress }: { goal: Goal; onPress: () => void }) {
+function GoalRow({ goal, onPress, onAdd, shared, version }: { goal: Goal; onPress: () => void; onAdd?: () => void; shared?: boolean; version?: string }) {
   const { tok, lang } = useI18n();
+  const [who, setWho] = useState<Array<{ name: string; total: number }>>([]);
+  useEffect(() => {
+    if (!shared) return;
+    apiFetch<{ data: { byPerson: Array<{ name: string; total: number }> } }>(`/goals/${goal._id}/contributions`).then((r) => setWho(r.data.byPerson)).catch(() => setWho([]));
+  }, [goal._id, shared, version]);
   const progress = goal.progressAmount ?? goal.savedAmount;
   const pct = goal.targetAmount > 0 ? Math.min(100, (progress / goal.targetAmount) * 100) : 0;
   return (
@@ -176,6 +198,16 @@ function GoalRow({ goal, onPress }: { goal: Goal; onPress: () => void }) {
           <Text style={{ marginTop: 8, color: tok.muted, fontFamily: fontMono('regular'), fontSize: 11, textAlign: lang === 'ar' ? 'right' : 'left' }}>
             {lang === 'ar' ? 'حتى ' : 'By '}{goal.deadline.slice(0, 10)}
           </Text>
+        ) : null}
+        {who.length > 0 ? (
+          <Text style={{ marginTop: 8, color: tok.muted, fontFamily: fontBody(lang), fontSize: 12, textAlign: lang === 'ar' ? 'right' : 'left' }}>
+            {who.map((w) => `${w.name} ${Math.round(w.total).toLocaleString('en-US')}`).join(' · ')}
+          </Text>
+        ) : null}
+        {onAdd ? (
+          <Pressable onPress={onAdd} hitSlop={8} style={{ marginTop: 10, alignSelf: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
+            <Text style={{ color: tok.gold, fontFamily: fontBody(lang, 'semibold'), fontSize: 13 }}>{lang === 'ar' ? 'أضف مبلغاً' : 'Add money'}</Text>
+          </Pressable>
         ) : null}
       </RCard>
     </Pressable>

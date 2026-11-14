@@ -9,6 +9,7 @@ import { useI18n } from '../lib/i18n';
 import { useAppData } from '../lib/appData';
 import { apiFetch } from '../lib/api';
 import { fontBody, fontMono } from '../lib/fonts';
+import { myAllowance, type AllowanceStatus } from '../lib/orgExtras';
 
 type Tx = { _id: string; amount: number; description?: string; date: string; type: 'income' | 'expense'; categoryId?: { nameEn?: string; nameAr?: string; emoji?: string } | string };
 type Goal = { _id: string; nameEn: string; nameAr?: string; targetAmount: number; progressAmount?: number; savedAmount: number; currency: string };
@@ -21,7 +22,8 @@ export function ChildHome() {
   const { tok, lang } = useI18n();
   const ar = lang === 'ar';
   const insets = useSafeAreaInsets();
-  const { profile, dataVersion } = useAppData();
+  const { profile, dataVersion, activeLedgerId } = useAppData();
+  const [allowance, setAllowance] = useState<AllowanceStatus | null>(null);
   const [txs, setTxs] = useState<Tx[] | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -34,9 +36,10 @@ export function ChildHome() {
         apiFetch<{ data: Goal[] }>('/goals').catch(() => ({ data: [] as Goal[] })),
       ]);
       setTxs(t.data); setGoals(g.data);
+      if (activeLedgerId?.startsWith('o_')) setAllowance(await myAllowance(activeLedgerId.slice(2)).catch(() => null));
     } catch { setTxs((v) => v ?? []); }
     finally { setRefreshing(false); }
-  }, []);
+  }, [activeLedgerId]);
   useEffect(() => { void load(); }, [load, dataVersion]);
 
   const now = new Date();
@@ -55,6 +58,17 @@ export function ChildHome() {
           contentContainerStyle={{ paddingTop: 14, paddingBottom: insets.bottom + 100, paddingHorizontal: 16, gap: 12 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={tok.gold} colors={[tok.gold]} progressBackgroundColor={tok.surface} />}
         >
+          {allowance ? (
+            <RCard padding={18} accent>
+              <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{allowance.period === 'week' ? (ar ? 'ما تبقّى من مصروفك هذا الأسبوع' : 'Left of your allowance this week') : (ar ? 'ما تبقّى من مصروفك هذا الشهر' : 'Left of your allowance this month')}</REyebrow>
+              <RAmount value={Math.max(0, allowance.left)} currency={currency} size={32} decimals={0} color={allowance.over ? tok.alertText : undefined} />
+              <View style={{ marginTop: 10 }}><RProgress value={Math.min(allowance.spent, allowance.amount)} max={Math.max(1, allowance.amount)} color={allowance.over ? tok.alertText : tok.gold} height={6} /></View>
+              <Text style={{ marginTop: 8, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
+                {ar ? `صرفتَ ${Math.round(allowance.spent).toLocaleString('en-US')} من ${Math.round(allowance.amount).toLocaleString('en-US')}` : `${Math.round(allowance.spent).toLocaleString('en-US')} spent of ${Math.round(allowance.amount).toLocaleString('en-US')}`}
+              </Text>
+            </RCard>
+          ) : null}
+
           <RCard padding={18}>
             <REyebrow style={{ marginBottom: 8, textAlign: ar ? 'right' : 'left' }}>{ar ? 'صرفتَ هذا الشهر' : 'You spent this month'}</REyebrow>
             <RAmount value={-spent} currency={currency} size={32} decimals={0} />

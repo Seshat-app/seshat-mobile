@@ -54,6 +54,9 @@ export type ApiProject = {
   budget?: number;
   color?: string;
   description?: string;
+  /** 'restricted': only the listed members, owners and admins see this project and its entries. */
+  visibility?: 'all' | 'restricted';
+  memberIds?: string[];
 };
 
 type Ctx = {
@@ -172,8 +175,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const next = serverActive && (serverActive.startsWith('u_') || orgMatch)
         ? serverActive
         : null;
+      const orgOf = (x: string | null | undefined) => (x && x.startsWith('o_') ? x : null);
+      const before = orgOf(getActiveLedger());
       setActiveLedger(next);
       setActiveLedgerIdState(next);
+      // Launching straight into a shared workspace: the screens (and the categories above) asked for data before this
+      // workspace was known, so they showed the personal ledger under the household's name. Load them again for it.
+      if (before !== orgOf(next)) {
+        apiFetch<{ data: ApiCategory[] }>('/categories').then((r) => setCategories(r.data)).catch(() => {});
+        setDataVersion((v) => v + 1);
+      }
 
       // Pull projects whenever we've resolved the active ledger. The helper
       // is a no-op on personal ledgers, so this is cheap to call here.

@@ -10,6 +10,9 @@ export type Reminder = {
   dayOfMonth: number;
   leadDays: number;
   status: 'active' | 'suggested' | 'off' | 'dismissed';
+  note?: string;
+  /** True for a bill of a shared workspace (everyone in it sees it and is reminded). */
+  shared?: boolean;
 };
 
 export async function listReminders(): Promise<Reminder[]> {
@@ -25,4 +28,10 @@ export async function updateReminder(
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+}
+
+/** Add a bill to a shared workspace; every adult in it gets the reminder. */
+export async function addSharedBill(body: { name: string; amount?: number; dayOfMonth: number; leadDays?: number; note?: string }): Promise<Reminder> {
+  const r = await apiFetch<{ data: Reminder }>('/me/reminders', { method: 'POST', body: JSON.stringify(body) });
+  return r.data;
 }

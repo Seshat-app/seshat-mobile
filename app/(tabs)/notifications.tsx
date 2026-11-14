@@ -78,6 +78,13 @@ export default function NotificationsScreen() {
       router.push('/review');
       return;
     }
+    // Team and family: approvals, limits, allowances and shared bills.
+    if (kind === 'approval' || kind === 'limit' || kind === 'allowance') {
+      const orgId = typeof meta.orgId === 'string' ? meta.orgId : undefined;
+      if (orgId) { router.push(kind === 'approval' ? { pathname: '/orgs/[id]/approvals', params: { id: orgId } } : { pathname: '/orgs/[id]', params: { id: orgId } }); return; }
+    }
+    if (kind === 'approval_result') { router.push('/(tabs)/transactions'); return; }
+    if (kind === 'shared_bill') { router.push('/reminders'); return; }
     if (kind === 'community') {
       const qid = typeof meta.questionId === 'string' ? meta.questionId : undefined;
       router.push((qid ? `/community/${qid}` : '/community') as never);

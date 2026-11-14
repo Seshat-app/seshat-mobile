@@ -24,6 +24,10 @@ export type OrgDetail = OrgSummary & {
   // null when no default is set. Surfaced on org detail so the owner can
   // pick one without diving into a separate screen.
   telegramDefaultProjectId?: string | null;
+  kind: OrgKind;
+  // Managers only.
+  approvalThreshold?: number | null;
+  pendingApprovals?: number;
 };
 
 export async function setTelegramDefaultProject(
@@ -44,6 +48,8 @@ export type OrgMember = {
   avatarUrl?: string;
   role: OrgRole;
   joinedAt: string;
+  // Managers only.
+  monthlyLimit?: number | null;
 };
 
 export type OrgInvite = {

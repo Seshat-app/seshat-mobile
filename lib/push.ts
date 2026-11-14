@@ -198,6 +198,13 @@ export function subscribeToNotificationTaps(
       router.push({ pathname: '/review', params: { ...(id ? { id } : {}), ...(action ? { action } : {}) } });
       return;
     }
+    // Team and family notifications (approvals, limits, allowances, shared bills).
+    if (data?.type === 'org') {
+      const d = data as unknown as { kind?: string; orgId?: string };
+      if (d.kind === 'shared_bill') { router.push('/reminders'); return; }
+      if (d.kind === 'approval_result') { router.push('/(tabs)/transactions'); return; }
+      if (d.orgId) { router.push(d.kind === 'approval' ? ({ pathname: '/orgs/[id]/approvals', params: { id: d.orgId } } as never) : (`/orgs/${d.orgId}` as never)); return; }
+    }
     // Someone answered your question: open it.
     if (data?.type === 'community' || data?.meta?.kind === 'community') {
       const d = data as unknown as { questionId?: string; meta?: { questionId?: string } };

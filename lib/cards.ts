@@ -17,6 +17,10 @@ export type CardSummary = {
   /** The balance the bank's last message printed (and when), offered to the user: never applied by itself. */
   reportedBalance?: number | null;
   reportedAt?: string | null;
+  /** 'private': only its owner sees it (shared workspaces). */
+  visibility?: 'shared' | 'private';
+  /** True when the signed-in person owns it. */
+  mine?: boolean;
 };
 
 export type CardDetail = Omit<CardSummary, 'lastUsedAt'> & {

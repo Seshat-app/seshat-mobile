@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fmtNum } from '../../../lib/privacy';
-import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, StyleSheet, RefreshControl, KeyboardAvoidingView, Platform, Modal, Switch } from 'react-native';
 import { ScrollView as ScreenScroll } from '../../../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,7 +9,10 @@ import { PlanScreen } from '../../../components/PlanShell';
 import { RCard, REyebrow, RButton, RField } from '../../../components/ui';
 import { SkeletonRow } from '../../../components/Skeleton';
 import { useI18n } from '../../../lib/i18n';
-import { useAppData, type ApiProject } from '../../../lib/appData';
+import { useAppData, useWorkspace, type ApiProject } from '../../../lib/appData';
+import { listMembers, type OrgMember } from '../../../lib/orgs';
+import { roleLabel } from '../../../lib/orgRoles';
+import { radius } from '../../../lib/theme';
 import { apiFetch, newIdempotencyKey } from '../../../lib/api';
 import { fontBody, fontHead, fontMono } from '../../../lib/fonts';
 
@@ -32,6 +35,8 @@ export default function OrgProjectsScreen() {
   const [items, setItems] = useState<ProjectWithBudget[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [creating, setCreating] = useState(false);
+  const ws = useWorkspace();
+  const [accessFor, setAccessFor] = useState<ProjectWithBudget | null>(null);
   const [name, setName] = useState('');
   const [budgetStr, setBudgetStr] = useState('');
 
@@ -286,6 +291,13 @@ export default function OrgProjectsScreen() {
                           </Text>
                         </Pressable>
                       </View>
+                      {ws.canManage ? (
+                        <Pressable onPress={() => setAccessFor(p)} hitSlop={8} style={{ padding: 6 }}>
+                          <Text style={{ color: p.visibility === 'restricted' ? tok.gold : tok.muted, fontFamily: fontMono('regular'), fontSize: 10, letterSpacing: 1.2 }}>
+                            {p.visibility === 'restricted' ? (lang === 'ar' ? 'مقيّد' : 'RESTRICTED') : (lang === 'ar' ? 'الوصول' : 'ACCESS')}
+                          </Text>
+                        </Pressable>
+                      ) : null}
                       <Pressable onPress={() => toggleArchived(p)} hitSlop={8} style={{ padding: 6 }}>
                         {p.status === 'active'
                           ? <Archive size={16} color={tok.muted} strokeWidth={1.5} />
@@ -304,6 +316,66 @@ export default function OrgProjectsScreen() {
           )}
         </ScreenScroll>
       </KeyboardAvoidingView>
+      <ProjectAccessSheet project={accessFor} orgId={id!} onClose={() => setAccessFor(null)} onSaved={() => { setAccessFor(null); void load(); }} />
     </PlanScreen>
+  );
+}
+
+/** Who can see a project: everyone, or only chosen members (plus owners and admins). */
+function ProjectAccessSheet({ project, orgId, onClose, onSaved }: { project: ProjectWithBudget | null; orgId: string; onClose: () => void; onSaved: () => void }) {
+  const { tok, lang } = useI18n();
+  const ar = lang === 'ar';
+  const insets = useSafeAreaInsets();
+  const [restricted, setRestricted] = useState(false);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [people, setPeople] = useState<OrgMember[]>([]);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!project) return;
+    setRestricted(project.visibility === 'restricted');
+    setChosen(project.memberIds ?? []);
+    listMembers(orgId).then(setPeople).catch(() => setPeople([]));
+  }, [project, orgId]);
+  const save = async () => {
+    if (!project) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/projects/${project._id}`, { method: 'PATCH', body: JSON.stringify({ visibility: restricted ? 'restricted' : 'all', memberIds: chosen }) });
+      onSaved();
+    } catch (e) { Alert.alert(ar ? 'تعذّر' : 'Could not save', e instanceof Error ? e.message : String(e)); }
+    finally { setBusy(false); }
+  };
+  const selectable = people.filter((m) => m.role !== 'owner' && m.role !== 'admin');
+  return (
+    <Modal visible={!!project} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={onClose} />
+      <View style={{ backgroundColor: tok.void, borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal, padding: 20, paddingBottom: insets.bottom + 16, borderTopWidth: 1, borderColor: tok.border, gap: 12, maxHeight: '85%' }}>
+        <Text style={{ fontFamily: fontHead(lang), fontSize: 20, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{project?.name}</Text>
+        <View style={{ flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: fontBody(lang, 'medium'), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{ar ? 'تقييد الوصول' : 'Restrict access'}</Text>
+            <Text style={{ marginTop: 2, fontFamily: fontBody(lang), fontSize: 12, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>{ar ? 'يراه المختارون والمالك والمديرون فقط، مع كل ما سُجّل عليه.' : 'Only the people you choose, plus owners and admins, see it and everything logged on it.'}</Text>
+          </View>
+          <Switch value={restricted} onValueChange={setRestricted} trackColor={{ true: tok.gold, false: tok.border }} />
+        </View>
+        {restricted ? (
+          <ScrollView style={{ maxHeight: 280 }}>
+            {selectable.length === 0 ? <Text style={{ fontFamily: fontBody(lang), fontSize: 13, color: tok.muted, paddingVertical: 8 }}>{ar ? 'لا أعضاء آخرون لاختيارهم.' : 'There are no other members to choose.'}</Text> : selectable.map((m) => {
+              const on = chosen.includes(m.userId);
+              return (
+                <Pressable key={m.userId} onPress={() => setChosen((c) => (on ? c.filter((x) => x !== m.userId) : [...c, m.userId]))} style={{ paddingVertical: 10, flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: on ? tok.gold : tok.border, backgroundColor: on ? tok.gold : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                    {on ? <Text style={{ color: tok.void, fontSize: 13 }}>✓</Text> : null}
+                  </View>
+                  <Text style={{ flex: 1, fontFamily: fontBody(lang), fontSize: 14, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{m.displayName ?? m.email}</Text>
+                  <Text style={{ fontFamily: fontMono('regular'), fontSize: 10, color: tok.muted }}>{roleLabel(m.role, 'team', ar).toUpperCase()}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+        <RButton full onPress={save} loading={busy} disabled={busy}>{ar ? 'حفظ' : 'Save'}</RButton>
+      </View>
+    </Modal>
   );
 }

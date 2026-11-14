@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, Modal, Alert } from 'react-native';
 import { ScrollView as ScreenScroll } from '../components/Scroll';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellOff, BellRing } from 'lucide-react-native';
 import { CategoryIconByKey } from '../components/icons';
 import { PlanScreen } from '../components/PlanShell';
-import { RCard, REyebrow, RStatus, RButton } from '../components/ui';
+import { RCard, REyebrow, RStatus, RButton, RField } from '../components/ui';
+import { useWorkspace } from '../lib/appData';
 import { useI18n, formatAmount } from '../lib/i18n';
-import { listReminders, updateReminder, type Reminder } from '../lib/reminders';
+import { listReminders, updateReminder, addSharedBill, type Reminder } from '../lib/reminders';
 import { useFetchList } from '../lib/hooks/useFetchList';
 import { fontBody, fontMono } from '../lib/fonts';
 import { radius } from '../lib/theme';
@@ -26,6 +27,21 @@ export default function BillRemindersScreen() {
     () => listReminders(),
   );
   const [busyId, setBusyId] = useState<string | null>(null);
+  const ws = useWorkspace();
+  const ar = lang === 'ar';
+  const [adding, setAdding] = useState(false);
+  const [bName, setBName] = useState('');
+  const [bAmount, setBAmount] = useState('');
+  const [bDay, setBDay] = useState('');
+  const [bBusy, setBBusy] = useState(false);
+  const saveBill = async () => {
+    setBBusy(true);
+    try {
+      await addSharedBill({ name: bName.trim(), amount: Number(bAmount.replace(/[^\d.]/g, '')) || 0, dayOfMonth: Number(bDay) });
+      setAdding(false); setBName(''); setBAmount(''); setBDay(''); await load('refresh');
+    } catch (e) { Alert.alert(ar ? 'تعذّر' : 'Could not add', e instanceof Error ? e.message : String(e)); }
+    finally { setBBusy(false); }
+  };
 
   const handleAction = async (id: string, status: string) => {
     setBusyId(id);
@@ -44,8 +60,9 @@ export default function BillRemindersScreen() {
 
   return (
     <PlanScreen
-      title={lang === 'ar' ? 'التذكيرات' : 'Reminders'}
-      subtitle={lang === 'ar' ? 'الفواتير التي تذكّرك بها سيشات' : 'Bills Seshat reminds you about'}
+      title={ws.inOrg ? (ar ? 'فواتير مشتركة' : 'Shared bills') : (lang === 'ar' ? 'التذكيرات' : 'Reminders')}
+      subtitle={ws.inOrg ? (ar ? 'يُذكَّر بها كل البالغين' : 'Every adult is reminded') : (lang === 'ar' ? 'الفواتير التي تذكّرك بها سيشات' : 'Bills Seshat reminds you about')}
+      onAdd={ws.inOrg && ws.canWrite && !ws.isChild ? () => setAdding(true) : undefined}
       refreshing={refreshing}
     >
       <ScreenScroll
@@ -279,6 +296,16 @@ export default function BillRemindersScreen() {
           </>
         )}
       </ScreenScroll>
+      <Modal visible={adding} transparent animationType="slide" onRequestClose={() => setAdding(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setAdding(false)} />
+        <View style={{ backgroundColor: tok.void, borderTopLeftRadius: radius.modal, borderTopRightRadius: radius.modal, padding: 20, paddingBottom: insets.bottom + 16, borderTopWidth: 1, borderColor: tok.border, gap: 12 }}>
+          <Text style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 18, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{ar ? 'فاتورة جديدة' : 'New bill'}</Text>
+          <RField label={ar ? 'الاسم' : 'NAME'} value={bName} onChange={setBName} placeholder={ar ? 'مثلاً: الكهرباء' : 'e.g. Electricity'} maxLength={60} />
+          <RField label={ar ? 'المبلغ (اختياري)' : 'AMOUNT (OPTIONAL)'} value={bAmount} onChange={setBAmount} keyboardType="numeric" mono ltr placeholder="0" />
+          <RField label={ar ? 'يوم الشهر' : 'DAY OF THE MONTH'} value={bDay} onChange={setBDay} keyboardType="numeric" mono ltr placeholder="15" maxLength={2} />
+          <RButton full onPress={saveBill} loading={bBusy} disabled={bBusy || !bName.trim() || !(Number(bDay) >= 1 && Number(bDay) <= 31)}>{ar ? 'حفظ' : 'Save'}</RButton>
+        </View>
+      </Modal>
     </PlanScreen>
   );
 }

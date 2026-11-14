@@ -125,7 +125,7 @@ export default function CardsScreen() {
                     <Icon size={19} color={tok.gold} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text numberOfLines={1} style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 15.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{c.name}</Text>
+                    <Text numberOfLines={1} style={{ fontFamily: fontBody(lang, 'semibold'), fontSize: 15.5, color: tok.bone, textAlign: ar ? 'right' : 'left' }}>{c.visibility === 'private' ? '🔒 ' : ''}{c.name}</Text>
                     <Text style={{ marginTop: 2, fontFamily: fontMono('regular'), fontSize: 11, color: tok.muted, textAlign: ar ? 'right' : 'left' }}>
                       {kindLabel}
                       {c.reportedBalance != null && Math.abs(c.reportedBalance - (c.balance ?? 0)) >= 1
